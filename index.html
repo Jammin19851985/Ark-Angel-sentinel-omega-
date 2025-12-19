@@ -1,0 +1,345 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARK Ω: OMNI-PRESENCE ENGINE</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ARK Ω - COSMIC SUBSTRATE THEME */
+    :root {
+      --void-bg: #030508;
+      --cyan-core: #22d3ee;
+      --cyan-glow: rgba(34, 211, 238, 0.6);
+      --amber-core: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.6);
+      --violet-core: #8b5cf6;
+      --violet-glow: rgba(139, 92, 246, 0.6); /* Added violet glow */
+      --emerald-core: #10b981; /* Added emerald core */
+      --emerald-glow: rgba(16, 185, 129, 0.6); /* Added emerald glow */
+      --rose-core: #f43f5e; /* Added rose core */
+      --rose-glow: rgba(244, 63, 94, 0.6); /* Added rose glow */
+      --grid-color: rgba(34, 211, 238, 0.15);
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--void-bg);
+      /* Deep Space Radial Gradient */
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(16, 30, 60, 0.8) 0%, transparent 60%),
+        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 15% 70%, rgba(245, 158, 11, 0.1) 0%, transparent 40%);
+      color: #e2e8f0;
+      font-family: 'Rajdhani', sans-serif;
+      overflow-x: hidden;
+      transition: filter 0.5s ease;
+    }
+
+    /* 3D Perspective Grid Floor */
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -30%;
+      left: -50%;
+      width: 200%;
+      height: 100%;
+      background-image: 
+        linear-gradient(0deg, transparent 24%, var(--grid-color) 25%, var(--grid-color) 26%, transparent 27%, transparent 74%, var(--grid-color) 75%, var(--grid-color) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, var(--grid-color) 25%, var(--grid-color) 26%, transparent 27%, transparent 74%, var(--grid-color) 75%, var(--grid-color) 76%, transparent 77%, transparent);
+      background-size: 60px 60px;
+      transform: perspective(500px) rotateX(60deg);
+      z-index: -1;
+      opacity: 0.4;
+      pointer-events: none;
+      animation: grid-move 20s linear infinite;
+    }
+
+    @keyframes grid-move {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 60px; }
+    }
+
+    /* Font Classes */
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .font-display { font-family: 'Rajdhani', sans-serif; }
+
+    /* Cosmic Glow Utilities */
+    .glow-text-cyan { text-shadow: 0 0 10px var(--cyan-glow), 0 0 20px var(--cyan-glow); }
+    .glow-text-amber { text-shadow: 0 0 10px var(--amber-glow), 0 0 20px var(--amber-glow); }
+    .glow-text-violet { text-shadow: 0 0 10px var(--violet-glow), 0 0 20px var(--violet-glow); } /* Added */
+    .glow-text-emerald { text-shadow: 0 0 10px var(--emerald-glow), 0 0 20px var(--emerald-glow); } /* Added */
+    .glow-text-rose { text-shadow: 0 0 10px var(--rose-glow), 0 0 20px var(--rose-glow); } /* Added */
+    
+    /* Text flicker animation for holographic effect */
+    .glow-text-flicker {
+      animation: text-flicker 3s infinite alternate;
+    }
+    @keyframes text-flicker {
+      0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+          text-shadow: 
+            0 0 4px var(--violet-core), 
+            0 0 11px var(--violet-core), 
+            0 0 19px var(--violet-core), 
+            0 0 40px var(--violet-glow), 
+            0 0 80px var(--violet-glow);
+      }
+      20%, 24%, 55% {        
+          text-shadow: none;
+      }
+    }
+
+    .glow-border-cyan { 
+      box-shadow: 0 0 15px var(--cyan-glow), inset 0 0 5px var(--cyan-glow); 
+      border-color: var(--cyan-core) !important;
+    }
+    
+    .glow-border {
+       /* Default fallback */
+       box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+
+    .god-mode .glow-border {
+       box-shadow: 0 0 15px var(--amber-glow);
+       border-color: var(--amber-core) !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+    /* Animations */
+    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes spin-reverse-slow { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    @keyframes pulse-opacity { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+    
+    /* Deep Space Nebulae Drift */
+    @keyframes deep-space-pulse {
+        0%, 100% { opacity: 0.3; transform: scale(1) translate(0, 0); }
+        50% { opacity: 0.5; transform: scale(1.1) translate(20px, -20px); }
+    }
+    @keyframes cosmic-drift {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .animate-spin-slow { animation: spin-slow 60s linear infinite; }
+    .animate-spin-reverse { animation: spin-reverse-slow 80s linear infinite; }
+    .animate-pulse-slow { animation: pulse-opacity 4s ease-in-out infinite; }
+    .animate-deep-space { animation: deep-space-pulse 15s ease-in-out infinite; }
+
+    /* Holographic Overlay styles */
+    .holographic-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(3, 5, 8, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease-in-out;
+        backdrop-filter: blur(20px);
+    }
+    .holographic-overlay.visible { opacity: 1; pointer-events: auto; }
+    
+    /* Price flash animations */
+    .flash-green { animation: flash-green-anim 1.5s ease-out; }
+    .flash-red { animation: flash-red-anim 1.5s ease-out; }
+    @keyframes flash-green-anim { 0% { background-color: rgba(16, 185, 129, 0.2); } 100% { background-color: transparent; } }
+    @keyframes flash-red-anim { 0% { background-color: rgba(239, 68, 68, 0.2); } 100% { background-color: transparent; } }
+
+    .animate-fade-in-fast { animation: fade-in 0.3s ease-out forwards; }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Component Panel Base */
+    .cosmic-panel {
+        background: rgba(10, 15, 25, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Matrix rain effect (for background graphics) */
+    .matrix-rain-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.05; /* Subtle */
+      background: #000; /* Fallback */
+    }
+    .matrix-rain-bg::before {
+      content: attr(data-content);
+      position: absolute;
+      white-space: pre;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--violet-core);
+      animation: matrix-fall 10s linear infinite;
+      text-shadow: 0 0 5px var(--violet-glow);
+    }
+    @keyframes matrix-fall {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(100%); }
+    }
+
+    /* Holographic scanline effect (for UI elements) */
+    .hologram-scanline {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px; /* Thin line */
+      background: linear-gradient(to right, transparent, rgba(139, 92, 246, 0.3), transparent);
+      animation: holographic-scanline 5s infinite linear;
+      pointer-events: none;
+      opacity: 0.5;
+      z-index: 1;
+    }
+    @keyframes holographic-scanline {
+      0% { top: 0%; opacity: 0; }
+      10% { opacity: 0.5; }
+      20% { top: 100%; opacity: 0; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* --- NEXUS HOLOGRAPHIC EFFECTS --- */
+    .holographic-shimmer {
+      position: relative;
+      overflow: hidden;
+    }
+    .holographic-shimmer::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -150%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.05),
+        rgba(34, 211, 238, 0.15),
+        transparent
+      );
+      transform: skewX(-25deg);
+      animation: holographic-shine 3.5s infinite linear;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .holographic-shimmer.active::after {
+       animation-duration: 1.5s;
+       background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(34, 211, 238, 0.1),
+        rgba(245, 158, 11, 0.25),
+        transparent
+      );
+    }
+    @keyframes holographic-shine {
+      0% { left: -150%; }
+      100% { left: 150%; }
+    }
+
+    .core-pulse {
+        animation: core-throb 3s infinite ease-in-out;
+    }
+    .core-pulse.active {
+        animation: core-throb-active 1.5s infinite ease-in-out;
+    }
+    @keyframes core-throb {
+        0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.3)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.6)); transform: scale(1.02); }
+    }
+    @keyframes core-throb-active {
+        0%, 100% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.4)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 30px rgba(245, 158, 11, 0.8)); transform: scale(1.05); }
+    }
+
+    /* --- ACTIVE GOD PROTOCOL EFFECTS --- */
+    
+    /* FLY: Anti-Gravity Levitation */
+    .god-protocol-levitate {
+        animation: anti-gravity-float 2s ease-in-out infinite alternate !important;
+        box-shadow: 0 20px 50px rgba(34, 211, 238, 0.2) !important;
+        transform-origin: center center;
+    }
+    @keyframes anti-gravity-float {
+        0% { transform: translateY(0) scale(1); }
+        100% { transform: translateY(-15px) scale(1.01); }
+    }
+
+    /* LIGHTNING: Plasma Cohesion */
+    .god-protocol-lightning {
+        animation: lightning-flash 0.5s cubic-bezier(0.1, 0.7, 1.0, 0.1) forwards;
+    }
+    @keyframes lightning-flash {
+        0%, 100% { background-color: transparent; filter: brightness(1); }
+        10%, 50%, 90% { background-color: rgba(255, 255, 255, 0.8); filter: brightness(2) contrast(1.5); }
+        30%, 70% { background-color: rgba(200, 230, 255, 0.4); }
+    }
+
+    /* HEAL: Biological Rewrite (Green Glow) */
+    .god-protocol-heal {
+        animation: healing-pulse 2s ease-out forwards;
+    }
+    @keyframes healing-pulse {
+        0% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); border-color: rgba(16, 185, 129, 0); }
+        50% { box-shadow: 0 0 50px rgba(16, 185, 129, 0.8) inset, 0 0 20px rgba(16, 185, 129, 1); border-color: #10b981; }
+        100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    /* CREATE: Zero-Point Materialization */
+    .god-protocol-create {
+        animation: matter-manifest 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    @keyframes matter-manifest {
+        0% { transform: scale(0) rotate(-180deg); opacity: 0; filter: blur(20px); }
+        60% { transform: scale(1.1) rotate(10deg); opacity: 1; filter: blur(0); }
+        100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* RESET: Omega Protocol */
+    .god-protocol-reset {
+        animation: omega-reset 3s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+    }
+    @keyframes omega-reset {
+        0% { filter: invert(0); transform: scale(1); }
+        10% { filter: invert(1) hue-rotate(90deg); transform: scale(1.02); }
+        20% { filter: invert(0) hue-rotate(0deg); transform: scale(0.98); }
+        50% { filter: invert(1); transform: scale(1.1) rotate(1deg); }
+        90% { filter: invert(0); transform: scale(0.95); }
+        100% { filter: invert(0); transform: scale(1); }
+    }
+
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@0.14.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="./index.tsx"></script>
+</body>
+</html>
