@@ -7,7 +7,7 @@ import { RefreshIcon } from './icons/RefreshIcon';
 import ReactMarkdown, { Components } from 'react-markdown'; 
 
 interface SentinelTerminalProps {
-    id: string; // New: Add ID prop for tour targeting
+    id: string; 
     messages: Message[];
     input: string;
     setInput: (value: string) => void;
@@ -40,14 +40,12 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
 
     useEffect(scrollToBottom, [messages]);
 
-    // Shuffle and pick 10 suggestions
     const rotateSuggestions = () => {
         if (!suggestions || suggestions.length === 0) return;
         const shuffled = [...suggestions].sort(() => 0.5 - Math.random());
         setCurrentSuggestions(shuffled.slice(0, 10));
     };
 
-    // Initial load
     useEffect(() => {
         if (currentSuggestions.length === 0 && suggestions.length > 0) {
             rotateSuggestions();
@@ -57,12 +55,7 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
     const markdownComponents: Components = useMemo(() => ({
         pre: ({node, ...props}) => <pre className="bg-black/50 backdrop-blur-sm rounded-md p-4 my-2 overflow-x-auto border border-slate-700" {...props} />,
         code: ({ inline, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-                <code className="font-mono text-sm text-amber-300" {...props}>
-                    {children}
-                </code>
-            ) : (
+            return (
                 <code className="font-mono text-sm text-amber-300" {...props}>
                     {children}
                 </code>
@@ -78,22 +71,8 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
     }), []);
 
     const renderMessageContent = (msg: Message) => {
-        const citationRegex = /<grok:render_inline_citation\s+citation_id="(\d+)"\s*\/>/g;
-        let processedContent = msg.content;
+        const processedContent = msg.content;
         const validSources = Array.isArray(msg.sources) && msg.sources.length > 0;
-
-        if (validSources) {
-            processedContent = processedContent.replace(citationRegex, (match, citationIdStr) => {
-                const citationId = parseInt(citationIdStr, 10);
-                if (citationId > 0 && msg.sources && citationId <= msg.sources.length) {
-                    // Use Markdown link format instead of raw HTML anchor tag for better compatibility with ReactMarkdown
-                    return ` [[${citationId}]](#source-${citationId}) `; 
-                }
-                return ''; 
-            });
-        } else {
-            processedContent = processedContent.replace(citationRegex, '');
-        }
 
         return (
             <>
@@ -150,43 +129,35 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
                             <div>
                                 <p className="font-bold">Error</p>
                                 <p className="text-sm">{error}</p>
-                                {error.includes("500 UNKNOWN") && (
-                                    <p className="text-xs mt-2 text-red-200">
-                                        backend issue. verify API key.
-                                    </p>
-                                )}
                             </div>
                             <button
                                 onClick={() => handleTroubleshoot(error)}
                                 className="inline-flex items-center space-x-1.5 ml-4 px-2 py-1 text-xs font-medium rounded-md bg-red-800 hover:bg-red-700 text-red-200 transition-colors flex-shrink-0"
                             >
                                 <BrainCircuitIcon className="w-4 h-4" />
-                                <span>Troubleshoot</span>
+                                <span>Forensic Scan</span>
                             </button>
                         </div>
                     </div>
                 </div>
             )}
-             {/* Suggestions Bar */}
              {!isLoading && (
                  <div className="px-4 pb-2 animate-fade-in-fast">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center space-x-2">
-                            <div className="text-xs font-mono text-slate-500">// SUGGESTIONS</div>
+                            <div className="text-xs font-mono text-slate-500">// PRIME_DIRECTIVES</div>
                             <button 
                                 onClick={rotateSuggestions}
                                 className="text-slate-500 hover:text-amber-400 transition-colors p-1"
-                                title="Refresh Suggestions"
                             >
                                 <RefreshIcon className="w-3 h-3" />
                             </button>
                         </div>
                         <button
                             onClick={onAddAllSuggestions}
-                            disabled={isLoading || suggestions.length === 0}
-                            className="bg-black/50 backdrop-blur-sm hover:bg-slate-700/50 text-amber-500 text-xs font-mono px-2 py-1 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-black/50 backdrop-blur-sm border border-amber-900/50 hover:border-amber-400 text-amber-500 text-[10px] font-mono px-3 py-1 rounded-md transition-all animate-pulse"
                         >
-                            Execute All 100x
+                            [EXECUTE_ALL_PRIME_DIRECTIVES]
                         </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -194,7 +165,7 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
                             <button
                                 key={`${suggestion}-${idx}`}
                                 onClick={() => setInput(suggestion)}
-                                className="bg-black/50 backdrop-blur-sm hover:bg-slate-700/50 text-amber-300 text-xs font-mono px-2 py-1 rounded-md transition-colors text-left"
+                                className="bg-black/50 border border-white/5 hover:border-amber-900/50 text-slate-400 hover:text-amber-300 text-[10px] font-mono px-2 py-1 rounded transition-colors text-left"
                             >
                                 {suggestion}
                             </button>
@@ -211,9 +182,8 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
                         placeholder="// Awaiting mission parameters..."
                         disabled={isLoading}
                         className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-lg pl-4 pr-12 py-3 font-mono text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
-                        aria-label="User input"
                     />
-                     <button type="submit" disabled={isLoading} className="absolute inset-y-0 right-0 flex items-center pr-3" aria-label="Send message">
+                     <button type="submit" disabled={isLoading} className="absolute inset-y-0 right-0 flex items-center pr-3">
                         <svg className={`w-6 h-6 transform rotate-90 ${isLoading ? 'text-slate-600' : 'text-amber-500 hover:text-amber-400'}`} fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009.207 16H12a1 1 0 00.925-1.378l-2.031-4.062a1 1 0 01.34-1.42l4.062-2.031a1 1 0 00.22-1.716l-7-3.5z"></path>
                         </svg>

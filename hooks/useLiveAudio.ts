@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { LogEntry } from '../types';
@@ -121,6 +122,7 @@ export const useLiveAudio = ({ addLog }: { addLog: (source: LogEntry['source'], 
                         scriptProcessorRef.current.onaudioprocess = (audioProcessingEvent) => {
                             const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
                             const pcmBlob = createBlob(inputData);
+                            // CRITICAL: Solely rely on sessionPromise resolves and then call session.sendRealtimeInput
                             if (sessionPromiseRef.current) {
                                 sessionPromiseRef.current.then((session) => {
                                     session.sendRealtimeInput({ media: pcmBlob });
@@ -174,7 +176,8 @@ export const useLiveAudio = ({ addLog }: { addLog: (source: LogEntry['source'], 
                     },
                 },
                 config: {
-                    responseModalities: mode === 'live' ? [Modality.AUDIO] : [],
+                    // @google/genai Fix: responseModalities MUST contain exactly one modality: Modality.AUDIO.
+                    responseModalities: [Modality.AUDIO],
                     inputAudioTranscription: {},
                     outputAudioTranscription: mode === 'live' ? {} : undefined,
                 },

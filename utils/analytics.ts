@@ -1,14 +1,16 @@
-import { Trade, AnalyticsKPIs } from '../types';
+
+import { OrderState, Trade, AnalyticsKPIs } from '../types';
 
 // Mock data and calculation helpers
+// @google/genai Fix: Use OrderState.FILLED enum instead of string literal 'FILLED' to match Trade interface.
 const MOCK_TRADE_HISTORY: Omit<Trade, 'pnl' | 'id' | 'timestamp'>[] = [
-    { symbol: 'SOL', action: 'BUY', quantity: 50, price: 145.00 },
-    { symbol: 'ETH', action: 'SELL', quantity: 10, price: 3550.00 },
-    { symbol: 'SOL', action: 'SELL', quantity: 50, price: 152.00 },
-    { symbol: 'BTC', action: 'BUY', quantity: 0.1, price: 66000.00 },
-    { symbol: 'ADA', action: 'BUY', quantity: 1000, price: 0.45 },
-    { symbol: 'ETH', action: 'BUY', quantity: 5, price: 3400.00 },
-    { symbol: 'BTC', action: 'SELL', quantity: 0.05, price: 68000.00 },
+    { symbol: 'SOL', action: 'BUY', quantity: 50, price: 145.00, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'ETH', action: 'SELL', quantity: 10, price: 3550.00, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'SOL', action: 'SELL', quantity: 50, price: 152.00, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'BTC', action: 'BUY', quantity: 0.1, price: 66000.00, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'ADA', action: 'BUY', quantity: 1000, price: 0.45, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'ETH', action: 'BUY', quantity: 5, price: 3400.00, status: OrderState.FILLED, type: 'STANDARD' },
+    { symbol: 'BTC', action: 'SELL', quantity: 0.05, price: 68000.00, status: OrderState.FILLED, type: 'STANDARD' },
 ];
 
 export const generateInitialTrades = (): Trade[] => {
@@ -26,7 +28,7 @@ export const generateInitialTrades = (): Trade[] => {
             id: `trade-${i}-${Date.now()}`,
             timestamp: new Date(Date.now() - (MOCK_TRADE_HISTORY.length - i) * 3600000).toLocaleTimeString(),
             pnl
-        }
+        } as Trade;
     }).reverse();
 };
 

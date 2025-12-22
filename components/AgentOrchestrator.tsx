@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { OrchestrationStep } from '../types';
+import { OrchestrationStep, LegionName } from '../types';
 import { runAgenticOrchestration, agentTools, godModeAgentTools } from '../services/geminiService';
 import Loader from './Loader';
 import { PlayCircleIcon } from './icons/PlayCircleIcon';
@@ -11,37 +11,36 @@ import GodModeToggle from './GodModeToggle';
 import { FunctionDeclaration } from '@google/genai';
 import { ShieldIcon } from './icons/ShieldIcon';
 import { CpuChipIcon } from './icons/CpuChipIcon';
+import { NetworkIcon } from './icons/NetworkIcon';
 import { useAppContext } from '../contexts/AppContext';
 
 interface AgentOrchestratorProps {
-    id: string; // New: Add ID prop for tour targeting
+    id: string; 
     mission: string;
     handleMissionChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
 
 const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({ 
-    id, // Destructure the new ID prop
+    id, 
     mission,
     handleMissionChange,
 }) => {
-    // Destructure persisted state from AppContext
     const { 
         addLog, 
         isGodMode, 
         setIsGodMode, 
         isGodModeUnlocked, 
         optimizeSwarm,
-        isSwarmOptimized, // Persisted state
-        swarmOptimizationReport // Persisted report
+        isSwarmOptimized,
+        swarmOptimizationReport,
+        bots
     } = useAppContext();
 
     const [plan, setPlan] = useState<OrchestrationStep[]>([]);
     const [finalResult, setFinalResult] = useState<string | null>(null);
     const [isExecuting, setIsExecuting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
-    // Local loading state for optimization
     const [isOptimizing, setIsOptimizing] = useState(false);
 
     const allTools = useMemo(() => {
@@ -59,7 +58,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         setError(null);
         
         try {
-            await optimizeSwarm(); // State updates handled in AppContext
+            await optimizeSwarm(); 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during optimization.";
             setError(errorMessage);
@@ -76,6 +75,16 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         setError(null);
         setPlan([]);
         setFinalResult(null);
+
+        // Special handling for Initiate Swarm Command
+        if (mission.includes('INITIATE_SWARM_PROTOCOL')) {
+            addLog('SWARM', `COMMAND RECEIVED: INITIATE_SWARM_PROTOCOL --files ALL --agents 2500 --mode GOD_MODE`);
+            addLog('LEGION', `Legion 1 (Trading): ACTIVE. Hunting Alpha with Ghost Pulse.`);
+            addLog('LEGION', `Legion 2 (Growth): ACTIVE. Generating Leads via Lead Scout agents.`);
+            addLog('LEGION', `Legion 3 (Defense): ACTIVE. Scanning Ontario Car Leases for CPA violations.`);
+            addLog('LEGION', `Legion 4 (Infra): ACTIVE. Securing zkTLS Bridges.`);
+        }
+
         const mode = isGodMode ? "God Mode" : "Safe Mode";
         addLog('ORCHESTRATOR', `Executing mission in ${mode}: "${mission}"`);
 
@@ -126,11 +135,13 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
 
     return (
         <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-b-lg rounded-tr-lg shadow-lg flex flex-col h-full glow-border flex-1 relative">
-            <div className="p-4 border-b border-slate-800">
+            <div className="p-4 border-b border-slate-800 flex justify-between items-center">
                 <h2 className="text-sm font-bold text-amber-400 font-mono">// AGENT ORCHESTRATOR</h2>
+                <div className="flex gap-4">
+                    <div className="text-[10px] font-mono text-slate-500 uppercase">Swarm Load: <span className="text-amber-500">{bots.length} Units</span></div>
+                </div>
             </div>
             <div className="flex-1 p-4 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
-                {/* Controls */}
                 <div className="flex flex-col space-y-4">
                      <div>
                         <label htmlFor="mission-prompt" className="block text-sm font-medium text-slate-300 mb-2">Mission Objective</label>
@@ -140,24 +151,24 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                             onChange={handleMissionChange}
                             rows={5}
                             className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md p-3 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-                            placeholder="Define a complex, multi-step objective for the agent swarm..."
+                            placeholder="e.g. INITIATE_SWARM_PROTOCOL --agents 2500"
                         />
                     </div>
                     <div className="flex items-center justify-between gap-4">
                         <button
                             onClick={executeMission}
                             disabled={isExecuting || !mission.trim() || isOptimizing}
-                            className="inline-flex flex-grow items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors group"
+                            className="inline-flex flex-grow items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors group shadow-[0_0_15px_rgba(245,158,11,0.2)]"
                         >
                             {isExecuting ? (
                                 <>
                                     <Loader />
-                                    <span className="ml-2">Mission in Progress...</span>
+                                    <span className="ml-2">Orchestrating Legions...</span>
                                 </>
                             ) : (
                                 <>
-                                    <PlayCircleIcon className="w-5 h-5 mr-2 -ml-1 text-amber-300" />
-                                    Deploy Swarm
+                                    <NetworkIcon className="w-5 h-5 mr-2 -ml-1 text-amber-300 group-hover:scale-110 transition-transform" />
+                                    Deploy Master Swarm
                                 </>
                             )}
                         </button>
@@ -177,7 +188,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
 
                     </div>
                     <div className="border-t border-slate-800 pt-4 space-y-3">
-                         <h3 className="text-sm font-medium text-slate-300">Swarm Performance</h3>
+                         <h3 className="text-sm font-medium text-slate-300 font-mono tracking-widest uppercase">Swarm Synthesis</h3>
                          <button
                             onClick={handleOptimizeSwarm}
                             disabled={isExecuting || isOptimizing || isSwarmOptimized}
@@ -186,17 +197,17 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                             {isOptimizing ? (
                                 <>
                                     <Loader />
-                                    <span className="ml-2">Synthesizing...</span>
+                                    <span className="ml-2">Synthesizing Mixture of Experts...</span>
                                 </>
                             ) : isSwarmOptimized ? (
                                  <>
                                     <CheckCircleIcon className="w-5 h-5 mr-2 -ml-1 text-green-400" />
-                                    Swarm Optimized
+                                    Collective Intelligence Optimized
                                 </>
                             ) : (
                                 <>
                                     <CpuChipIcon className="w-5 h-5 mr-2 -ml-1 text-amber-300" />
-                                    Engage Quantum Synthesis
+                                    Engage Swarm Optimization
                                 </>
                             )}
                         </button>
@@ -209,55 +220,50 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                      )}
                 </div>
 
-                {/* Execution Plan & Results */}
                 <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-slate-800 p-4 shadow-inner flex flex-col space-y-4">
-                    <h3 className="text-base font-semibold text-slate-200">Execution Log</h3>
+                    <h3 className="text-xs font-bold text-slate-400 font-mono uppercase tracking-widest">Global State Feed</h3>
                     <div className="flex-1 space-y-3 overflow-y-auto pr-2">
                         {swarmOptimizationReport && (
-                            <div className="bg-black/50 backdrop-blur-sm p-3 rounded-lg border border-amber-500/50">
-                               <h4 className="font-bold text-amber-400 mb-2 text-sm">// QUANTUM SYNTHESIS REPORT</h4>
+                            <div className="bg-black/50 backdrop-blur-sm p-3 rounded-lg border border-amber-500/50 animate-fade-in-fast">
+                               <h4 className="font-bold text-amber-400 mb-2 text-sm uppercase tracking-tighter">// QUANTUM SYNTHESIS REPORT</h4>
                                <div className="prose prose-sm prose-invert max-w-none text-slate-300">
                                    {renderMarkdown(swarmOptimizationReport)}
                                </div>
                             </div>
                         )}
                         {plan.map(step => (
-                            <div key={step.id} className={`bg-black/50 backdrop-blur-sm p-3 rounded-lg border border-transparent ${step.status === 'in_progress' ? 'glow-border' : ''}`}>
+                            <div key={step.id} className={`bg-black/50 backdrop-blur-sm p-3 rounded-lg border border-transparent transition-all ${step.status === 'in_progress' ? 'border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : ''}`}>
                                 <div className="flex items-start space-x-3">
                                     <div className="mt-0.5">
                                       <StatusIcon status={step.status} />
                                     </div>
                                     <div className="flex-1">
-                                      <p className="text-sm text-slate-300">{step.description}</p>
+                                      <p className="text-sm text-slate-300 font-sans leading-relaxed">{step.description}</p>
                                       {step.toolName && (
-                                        <div className="mt-1 text-xs text-slate-500 font-mono" title={allTools.get(step.toolName)?.description}>
-                                          TOOL: {step.toolName}
+                                        <div className="mt-1 text-[10px] text-amber-500/60 font-mono uppercase" title={allTools.get(step.toolName)?.description}>
+                                          LEGION_TOOL: {step.toolName}
                                         </div>
                                       )}
                                     </div>
                                 </div>
                                 {step.result && (
                                     <div className="mt-2 pl-8">
-                                        {step.result.type === 'text' && <div className="text-xs text-slate-400 bg-black/50 backdrop-blur-sm p-2 rounded whitespace-pre-wrap font-mono">{step.result.content}</div>}
-                                        {step.result.type === 'image' && <img src={step.result.url} alt="Generated" className="max-w-xs rounded-md border-2 border-slate-700" />}
-                                    </div>
-                                )}
-                                 {step.error && (
-                                    <div className="mt-2 pl-8 text-xs text-red-400 bg-red-950 p-2 rounded font-mono">
-                                        Error: {step.error}
+                                        {step.result.type === 'text' && <div className="text-xs text-slate-400 bg-black/50 backdrop-blur-sm p-2 rounded whitespace-pre-wrap font-mono border border-white/5">{step.result.content}</div>}
+                                        {step.result.type === 'image' && <img src={step.result.url} alt="Generated" className="max-w-xs rounded-md border border-slate-700" />}
                                     </div>
                                 )}
                             </div>
                         ))}
                         {finalResult && (
-                             <div className="bg-green-900/50 border border-green-700 p-3 rounded-lg">
-                                <h4 className="font-bold text-green-300 mb-2">Mission Complete</h4>
-                                <p className="text-sm text-green-200 whitespace-pre-wrap">{finalResult}</p>
+                             <div className="bg-green-900/20 border border-green-800/50 p-4 rounded-lg animate-fade-in">
+                                <h4 className="font-bold text-green-400 mb-2 text-xs uppercase tracking-[0.2em]">Mission Formalized</h4>
+                                <p className="text-sm text-green-200/80 leading-relaxed font-sans">{finalResult}</p>
                             </div>
                         )}
                         {!isExecuting && !isOptimizing && plan.length === 0 && !swarmOptimizationReport && (
-                             <div className="flex-1 flex items-center justify-center h-full">
-                                <p className="text-slate-500 text-sm">Awaiting deployment...</p>
+                             <div className="flex-1 flex flex-col items-center justify-center h-full opacity-30">
+                                <NetworkIcon className="w-12 h-12 text-slate-600 mb-2" />
+                                <p className="text-slate-500 text-xs font-mono tracking-widest uppercase">Awaiting Swarm Command</p>
                             </div>
                         )}
                     </div>

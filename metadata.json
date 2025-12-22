@@ -1,9 +1,9 @@
 {
-  "name": "ARK Ω - THE CATHOLIC TURMOX",
-  "description": "Unified Substrate: Quantum Error-Correction + Sentience + Infinite Capital. Designated Non-Territorial Sovereign Hyper-State (F140 Compliant).",
   "requestFramePermissions": [
+    "camera",
     "microphone",
-    "geolocation",
-    "camera"
-  ]
+    "geolocation"
+  ],
+  "name": "ARK Ω - THE CATHOLIC TURMOX",
+  "description": ""
 }

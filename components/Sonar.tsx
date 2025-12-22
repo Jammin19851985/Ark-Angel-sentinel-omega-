@@ -167,7 +167,8 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                         .finally(() => setIsAnalyzing(false));
                 }
 
-                analyzeSentiment(selectedSignal.details, addLog)
+                // @google/genai Fix: Removed 'addLog' argument from analyzeSentiment call (expected 1 argument).
+                analyzeSentiment(selectedSignal.details)
                     .then(result => setSentimentResult(result))
                     .catch(e => {
                         const msg = e instanceof Error ? e.message : "Sentiment analysis failed.";

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState } from 'react';
 import { useLiveAudio } from '../../hooks/useLiveAudio';
 import { generateSpeech } from '../../services/geminiService';
 import Loader from '../Loader';
@@ -18,7 +18,6 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
     const [selectedVoice, setSelectedVoice] = useState('Kore');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    // @google/genai Fix: Declare `mode` and `setMode` using `useState` to manage the active mode of the AudioLabTab.
     const [mode, setMode] = useState<Mode>('live');
 
     const {
@@ -99,14 +98,14 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
                                 id="voice-select"
                                 value={selectedVoice}
                                 onChange={(e) => setSelectedVoice(e.target.value)}
-                                className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                             >
                                 {VOICES.map(voice => (
                                     <option key={voice} value={voice}>{voice}</option>
                                 ))}
                             </select>
                         </div>
-                        <textarea value={ttsText} onChange={(e) => setTtsText(e.target.value)} rows={5} placeholder="Enter text to generate speech..." className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+                        <textarea value={ttsText} onChange={(e) => setTtsText(e.target.value)} rows={5} placeholder="Enter text to generate speech..." className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
                         <button onClick={handleTtsSubmit} disabled={isLoading} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600">
                            {isLoading ? <span className="flex items-center justify-center"><Loader /> Generating...</span> : 'Generate & Play Audio'}
                         </button>

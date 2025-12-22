@@ -1,10 +1,10 @@
+
 import React, { useState, useCallback } from 'react';
 import { SentimentResult } from '../../types';
 import { analyzeSentiment } from '../../services/geminiService';
 import Loader from '../Loader';
-import { SparklesIcon } from '../icons/SparklesIcon'; // Changed to direct relative path
+import { SparklesIcon } from '../icons/SparklesIcon';
 import { useAppContext } from '../../contexts/AppContext';
-import { LogEntry } from '../../types'; // Import LogEntry type for addLog
 
 const SentimentGauge: React.FC<{ score: number }> = ({ score }) => {
     const percentage = (score + 1) / 2 * 100;
@@ -23,7 +23,7 @@ const SentimentGauge: React.FC<{ score: number }> = ({ score }) => {
 };
 
 
-const SentimentAnalysisTab: React.FC = () => { // Changed to named export
+const SentimentAnalysisTab: React.FC = () => {
     const { addLog } = useAppContext();
     const [query, setQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -39,8 +39,7 @@ const SentimentAnalysisTab: React.FC = () => { // Changed to named export
         addLog('AI_TOOLKIT', `Sentiment analysis started for: "${query}"`);
 
         try {
-            // Pass addLog to analyzeSentiment for source logging
-            const sentimentData = await analyzeSentiment(query, addLog);
+            const sentimentData = await analyzeSentiment(query);
             setResult(sentimentData);
             addLog('AI_TOOLKIT', 'Sentiment analysis successful.');
         } catch (err) {
@@ -55,7 +54,7 @@ const SentimentAnalysisTab: React.FC = () => { // Changed to named export
     return (
         <div className="h-full flex flex-col">
             <h3 className="text-lg font-bold text-slate-200 mb-1">Sentiment Analysis</h3>
-            <p className="text-sm text-slate-400 mb-4">Analyze market sentiment for any topic using real-time news and social data.</p>
+            <p className="text-sm text-slate-400 mb-4">Analyze market sentiment using v17.0 Search Grounding.</p>
 
             <div className="flex flex-col space-y-4">
                 <div className="flex space-x-2">
@@ -63,7 +62,7 @@ const SentimentAnalysisTab: React.FC = () => { // Changed to named export
                         type="text"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="e.g., 'Bitcoin market outlook' or 'Solana news'"
+                        placeholder="e.g., 'BTC outlook' or 'NVDA news'"
                         disabled={isLoading}
                         className="flex-grow bg-black/50 backdrop-blur-sm border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
                     />
@@ -72,29 +71,20 @@ const SentimentAnalysisTab: React.FC = () => { // Changed to named export
                         disabled={isLoading || !query.trim()}
                         className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors group"
                     >
-                        {isLoading ? (
-                            'Analyzing...'
-                        ) : (
-                            <>
-                                <SparklesIcon className="w-5 h-5 mr-2 -ml-1 text-amber-300" />
-                                Analyze
-                            </>
-                        )}
+                        {isLoading ? 'Analyzing...' : 'Analyze'}
                     </button>
                 </div>
 
-                <div className="flex-1 bg-black/30 backdrop-blur-sm rounded-lg border border-slate-800 p-4 min-h-[300px] flex flex-col justify-center">
+                <div className="flex-1 bg-black/30 backdrop-blur-sm rounded-lg border border-slate-800 p-4 min-h-[300px] flex flex-col justify-center overflow-y-auto">
                     {isLoading && (
                         <div className="text-center">
                             <Loader />
-                            <p className="mt-2 text-slate-400">Analyzing real-time data...</p>
+                            <p className="mt-2 text-slate-400">Analyzing v17.0 real-time streams...</p>
                         </div>
                     )}
                     {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                     {!isLoading && !error && !result && (
-                        <p className="text-slate-500 text-sm text-center">
-                            Sentiment analysis results will appear here.
-                        </p>
+                        <p className="text-slate-500 text-sm text-center">Sentiment results will appear here.</p>
                     )}
                     {result && (
                         <div className="space-y-4 animate-fade-in">
@@ -115,14 +105,20 @@ const SentimentAnalysisTab: React.FC = () => { // Changed to named export
                                 <h4 className="text-xs font-bold text-slate-400 mb-1">Summary</h4>
                                 <p className="text-sm text-slate-300 whitespace-pre-wrap">{result.summary}</p>
                             </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-slate-400 mb-1">Key Topics</h4>
-                                <ul className="list-disc list-inside text-sm text-slate-300">
-                                    {result.key_topics.map((topic, index) => (
-                                        <li key={index}>{topic}</li>
-                                    ))}
-                                </ul>
-                            </div>
+                            {result.sources && result.sources.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-slate-700">
+                                    <h4 className="text-xs font-bold text-slate-400 mb-2">Grounded Sources:</h4>
+                                    <ul className="space-y-1">
+                                        {result.sources.map((source, index) => (
+                                            <li key={index} className="truncate">
+                                                <a href={source} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-400 hover:underline">
+                                                    [{index + 1}] {source}
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

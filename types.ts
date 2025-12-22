@@ -1,4 +1,3 @@
-
 export interface Message {
     author: 'sentinel' | 'user';
     content: string;
@@ -24,28 +23,197 @@ export interface MarketData {
     };
 }
 
-export type BotStatus = 'Executing' | 'Analyzing' | 'Idle';
+export type BotStatus = 'Executing' | 'Analyzing' | 'Idle' | 'Patrolling' | 'Synthesizing' | 'Defending';
+
+export type AgentRole = 'Hunter' | 'Sentinel' | 'Oracle' | 'Weaver' | 'Saboteur' | 'Infra' | 'Persona' | 'Growth' | 'Legal';
+
+export type LegionName = 'Infrastructure' | 'Seraphim' | 'Voice' | 'Growth' | 'Security';
 
 export interface Bot {
     id: number;
     status: BotStatus;
+    role: AgentRole;
+    legion: LegionName;
+    efficiency: number;
+    xp: number;
+    tech?: string;
 }
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER';
     message: string;
+    complianceHash?: string;
 }
 
-export interface Geolocation {
-    latitude: number;
-    longitude: number;
+export enum OrderState {
+    CREATED = 'CREATED',
+    PRECHECK = 'PRECHECK',
+    SUBMITTED = 'SUBMITTED',
+    PRESUBMITTED = 'PRESUBMITTED',
+    PENDING_SUBMIT = 'PENDING_SUBMIT',
+    PARTIALLY_FILLED = 'PARTIALLY_FILLED',
+    FILLED = 'FILLED',
+    CANCELLED = 'CANCELLED',
+    REJECTED = 'REJECTED',
+    EXPIRED = 'EXPIRED',
+    FAILED = 'FAILED'
+}
+
+export interface Trade {
+    id: string;
+    timestamp: string;
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    quantity: number;
+    price: number;
+    pnl: number;
+    type: 'STANDARD' | 'SICO';
+    status: OrderState;
+    auditHash?: string;
+    tesScore?: number;
+    coherenceAtExecution?: number;
+    quboEnergyAtExecution?: number;
+    mlemVerified?: boolean;
+    isPaper?: boolean;
+}
+
+export type TradeMode = 'MANUAL' | 'AUTONOMOUS' | 'SOVEREIGN' | 'AODE_QUANTUM';
+
+export interface AnalyticsKPIs {
+    winRate: number;
+    sharpeRatio: number;
+    maxDrawdown: number;
+    totalPnl: number;
+    pnlPercent: number;
+    globalOptimality?: number;
+    stochasticAlpha?: number;
+}
+
+export interface ForecastPoint {
+    date: string;
+    price: number;
+}
+
+export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus' | 'paper_terminal';
+
+export interface SonarSignal {
+    id: number;
+    lat: number;
+    lon: number;
+    type: 'Financial' | 'Geopolitical' | 'Cyber' | 'Quantum';
+    threat: 'Low' | 'Medium' | 'High';
+    timestamp: string;
+    details: string;
+}
+
+export interface LearningParams {
+    learningRate: number;
+    batchSize: number;
+    activationFunction: 'ReLU' | 'Sigmoid' | 'Tanh' | 'Leaky ReLU';
+    epochs: number;
+    optimizer: 'Adam' | 'SGD' | 'RMSprop';
+}
+
+export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params' | 'sentry';
+
+export interface AiToolkitState {
+    activeTab: ToolkitTab;
+    chatSettings: {
+        useSearch: boolean;
+        useMaps: boolean;
+        useThinking: boolean;
+    };
+    learningParams: LearningParams;
+}
+
+export interface QuantumMetrics {
+    qubitCoherence: number;
+    fsfMetric: number;
+    quboEnergy: number;
+    acmdStatus: 'ACTIVE' | 'PATCHING' | 'IDLE';
+    gpGenerations: number;
+    boredom: number;
+    entropy: number;
+    drift: number;
+    trustScore: number;
+    regime: string;
+    dnaIntegrity: number;
+    satelliteLink: number;
+    atmosphericNoise: number;
+    realityAnchorStability: number;
+    selfAuditProgress: number;
+    executionLatency: number;
+    tesScore: number; 
+}
+
+export interface ArchangelCoreState {
+    confidence: number;
+    approved: boolean;
+    lastHash: string;
+    ledgerSize: number;
+    quorumStatus: 'VERIFIED' | 'PENDING' | 'HALTED';
+    buyingPower: number;
+    spineHeartbeatAge: number;
+    monotonicTime: number; 
+    killSwitchActive: boolean;
+    hardwareSignedDevices: string[];
+    hardwareQuorumRequired: number;
+    survivalDrawdownLimit: number;
+    structuralAlphaThreshold: number;
+    isAutonomyUnlocked: boolean;
+}
+
+export interface PrimeSuggestion {
+    id: number;
+    label: string;
+    status: 'ACTIVE' | 'PENDING' | 'ERROR';
+}
+
+export interface ProtocolNode {
+    id: number;
+    code: string;
+    name: string;
+    load: number;
+    status: 'STABLE' | 'DECOHERENT' | 'SYNTHESIZING';
+}
+
+export interface OrchestrationStep {
+    id: string;
+    description: string;
+    toolName?: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'failed';
+    result?: {
+        type: 'text' | 'image';
+        content?: string;
+        url?: string;
+    };
+}
+
+export interface SentimentResult {
+    overall_sentiment: number;
+    sentiment_label: string;
+    key_topics: string[];
+    summary: string;
+    sources?: string[];
+}
+
+export interface RagQueryResult {
+    text: string;
+    sources: string[];
 }
 
 export interface ChatMessage {
     author: 'gemini' | 'user';
     content: string;
     sources?: any[];
+}
+
+export interface TourStep {
+    selector: string;
+    title: string;
+    content: string;
+    placement: 'top' | 'bottom' | 'left' | 'right';
 }
 
 export interface EquityDataPoint {
@@ -63,102 +231,12 @@ export interface BacktestResults {
     equityCurve: EquityDataPoint[];
 }
 
-export interface OrchestrationStep {
-    id: number;
-    description: string;
-    toolName?: string;
-    status: 'pending' | 'in_progress' | 'completed' | 'failed';
-    result?: { type: 'image' | 'video' | 'audio', url: string } | { type: 'text', content: string };
-    error?: string;
-}
-
 export interface CandlestickData {
     date: string;
     open: number;
     high: number;
     low: number;
     close: number;
-}
-
-export interface SentimentResult {
-    overall_sentiment: number;
-    sentiment_label: string;
-    key_topics: string[];
-    summary: string;
-    sources?: string[];
-}
-
-export interface RagQueryResult {
-    text: string;
-    sources: string[];
-}
-
-export interface Trade {
-    id: string;
-    timestamp: string;
-    symbol: string;
-    action: 'BUY' | 'SELL';
-    quantity: number;
-    price: number;
-    pnl: number;
-    type?: 'STANDARD' | 'SICO';
-    quboOptimality?: number;
-    status?: 'FILLED' | 'PARTIAL' | 'REJECTED' | 'EXPIRED';
-    slippage?: number;
-    fee?: number;
-    latency?: number;
-}
-
-export interface AnalyticsKPIs {
-    winRate: number;
-    sharpeRatio: number;
-    maxDrawdown: number;
-    totalPnl: number;
-    pnlPercent: number;
-}
-
-export interface ForecastPoint {
-    date: string;
-    price: number;
-}
-
-export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus';
-
-export interface SonarSignal {
-    id: number;
-    lat: number;
-    lon: number;
-    type: 'Financial' | 'Geopolitical' | 'Cyber' | 'Quantum';
-    threat: 'Low' | 'Medium' | 'High';
-    timestamp: string;
-    details: string;
-}
-
-export interface TourStep {
-    selector: string;
-    title: string;
-    content: string;
-    placement: 'top' | 'bottom' | 'left' | 'right';
-}
-
-export interface LearningParams {
-    learningRate: number;
-    batchSize: number;
-    activationFunction: 'ReLU' | 'Sigmoid' | 'Tanh' | 'Leaky ReLU';
-    epochs: number;
-    optimizer: 'Adam' | 'SGD' | 'RMSprop';
-}
-
-export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params';
-
-export interface AiToolkitState {
-    activeTab: ToolkitTab;
-    chatSettings: {
-        useSearch: boolean;
-        useMaps: boolean;
-        useThinking: boolean;
-    };
-    learningParams: LearningParams;
 }
 
 export interface CycleLog {
@@ -170,8 +248,6 @@ export interface CycleLog {
     hedge_size: number;
     net_pnl_today_usd: number;
     total_pnl_usd: number;
-    quantum_coherence?: number;
-    adaptive_iv?: number;
 }
 
 export interface GammaSessionState {
@@ -185,43 +261,47 @@ export interface GammaSessionState {
 
 export interface InversionEventLog {
     id: string;
-    type: 'INVERSION' | 'PARADOX'; 
+    type: 'STANDARD' | 'PARADOX';
     symbol: string;
     action: 'BUY' | 'SELL';
     temporalAnchors: {
         tMinus: number;
-        tZero: number; 
-        tPlus: number; 
+        tZero: number;
         latencyDelta: number;
     };
     vectorOfTruth: {
+        causalDriftScore: number;
         predictedStateHash: string;
         manifestedStateHash: string;
-        causalDriftScore: number;
-    };
-    financialOutcome: {
-        projectedRoi: number;
-        realizedRoi: number;
-        slippageAttribution?: string;
     };
 }
 
-export interface QuantumMetrics {
-    qubitCoherence: number;
-    fsfMetric: number;
-    quboEnergy: number;
-    acmdStatus: 'ACTIVE' | 'PATCHING' | 'IDLE';
-    gpGenerations: number;
-    // New Advanced Metrics
-    boredom: number;
-    entropy: number;
-    drift: number;
-    trustScore: number;
+export interface Geolocation {
+    latitude: number;
+    longitude: number;
 }
 
-export interface ArchangelCoreState {
+export interface GrandSlamFeature {
+    id: number;
+    name: string;
+    status: 'LOCKED' | 'DEPLOYED' | 'MONITORING';
+    description?: string;
+    technicalAlias?: string;
+}
+
+export interface ApexTarget {
+    alias: string;
+    address: string;
+    threatLevel: number;
+    lastVector: string;
     confidence: number;
-    approved: boolean;
-    lastHash: string;
-    ledgerSize: number;
 }
+
+export interface InterceptedAsset {
+    codename: string;
+    contract: string;
+    auditStatus: 'PASSED' | 'FAILED' | 'PENDING';
+    liquidity: string;
+}
+
+export type BacktestStrategy = 'sma_crossover' | 'rsi_momentum' | 'tri_arb' | 'hft_market_making';

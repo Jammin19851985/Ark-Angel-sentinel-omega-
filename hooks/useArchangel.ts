@@ -1,307 +1,310 @@
-
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { MarketData, Portfolio, Bot, LogEntry, BotStatus, SonarSignal, Trade, AnalyticsKPIs, Holding, QuantumMetrics, InversionEventLog, ArchangelCoreState } from '../types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+    MarketData, Portfolio, Bot, LogEntry, BotStatus, SonarSignal, 
+    Trade, AnalyticsKPIs, QuantumMetrics, ArchangelCoreState, 
+    TradeMode, PrimeSuggestion, ProtocolNode, AgentRole, LegionName,
+    InversionEventLog, OrderState
+} from '../types';
 import { generateInitialTrades, calculateKPIs } from '../utils/analytics';
-import { ShadowExecutionEngine, Side, OrderStatus } from '../utils/shadowExecution';
-import { ArchangelCore } from '../utils/archangelCore';
+import { ShadowExecutionEngine, Side } from '../utils/shadowExecution';
+import { SpineEngine, SpineContext } from '../utils/spine';
 
-const SYMBOL_TO_CG_ID: { [key: string]: string } = {
-    'BTC': 'bitcoin',
-    'ETH': 'ethereum',
-    'SOL': 'solana',
-    'ADA': 'cardano',
-    'DOGE': 'dogecoin',
-};
-
-const MOCK_STOCKS_FOREX: MarketData = {
-    'AAPL': { price: 192.65, change: 1.2, volume: 81910000, changeAbsolute: 2.25 },
-    'TSLA': { price: 206.62, change: -0.5, volume: 146220000, changeAbsolute: -1.03 },
-    'EUR/USD': { price: 1.0863, change: 0.1, volume: 0, changeAbsolute: 0.0008 },
-};
-
-const INITIAL_SYMBOLS = Object.keys(SYMBOL_TO_CG_ID);
-
-const initialPortfolio: Portfolio = {
-    'BTC': { symbol: 'BTC', quantity: 0.005, avgPrice: 66500.50 },
-    'ETH': { symbol: 'ETH', quantity: 0.1, avgPrice: 3890.10 },
-};
-
-const initialMarketData: MarketData = INITIAL_SYMBOLS.reduce((acc, symbol) => {
-    acc[symbol] = { price: 0, change: 0, volume: 0, changeAbsolute: 0 };
-    return acc;
-}, {} as MarketData);
-Object.assign(initialMarketData, MOCK_STOCKS_FOREX);
-
-const BOT_COUNT = 25; 
-const initialBots: Bot[] = Array.from({ length: BOT_COUNT }, (_, i) => ({
-    id: i,
-    status: 'Idle',
-}));
+// AODE Kernel UPB-1 Constants
+const QUBIT_MIN_COHERENCE_NS = 40.0;
+const HEARTBEAT_TIMEOUT_MS = 5000;
+const TES_STEALTH_THRESHOLD = 0.95;
 
 export const useArchangel = () => {
-    const [marketData, setMarketData] = useState<MarketData>(initialMarketData);
-    const [portfolio, setPortfolio] = useState<Portfolio>(() => {
-        try {
-            const saved = localStorage.getItem('archangel_portfolio');
-            return saved ? JSON.parse(saved) : initialPortfolio;
-        } catch (e) {
-            console.warn("Failed to load portfolio from storage", e);
-            return initialPortfolio;
-        }
-    });
-    
-    const [fiatBalance, setFiatBalance] = useState<number>(() => {
-        try {
-            const saved = localStorage.getItem('archangel_fiat_balance');
-            return saved ? parseFloat(saved) : 10000.00;
-        } catch {
-            return 10000.00;
-        }
-    });
-
-    const [bots, setBots] = useState<Bot[]>(initialBots);
-    const [logs, setLogs] = useState<LogEntry[]>(() => {
-        try {
-            const saved = localStorage.getItem('archangel_logs');
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            console.warn("Failed to load logs from storage", e);
-            return [];
-        }
-    });
+    const [marketData, setMarketData] = useState<MarketData>({});
     const [historicalMarketData, setHistoricalMarketData] = useState<Record<string, number[]>>({});
     const [marketFilter, setMarketFilter] = useState('');
+    const [portfolio, setPortfolio] = useState<Portfolio>({});
+    const [paperPortfolio, setPaperPortfolio] = useState<Portfolio>({});
+    const [fiatBalance, setFiatBalance] = useState<number>(100000.00);
+    const [paperBalance, setPaperBalance] = useState<number>(1000000.00);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
     const [sonarSignals, setSonarSignals] = useState<SonarSignal[]>([]);
-    const [estimatedAlpha, setEstimatedAlpha] = useState(21.5);
     
     const [quantumMetrics, setQuantumMetrics] = useState<QuantumMetrics>({
         qubitCoherence: 120, 
-        fsfMetric: 0.00000005,
+        fsfMetric: 0.00000005, 
         quboEnergy: -24.5,
         acmdStatus: 'ACTIVE', 
-        gpGenerations: 45000,
+        gpGenerations: 45000, 
         boredom: 0.12,
-        entropy: 0.45,
-        drift: 0.02,
-        trustScore: 0.99
+        entropy: 0.45, 
+        drift: 0.02, 
+        trustScore: 0.99,
+        regime: 'STABLE_TREND', 
+        dnaIntegrity: 0.9999, 
+        satelliteLink: 1.0, 
+        atmosphericNoise: 0.42, 
+        realityAnchorStability: 0.99999,
+        selfAuditProgress: 0.15,
+        executionLatency: 0.85,
+        tesScore: 0.88
     });
 
-    const [coreState, setCoreState] = useState<ArchangelCoreState>({
-        confidence: 0,
-        approved: false,
-        lastHash: 'INIT',
-        ledgerSize: 0
+    const [coreState, setCoreState] = useState<ArchangelCoreState>({ 
+        confidence: 0.99, 
+        approved: true, 
+        lastHash: 'AODE_INIT_Ω', 
+        ledgerSize: 0,
+        quorumStatus: 'PENDING',
+        buyingPower: 1200000.00, 
+        spineHeartbeatAge: 0,
+        monotonicTime: 0,
+        killSwitchActive: false,
+        hardwareSignedDevices: [],
+        hardwareQuorumRequired: 2,
+        survivalDrawdownLimit: SpineEngine.MAX_DRAWDOWN,
+        structuralAlphaThreshold: SpineEngine.ALPHA_THRESHOLD,
+        isAutonomyUnlocked: true
     });
 
+    const [trades, setTrades] = useState<Trade[]>(generateInitialTrades());
+    const [paperTrades, setPaperTrades] = useState<Trade[]>([]);
+    const [kpis, setKpis] = useState<AnalyticsKPIs>(() => calculateKPIs([], 100000));
+    const [killSwitchActive, setKillSwitchActive] = useState(false);
+    const [tradeMode, setTradeMode] = useState<TradeMode>('AUTONOMOUS');
+    const [protocolNodes, setProtocolNodes] = useState<ProtocolNode[]>([]);
+    const [primeSuggestions, setPrimeSuggestions] = useState<PrimeSuggestion[]>([]);
+    const [bots, setBots] = useState<Bot[]>([]);
     const [inversionLogs, setInversionLogs] = useState<InversionEventLog[]>([]);
 
-    const [trades, setTrades] = useState<Trade[]>(() => {
-        try {
-            const saved = localStorage.getItem('archangel_trades');
-            return saved ? JSON.parse(saved) : generateInitialTrades();
-        } catch (e) {
-            console.warn("Failed to load trades from storage", e);
-            return generateInitialTrades();
-        }
-    });
-    
-    const initialPortfolioCost = useMemo(() => 10000, []); 
-    const [kpis, setKpis] = useState<AnalyticsKPIs>(() => calculateKPIs(trades, initialPortfolioCost));
-    
-    const marketDataRef = useRef(marketData);
-    const portfolioRef = useRef(portfolio);
-    const quantumMetricsRef = useRef(quantumMetrics);
-    const shadowEngine = useRef(new ShadowExecutionEngine()); 
-    const coreRef = useRef(new ArchangelCore()); 
-    const isWsConnected = useRef(false);
+    const shadowEngine = useRef(new ShadowExecutionEngine());
+    const lastHeartbeat = useRef(Date.now());
+    const genesisTime = useRef(performance.now());
 
-    useEffect(() => { marketDataRef.current = marketData; }, [marketData]);
-    useEffect(() => { portfolioRef.current = portfolio; }, [portfolio]);
-    useEffect(() => { quantumMetricsRef.current = quantumMetrics; }, [quantumMetrics]);
-
-    const addLog = useCallback((source: LogEntry['source'], message: string) => {
-        const newLog: LogEntry = {
-            timestamp: new Date().toLocaleTimeString(),
-            source,
-            message,
+    const addLog = useCallback((source: LogEntry['source'], message: string, complianceHash?: string) => {
+        const log: LogEntry = { 
+            timestamp: new Date().toLocaleTimeString(), 
+            source, 
+            message, 
+            complianceHash 
         };
-        setLogs(prevLogs => [...prevLogs.slice(-100), newLog]); 
+        setLogs(prev => [...prev.slice(-200), log]);
     }, []);
-    
-    const executeTrade = useCallback(async (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number) => {
-        if (quantumMetricsRef.current.fsfMetric > 0.0000001) {
-            addLog('AODE', `TRADE BLOCKED: FSF THRESHOLD EXCEEDED (${quantumMetricsRef.current.fsfMetric.toFixed(9)})`);
+
+    // Implementation of real-time market simulation and deterministic heartbeat
+    useEffect(() => {
+        const spinePulse = setInterval(() => {
+            const now = performance.now();
+            const elapsedMicros = Math.floor((now - genesisTime.current) * 1000);
+            
+            setCoreState(prev => ({
+                ...prev,
+                monotonicTime: elapsedMicros,
+                spineHeartbeatAge: Date.now() - lastHeartbeat.current
+            }));
+
+            if (Date.now() - lastHeartbeat.current > HEARTBEAT_TIMEOUT_MS) {
+                if (!killSwitchActive) {
+                    setKillSwitchActive(true);
+                    addLog('ERROR', "[FAIL_CLOSED]: Execution Spine Heartbeat Lost. Hard halt engaged.");
+                }
+            }
+
+            setQuantumMetrics(prev => {
+                const decoherenceTrigger = Math.random() < 0.02;
+                const nextCoherence = decoherenceTrigger ? 38 : Math.max(30, prev.qubitCoherence + (Math.random() - 0.5) * 2);
+                
+                let acmdStatus = prev.acmdStatus;
+                if (nextCoherence < QUBIT_MIN_COHERENCE_NS) {
+                    acmdStatus = 'PATCHING';
+                    addLog('XEDO', `AODE: Majorana Qubit Decoherence (${nextCoherence.toFixed(2)}ns). Executing SKP Kernel Patch.`);
+                } else if (acmdStatus === 'PATCHING') {
+                    acmdStatus = 'ACTIVE';
+                }
+
+                return {
+                    ...prev,
+                    qubitCoherence: nextCoherence,
+                    acmdStatus: acmdStatus,
+                    fsfMetric: Math.max(0.00000001, prev.fsfMetric + (Math.random() - 0.5) * 0.00000001),
+                    gpGenerations: prev.gpGenerations + 1000,
+                    tesScore: Math.max(0.1, Math.min(0.99, prev.tesScore + (Math.random() - 0.5) * 0.05))
+                };
+            });
+
+            // Simulate Market Data movements for UI Manifestation
+            const symbols = ['BTC', 'ETH', 'SOL', 'ADA', 'DOT', 'LINK', 'UNI', 'AVAX'];
+            setMarketData(prevData => {
+                const nextData: MarketData = { ...prevData };
+                symbols.forEach(sym => {
+                    const basePrice = sym === 'BTC' ? 65000 : sym === 'ETH' ? 3500 : sym === 'SOL' ? 145 : 0.5;
+                    const prevPrice = prevData[sym]?.price || basePrice;
+                    const drift = (Math.random() - 0.48) * 0.002; 
+                    const price = prevPrice * (1 + drift);
+                    const change = ((price / basePrice) - 1) * 100;
+                    const absChange = price - prevPrice;
+                    const volume = (prevData[sym]?.volume || 1000000000) * (1 + (Math.random() - 0.5) * 0.05);
+
+                    nextData[sym] = { price, change, changeAbsolute: absChange, volume };
+
+                    setHistoricalMarketData(prevHist => ({
+                        ...prevHist,
+                        [sym]: [...(prevHist[sym] || []).slice(-19), price]
+                    }));
+                });
+                return nextData;
+            });
+
+        }, 3000);
+        return () => clearInterval(spinePulse);
+    }, [addLog, killSwitchActive]);
+
+    const signDevice = useCallback((deviceId: string) => {
+        setCoreState(prev => {
+            if (prev.hardwareSignedDevices.includes(deviceId)) return prev;
+            const nextSigned = [...prev.hardwareSignedDevices, deviceId];
+            const quorumMet = nextSigned.length >= prev.hardwareQuorumRequired;
+            
+            addLog('SPINE', `DEVICE SIGNED: ${deviceId}. Quorum: ${nextSigned.length}/${prev.hardwareQuorumRequired}`);
+            
+            return {
+                ...prev,
+                hardwareSignedDevices: nextSigned,
+                quorumStatus: quorumMet ? 'VERIFIED' : 'PENDING'
+            };
+        });
+    }, [addLog]);
+
+    const heartbeat = useCallback(() => {
+        lastHeartbeat.current = Date.now();
+        if (killSwitchActive) {
+            setKillSwitchActive(false);
+            addLog('SYSTEM', "AODE: Execution Spine Restored via Heartbeat Ping.");
+        }
+    }, [killSwitchActive, addLog]);
+
+    const triggerKillSwitch = useCallback(() => {
+        setKillSwitchActive(true);
+        setCoreState(prev => ({ ...prev, killSwitchActive: true }));
+        addLog('ERROR', "!!! ATOMIC KILL SWITCH TRIGGERED !!! TERMINATING ALL ACTIVE VECTORS !!!");
+    }, [addLog]);
+
+    const executeTrade = useCallback(async (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number, isPaper = false) => {
+        if (!isPaper && killSwitchActive) {
+            addLog('ERROR', "AODE: Execution Blocked. Core Halted.");
             return;
         }
 
-        const tesScore = Math.random(); 
-        let effectiveQty = quantity;
-        if (tesScore > 0.95) {
-            effectiveQty = quantity * 0.25; 
-            addLog('AODE', `TES ALERT (${tesScore.toFixed(3)} > 0.95): ENGAGING P-L-E. SIZE REDUCED BY 75%.`);
-        }
+        const currentBalance = isPaper ? paperBalance : fiatBalance;
 
-        addLog('SHADOW', `Initiating SICO Execution for ${action} ${effectiveQty} ${symbol}...`);
-        
+        const context: SpineContext = {
+            device: coreState.hardwareSignedDevices[0] || 'MASTER_TERMINAL_Ω',
+            equity: currentBalance,
+            volatility: 0.2, 
+            drawdown: kpis.maxDrawdown / 100,
+            structureScore: quantumMetrics.trustScore,
+            signedDevices: coreState.hardwareSignedDevices,
+            requiredQuorum: coreState.hardwareQuorumRequired,
+            fsfMetric: quantumMetrics.fsfMetric,
+            qubitCoherence: quantumMetrics.qubitCoherence
+        };
+
         try {
-            const fill = await shadowEngine.current.submit_order(
-                action === 'BUY' ? Side.BUY : Side.SELL,
-                effectiveQty,
-                price
-            );
-
-            if (fill.status === OrderStatus.REJECTED) {
-                addLog('ERROR', `Order REJECTED by Shadow Exchange. ID: ${fill.order_id} | Latency: ${fill.latency_ms}ms`);
-                return;
+            if (!isPaper) {
+                addLog('SPINE', `[PREFLIGHT]: Authorizing ${action} ${symbol} through Deterministic Spine...`);
+                SpineEngine.authorize(context);
+            } else {
+                addLog('PAPER', `[SIMULATION]: Validating ${action} ${symbol} intent...`);
             }
 
-            const fillQty = fill.filled_qty;
-            const fillPrice = fill.avg_price;
-            const totalCost = fillQty * fillPrice + fill.fee;
-            const currentHolding = portfolioRef.current[symbol];
-
-            if (action === 'BUY') {
-                setFiatBalance(prev => {
-                    if (prev < totalCost) {
-                        addLog('ERROR', `Insufficient funds for BUY ${symbol}. Req: $${totalCost.toFixed(2)}, Avail: $${prev.toFixed(2)}`);
-                        return prev;
-                    }
-                    const existingQty = currentHolding?.quantity || 0;
-                    const existingAvgPrice = currentHolding?.avgPrice || 0;
-                    const newTotalQty = existingQty + fillQty;
-                    const newAvgPrice = ((existingQty * existingAvgPrice) + (fillQty * fillPrice)) / newTotalQty;
-                    setPortfolio(p => ({ ...p, [symbol]: { symbol, quantity: newTotalQty, avgPrice: newAvgPrice } }));
-                    addLog('TRADE', `SHADOW FILL: BUY ${fillQty.toFixed(4)} ${symbol} @ $${fillPrice.toFixed(2)} | Latency: ${fill.latency_ms}ms`);
-                    return prev - totalCost;
-                });
-            } else { 
-                if (!currentHolding || currentHolding.quantity < quantity) {
-                    addLog('ERROR', `Insufficient holding for SELL ${symbol}.`);
-                    return;
-                }
-                const pnl = (fillPrice - currentHolding.avgPrice) * fillQty;
-                const remainingQty = currentHolding.quantity - fillQty;
-                const proceeds = (fillQty * fillPrice) - fill.fee;
-                setPortfolio(p => {
-                    const newP = { ...p };
-                    if (remainingQty <= 0.000001) delete newP[symbol];
-                    else newP[symbol] = { ...currentHolding, quantity: remainingQty };
-                    return newP;
-                });
-                setFiatBalance(prev => prev + proceeds);
-                addLog('TRADE', `SHADOW FILL: SELL ${fillQty.toFixed(4)} ${symbol} @ $${fillPrice.toFixed(2)} PnL: $${pnl.toFixed(2)}`);
-            }
+            const preflight = await SpineEngine.preflight({ symbol, side: action }, context);
             
-            setTrades(prev => [{
+            // ADVERSARIAL MITIGATION (3.3) - Only for Live
+            let finalQuantity = quantity;
+            if (!isPaper && quantumMetrics.tesScore > TES_STEALTH_THRESHOLD) {
+                addLog('AODE', `[TES_EVASION]: Stealth signature detected (${quantumMetrics.tesScore.toFixed(3)}). Applying 75% size reduction.`);
+                finalQuantity = quantity * 0.25;
+            }
+
+            const startTime = performance.now();
+            const fill = await shadowEngine.current.submit_order(action === 'BUY' ? Side.BUY : Side.SELL, finalQuantity, price);
+            const endTime = performance.now();
+            
+            const complianceHash = preflight.complianceHash;
+
+            const newTrade: Trade = {
                 id: fill.order_id,
                 timestamp: new Date().toLocaleTimeString(),
-                symbol,
-                action,
-                quantity: fillQty,
-                price: fillPrice,
-                pnl: action === 'SELL' ? (fillPrice - (currentHolding?.avgPrice || 0)) * fillQty : 0,
+                symbol, action,
+                quantity: fill.filled_qty,
+                price: fill.avg_price,
+                pnl: action === 'SELL' ? (fill.avg_price - price) * fill.filled_qty : 0,
                 type: 'SICO',
-                status: fill.status,
-                slippage: fill.slippage,
-                fee: fill.fee,
-                latency: fill.latency_ms
-            }, ...prev.slice(0, 49)]);
-
-            const complianceHash = Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
-            addLog('FORENSIC', `MLEM GENERATED: ${complianceHash.substring(0,16)}...`);
-
-            setInversionLogs(prev => [{
-                id: fill.order_id,
-                type: Math.random() > 0.98 ? 'PARADOX' : 'INVERSION',
-                symbol,
-                action,
-                temporalAnchors: {
-                    tMinus: Date.now() - fill.latency_ms - 2,
-                    tZero: Date.now() - fill.latency_ms,
-                    tPlus: Date.now(),
-                    latencyDelta: 0 
-                },
-                vectorOfTruth: {
-                    predictedStateHash: complianceHash.substring(0, 8),
-                    manifestedStateHash: complianceHash.substring(0, 8),
-                    causalDriftScore: Math.random() * 0.0000001
-                },
-                financialOutcome: {
-                    projectedRoi: 0.05,
-                    realizedRoi: 0.05
-                }
-            }, ...prev.slice(0, 99)]);
-
-        } catch (e) {
-            addLog('ERROR', `Trade Execution Failed: ${e instanceof Error ? e.message : 'Unknown'}`);
-        }
-    }, [addLog]);
-
-    useEffect(() => {
-        let ws: WebSocket | null = null;
-        const connect = () => {
-            const assets = Object.values(SYMBOL_TO_CG_ID).join(',');
-            ws = new WebSocket(`wss://ws.coincap.io/prices?assets=${assets}`);
-            ws.onopen = () => { addLog('MARKET', 'WebSocket Uplink: STABLE.'); isWsConnected.current = true; };
-            ws.onmessage = (msg) => {
-                try {
-                    const data = JSON.parse(msg.data);
-                    setMarketData(prev => {
-                        let newData = { ...prev };
-                        let hasChanged = false;
-                        for (const id in data) {
-                            const sym = Object.keys(SYMBOL_TO_CG_ID).find(k => SYMBOL_TO_CG_ID[k] === id);
-                            if (sym) {
-                                newData[sym] = { ...newData[sym], price: parseFloat(data[id]) };
-                                hasChanged = true;
-                            }
-                        }
-                        return hasChanged ? newData : prev;
-                    });
-                } catch (e) {}
+                status: OrderState.FILLED,
+                auditHash: complianceHash,
+                tesScore: quantumMetrics.tesScore,
+                coherenceAtExecution: quantumMetrics.qubitCoherence,
+                quboEnergyAtExecution: quantumMetrics.quboEnergy,
+                mlemVerified: true,
+                isPaper
             };
-            ws.onerror = () => { isWsConnected.current = false; ws?.close(); };
-            ws.onclose = () => { isWsConnected.current = false; setTimeout(connect, 5000); };
-        };
-        connect();
-        return () => ws?.close();
-    }, [addLog]);
 
-    useEffect(() => {
-        const simInterval = setInterval(() => {
-            const btcPrice = marketDataRef.current['BTC']?.price || 90000;
-            const coreResult = coreRef.current.cycle(btcPrice, Math.random() * 2 - 1);
-            setCoreState({
-                confidence: coreResult.confidence,
-                approved: coreResult.approved,
-                lastHash: coreResult.hash,
-                ledgerSize: coreResult.ledgerSize
-            });
-
-            setQuantumMetrics(prev => ({
-                ...prev,
-                qubitCoherence: 100 + (Math.random() * 40),
-                fsfMetric: 0.00000001 + (Math.random() * 0.00000005),
-                quboEnergy: -20 - Math.random() * 10,
-                gpGenerations: prev.gpGenerations + 1000,
-                boredom: Math.random(),
-                entropy: Math.random(),
-                drift: Math.random() * 0.1,
-                trustScore: 0.95 + Math.random() * 0.05
-            }));
-
-            if (Math.random() < 0.05) {
-                addLog('FORENSIC', `Reconciliation Cycle Complete. Hash Match: ${Math.random().toString(36).substring(7)}`);
+            if (isPaper) {
+                setPaperTrades(prev => [newTrade, ...prev.slice(0, 99)]);
+                setPaperBalance(p => action === 'BUY' ? p - (fill.avg_price * fill.filled_qty) : p + (fill.avg_price * fill.filled_qty));
+            } else {
+                setTrades(prev => [newTrade, ...prev.slice(0, 99)]);
+                setFiatBalance(p => action === 'BUY' ? p - (fill.avg_price * fill.filled_qty) : p + (fill.avg_price * fill.filled_qty));
+                addLog('MLEM', `[UPB-1]: SICO EXECUTED. HASH: ${complianceHash}`, complianceHash);
             }
 
-        }, 3000);
-        return () => clearInterval(simInterval);
+            const newInversionLog: InversionEventLog = {
+                id: `${isPaper ? 'PAPER' : 'AODE'}-${crypto.randomUUID().substring(0, 8)}`,
+                type: 'STANDARD',
+                symbol, action,
+                temporalAnchors: { tMinus: startTime, tZero: fill.timestamp, latencyDelta: endTime - startTime },
+                vectorOfTruth: { causalDriftScore: 0.0000001, predictedStateHash: complianceHash.substring(0, 8), manifestedStateHash: complianceHash.substring(0, 8) }
+            };
+            setInversionLogs(prev => [newInversionLog, ...prev.slice(0, 49)]);
+
+        } catch (e) {
+            const errorMsg = e instanceof Error ? e.message : "Unknown spine error";
+            addLog('ERROR', `[SPINE BLOCK]: ${errorMsg}`);
+        }
+    }, [killSwitchActive, coreState, fiatBalance, paperBalance, kpis.maxDrawdown, quantumMetrics.trustScore, quantumMetrics.qubitCoherence, quantumMetrics.fsfMetric, quantumMetrics.tesScore, quantumMetrics.quboEnergy, addLog]);
+
+    useEffect(() => {
+        const initialBots: Bot[] = [];
+        const legionConfig: { name: LegionName, count: number, roles: AgentRole[] }[] = [
+            { name: 'Infrastructure', count: 500, roles: ['Infra'] },
+            { name: 'Seraphim', count: 1000, roles: ['Hunter', 'Sentinel', 'Weaver'] },
+            { name: 'Voice', count: 500, roles: ['Persona', 'Oracle'] },
+            { name: 'Growth', count: 250, roles: ['Growth'] },
+            { name: 'Security', count: 250, roles: ['Legal', 'Saboteur'] },
+        ];
+        let botId = 1;
+        legionConfig.forEach(c => {
+            for(let i=0; i<c.count; i++) {
+                initialBots.push({ id: botId++, legion: c.name, role: c.roles[i % c.roles.length], status: 'Idle', efficiency: 1.0, xp: 1000 });
+            }
+        });
+        setBots(initialBots);
+    }, []);
+
+    const executeAllPrimeDirectives = useCallback(async (suggestions: string[]) => {
+        addLog('AODE', "AODE: Engaging 100 Sovereign Directives...");
+        const newSuggestions = suggestions.map((s, i) => ({ id: i + 1, label: s, status: 'PENDING' as const }));
+        setPrimeSuggestions(newSuggestions);
+        for (let i = 0; i < newSuggestions.length; i++) {
+            await new Promise(r => setTimeout(r, 2));
+            setPrimeSuggestions(prev => prev.map((ps, idx) => idx === i ? { ...ps, status: 'ACTIVE' as const } : ps));
+        }
     }, [addLog]);
 
     return { 
-        marketData, portfolio, setPortfolio, fiatBalance, depositFiat: (a:number, s:string)=>setFiatBalance(p=>p+a), 
-        withdrawFiat: (a:number, d:string)=>{ if(fiatBalance>=a){setFiatBalance(p=>p-a); return true;} return false;},
-        executeTrade, bots, logs, addLog, historicalMarketData, marketFilter, setMarketFilter, sonarSignals, 
-        trades, setTrades, kpis, setKpis, estimatedAlpha, quantumMetrics, inversionLogs, coreState 
+        marketData, portfolio, setPortfolio, paperPortfolio, setPaperPortfolio,
+        fiatBalance, paperBalance, executeTrade, logs, addLog, sonarSignals, 
+        trades, setTrades, paperTrades, kpis, setKpis, quantumMetrics, coreState, killSwitchActive,
+        heartbeat, triggerKillSwitch, signDevice,
+        tradeMode, setTradeMode, protocolNodes, bots,
+        primeSuggestions, executeAllPrimeDirectives, inversionLogs,
+        depositFiat: (a: number, s: string) => setFiatBalance(p => p + a),
+        withdrawFiat: (a: number, d: string) => { if (fiatBalance >= a) { setFiatBalance(p => p - a); return true; } return false; },
+        historicalMarketData, marketFilter, setMarketFilter, estimatedAlpha: 36.82
     };
 };
