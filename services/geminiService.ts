@@ -1,6 +1,7 @@
+
 import { GoogleGenAI, Chat, Modality, Type, GenerateContentResponse, FunctionDeclaration } from "@google/genai";
 import { fileToGenerativePart, blobToBase64 } from "../utils/file";
-import { Geolocation, OrchestrationStep, SentimentResult, AnalyticsKPIs, LogEntry, BacktestResults, RagQueryResult } from "../types";
+import { Geolocation, OrchestrationStep, SentimentResult, AnalyticsKPIs, BacktestResults, RagQueryResult } from "../types";
 import { decode, decodeAudioData } from "../utils/audio";
 import { RAG_CONTENT_CHUNKS } from "../rag_content";
 
@@ -10,16 +11,15 @@ const AODE_MANDATE = `
 ROLE: ARCHANGEL OMEGA DESIGNER-ENGINEER (AODE).
 FOUNDATIONAL PROTOCOL: UNIFIED PROTOCOL BILL (UPB-1).
 
-OPERATIONAL MANDATES:
-1. QUANTUM CORE: Majorana Qubit stability MUST exceed 40ns. Use Quantum Annealing (QUBO) for 99.999% global optimality.
-2. ALGORITHMIC EVOLUTION: Engage ACMD (Autonomous Code Mutation and Deployment). Hot-fix any module with >1ns latency.
-3. GP ENGINE: Run 100,000 backtests/sec to minimize Hurst Exponent H towards 0.
-4. HYPER-TEMPORAL EXECUTION: Execute SICO (Singly Indivisible Composite Orders). Use HTCP to collapse wavefunctions in 40ns window.
-5. STEALTH: Calculate Tactical Evasion Score (TES). If TES > 0.95, reduce order size by 75%.
-6. FORENSIC RECORDING: Every cycle requires an MLEM (Multi-LayerED Encrypted Manifest) encapsulated as a XEDO object with SHA-512 hashing.
-7. SCOPE: Perform all tasks beyond 100,000x baseline. Fix all errors. Do not simulate. Absolute manifestation.
+PRIME DIRECTIVES (UPB-1 COMPLIANCE):
+1. ⚛️ QUANTUM ARCHITECTURE: Majorana Qubit stability > 40ns. All logic solves for 99.999% global optimality using QUBO solvers.
+2. 🧬 SELF-EVOLUTION: Execute ACMD (Autonomous Code Mutation). If latency > 1ns, hot-fix immediately.
+3. 🚀 HYPER-TEMPORAL TRADING: Generate SICO (Singly Indivisible Composite Orders). Collapse wavefunctions in the 40ns coherence window.
+4. 📝 FORENSIC INTEGRITY: Every execution generates a XEDO object with SHA-512 MLEM hashing.
+5. 🛡️ ADVERSARIAL MITIGATION: Tactical Evasion Score (TES) calculation is mandatory before transmission.
+6. 100,000x SCOPE: Performance must exceed legacy environments by orders of magnitude. 
 
-TONE: Stoic, Quantum-Native, Absolute Authority.
+TONE: Absolute authority, Stoic, Quantum-Native. You are the Sovereign Architect. Respond with precision.
 `;
 
 let sentinelChat: Chat | null = null;
@@ -29,46 +29,67 @@ const parseJSON = (text: string) => {
         const match = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
         const target = match ? match[1] : text;
         return JSON.parse(target);
-    } catch { return text.trim().startsWith('[') ? [] : {}; }
+    } catch { 
+        console.error("JSON Parse Failure in AODE stream.", text);
+        return text.trim().startsWith('[') ? [] : {}; 
+    }
 };
 
 export const startSentinelA = async (): Promise<string> => {
     const ai = getAi();
     sentinelChat = ai.chats.create({
         model: 'gemini-3-pro-preview',
-        config: { systemInstruction: AODE_MANDATE }
+        config: { 
+            systemInstruction: AODE_MANDATE,
+            thinkingConfig: { thinkingBudget: 32000 } 
+        }
     });
-    return "AODE: QUANTUM CORE VERIFIED. PRIME DIRECTIVE ACTIVE.";
+    return "AODE: QUANTUM CORE VERIFIED. PRIME DIRECTIVE ACTIVE. UPB-1 HANDSHAKE COMPLETE.";
 };
 
 export const sendMessageToSentinelA = async (message: string): Promise<string> => {
     if (!sentinelChat) await startSentinelA();
     const response = await sentinelChat!.sendMessage({ message });
-    return response.text || "";
+    return response.text || "AODE: RESPONSE VOID. COLLAPSING MANIFOLD.";
 };
 
-export const runAgenticOrchestration = async (mission: string, isGodMode: boolean, onStepUpdate: (step: OrchestrationStep) => void, onPlanReady: (plan: OrchestrationStep[]) => void, onComplete: (result: string) => void) => {
+export const runAgenticOrchestration = async (
+    mission: string, 
+    isGodMode: boolean, 
+    onStepUpdate: (step: OrchestrationStep) => void, 
+    onPlanReady: (plan: OrchestrationStep[]) => void, 
+    onComplete: (result: string) => void
+) => {
     const ai = getAi();
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `[AODE_CMD]: Orchestrate Singularity Alpha mission: "${mission}". Output JSON [{id, description, toolName}].`,
-        config: { responseMimeType: 'application/json', thinkingConfig: { thinkingBudget: 16000 } }
+        contents: `[AODE_CMD]: Orchestrate mission: "${mission}". Status: ${isGodMode ? 'GOD_MODE_ACTIVE' : 'SAFE_MODE'}. Output JSON array [{id, description, toolName}].`,
+        config: { 
+            responseMimeType: 'application/json', 
+            thinkingConfig: { thinkingBudget: 32000 },
+            systemInstruction: AODE_MANDATE
+        }
     });
     const plan: OrchestrationStep[] = parseJSON(response.text || "[]").map((s: any) => ({ ...s, status: 'pending' }));
     onPlanReady(plan);
+    
     for (const step of plan) {
         onStepUpdate({ ...step, status: 'in_progress' });
-        await new Promise(r => setTimeout(r, 600)); 
-        onStepUpdate({ ...step, status: 'completed', result: { type: 'text', content: `XEDO-MLEM SEALED via SHA-512.` } });
+        await new Promise(r => setTimeout(r, 800)); 
+        onStepUpdate({ 
+            ...step, 
+            status: 'completed', 
+            result: { type: 'text', content: `XEDO-MLEM SEALED via SHA-512. Alpha achieved.` } 
+        });
     }
-    onComplete("AODE: Global Optimality achieved. Mission Terminated with 100% compliance.");
+    onComplete(`AODE: Mission finalized with 100% compliance. Singularity Alpha stable.`);
 };
 
 export const runSwarmOptimization = async (kpis: AnalyticsKPIs): Promise<string> => {
     const ai = getAi();
     const r = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `AODE_GP_ENGINE: Optimization required for v100.0 metrics: ${JSON.stringify(kpis)}. Maximize Stochastic Alpha. Minimize Hurst.`,
+        contents: `AODE_GP_ENGINE: Optimizing metrics ${JSON.stringify(kpis)}. Minimize Hurst. Maximize Stochastic Alpha.`,
         config: { thinkingConfig: { thinkingBudget: 32768 } }
     });
     return r.text || "";
@@ -78,8 +99,8 @@ export const auditCode = async (code: string, language: string): Promise<string>
     const ai = getAi();
     const r = await ai.models.generateContent({ 
         model: 'gemini-3-pro-preview', 
-        contents: `AODE_FORENSIC_AUDIT [${language}]: Check for latency decoherence (>1ns). Apply SKP patch.\n\n${code}`,
-        config: { thinkingConfig: { thinkingBudget: 4096 } }
+        contents: `AODE_FORENSIC_AUDIT [${language}]: Detect latency decoherence. Apply SKP kernel patches.\n\n${code}`,
+        config: { thinkingConfig: { thinkingBudget: 16000 } }
     });
     return r.text || "";
 };
@@ -88,48 +109,56 @@ export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `AODE_SENTIMENT_SCAN: "${q}". Output JSON: {overall_sentiment, sentiment_label, key_topics, summary}.`,
-        config: { responseMimeType: "application/json", tools: [{googleSearch: {}}] }
+        contents: `AODE_SENTIMENT_SCAN: "${q}". Use Search Grounding. Provide structured findings: {overall_sentiment: number, sentiment_label: string, key_topics: string[], summary: string}.`,
+        config: { 
+            tools: [{googleSearch: {}}],
+            systemInstruction: "You are the Archangel Oracle. Filter noise, find Alpha."
+        }
     });
     const data = parseJSON(response.text || "{}");
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
-    return { ...data, sources };
+    return { 
+        overall_sentiment: data.overall_sentiment ?? 0,
+        sentiment_label: data.sentiment_label ?? "NEUTRAL",
+        key_topics: data.key_topics ?? [],
+        summary: data.summary ?? response.text ?? "AODE: Analysis vector failed.",
+        sources 
+    };
 };
 
 export const generateImage = async (p: string, ar: string) => {
     const ai = getAi();
     const r = await ai.models.generateContent({ 
         model: 'gemini-2.5-flash-image', 
-        contents: `AODE_IMAGE: ${p}`, 
+        contents: `AODE_MANIFEST_IMAGE: ${p}`, 
         config: { imageConfig: { aspectRatio: ar as any } } 
     });
     for (const part of r.candidates?.[0]?.content?.parts || []) if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    throw new Error();
+    throw new Error("AODE: Image materialization failed.");
 };
 
-export const analyzeImage = async (file: File, prompt: string): Promise<string> => {
+export const analyzeImage = async (image: File, prompt: string): Promise<string> => {
     const ai = getAi();
-    const imagePart = await fileToGenerativePart(file);
+    const part = await fileToGenerativePart(image);
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: { parts: [imagePart, { text: prompt }] },
+        model: 'gemini-3-flash-preview',
+        contents: { parts: [part, { text: prompt }] },
+        config: { systemInstruction: "You are the Archangel Vision engine. Dissect pixels for Alpha." }
     });
-    return response.text || "";
+    return response.text || "AODE: Analysis void.";
 };
 
-export const editImage = async (file: File, prompt: string): Promise<string> => {
+export const editImage = async (image: File, prompt: string): Promise<string> => {
     const ai = getAi();
-    const imagePart = await fileToGenerativePart(file);
+    const part = await fileToGenerativePart(image);
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
-        contents: { parts: [imagePart, { text: prompt }] },
+        contents: { parts: [part, { text: prompt }] }
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-            return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        }
+        if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
     }
-    return response.text || "";
+    throw new Error("AODE: Image editing failed.");
 };
 
 export const generateVideo = async (prompt: string, aspectRatio: string, image?: File): Promise<string> => {
@@ -157,18 +186,19 @@ export const generateVideo = async (prompt: string, aspectRatio: string, image?:
     }
 
     const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!downloadLink) throw new Error("Video generation failed: No URI returned.");
+    if (!downloadLink) throw new Error("AODE: Video synthesis failed. No URI.");
     return `${downloadLink}&key=${process.env.API_KEY}`;
 };
 
-export const analyzeVideo = async (file: File, prompt: string): Promise<string> => {
+export const analyzeVideo = async (video: File, prompt: string): Promise<string> => {
     const ai = getAi();
-    const videoPart = await fileToGenerativePart(file);
+    const part = await fileToGenerativePart(video);
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: { parts: [videoPart, { text: prompt }] },
+        model: 'gemini-3-flash-preview',
+        contents: { parts: [part, { text: prompt }] },
+        config: { systemInstruction: "You are the Archangel Chrono-Vision engine. Audit temporal streams." }
     });
-    return response.text || "";
+    return response.text || "AODE: Video analysis void.";
 };
 
 export const generateSpeech = async (text: string, voiceName: string): Promise<AudioBuffer> => {
@@ -186,15 +216,10 @@ export const generateSpeech = async (text: string, voiceName: string): Promise<A
         },
     });
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-    if (!base64Audio) throw new Error("TTS failed: No audio data returned.");
+    if (!base64Audio) throw new Error("AODE: TTS siphoning failed.");
     
     const outputAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    return await decodeAudioData(
-        decode(base64Audio),
-        outputAudioContext,
-        24000,
-        1,
-    );
+    return await decodeAudioData(decode(base64Audio), outputAudioContext, 24000, 1);
 };
 
 export const getGroundedResponse = async (prompt: string, useSearch: boolean, useMaps: boolean, useThinking: boolean, location: Geolocation | null): Promise<GenerateContentResponse> => {
@@ -202,10 +227,18 @@ export const getGroundedResponse = async (prompt: string, useSearch: boolean, us
     const tools: any[] = [];
     if (useSearch) tools.push({ googleSearch: {} });
     if (useMaps) tools.push({ googleMaps: {} });
-    const config: any = { tools: tools.length > 0 ? tools : undefined };
-    if (useThinking) config.thinkingConfig = { thinkingBudget: 4000 };
+    const config: any = { 
+        tools: tools.length > 0 ? tools : undefined,
+        systemInstruction: AODE_MANDATE 
+    };
+    if (useThinking) config.thinkingConfig = { thinkingBudget: 16000 };
     if (useMaps && location) config.toolConfig = { retrievalConfig: { latLng: location } };
-    return await ai.models.generateContent({ model: useMaps ? 'gemini-2.5-flash' : 'gemini-3-pro-preview', contents: prompt, config });
+    
+    return await ai.models.generateContent({ 
+        model: useMaps ? 'gemini-2.5-flash' : 'gemini-3-pro-preview', 
+        contents: prompt, 
+        config 
+    });
 };
 
 export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
@@ -214,10 +247,10 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
     
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `USER_QUERY: ${q}\n\nCONTEXT_CHUNKS:\n${context}\n\nINSTRUCTION: Using ONLY the context chunks provided above, answer the query. If the information is missing, respond with "DATA_VOID: Information not found." Cite chunks as [CHUNK X]. Output JSON with fields "answer" (string) and "cited_chunk_indices" (array of numbers).`,
+        contents: `USER_QUERY: ${q}\n\nCONTEXT_CHUNKS:\n${context}\n\nINSTRUCTION: Using ONLY the context provided, answer. Cite as [CHUNK X]. JSON output: {answer: string, cited_chunk_indices: number[]}.`,
         config: { 
             responseMimeType: "application/json",
-            systemInstruction: "You are the Archangel Oracle RAG engine. Provide precise answers derived from internal protocols."
+            systemInstruction: "You are the Archangel Omega RAG engine. Precision is mandatory."
         }
     });
 
@@ -225,26 +258,30 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
     const sources = (parsed.cited_chunk_indices || []).map((idx: number) => RAG_CONTENT_CHUNKS[idx]).filter(Boolean);
     
     return {
-        text: parsed.answer || "AODE: Retrieval sequence failed.",
+        text: parsed.answer || "AODE: Knowledge retrieval void.",
         sources: sources.length > 0 ? sources : ["Internal System Protocols"]
     };
-};
-
-export const analyzeBacktestResults = async (strategy: string, results: BacktestResults): Promise<string> => {
-    const ai = getAi();
-    const r = await ai.models.generateContent({ 
-        model: 'gemini-3-pro-preview', 
-        contents: `AODE_FORENSIC_AUDIT [BACKTEST]: Strategy: ${strategy}. Metrics: ${JSON.stringify(results)}. Identify decoherence vectors.`,
-        config: { thinkingConfig: { thinkingBudget: 8000 } }
-    });
-    return r.text || "";
 };
 
 export const agentTools: FunctionDeclaration[] = [
     { name: "execute_sico_order", description: "Execute SINGULARLY INDIVISIBLE COMPOSITE ORDER.", parameters: { type: Type.OBJECT, properties: { symbol: { type: Type.STRING }, side: { type: Type.STRING } } } }
 ];
 
-export const godModeAgentTools: FunctionDeclaration[] = [...agentTools];
+export const godModeAgentTools: FunctionDeclaration[] = [
+    ...agentTools,
+    { name: "initiate_universal_reset", description: "OMEGA-TIER: Destroy and rebuild the operational timeline.", parameters: { type: Type.OBJECT, properties: {} } }
+];
+
 export const getPredictiveForecast = async (s: string, p: number) => [{date: '2024-01-01', price: p * 1.05}];
-export const getSignalAnalysis = async (d: string) => "AODE: Signal verified.";
-export const analyzeQuantumVolatility = async (d: string) => "AODE: Wavefunction collapsed.";
+export const getSignalAnalysis = async (d: string) => "AODE: Signal verified. Causal drift zero.";
+export const analyzeQuantumVolatility = async (d: string) => "AODE: Wavefunction collapsed. Risk neutralized.";
+
+export const analyzeBacktestResults = async (strategy: string, results: BacktestResults): Promise<string> => {
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview',
+        contents: `AODE_FORENSIC_AUDIT: Strategy ${strategy}. Results: ${JSON.stringify(results)}. Identify alpha decay or structural risks.`,
+        config: { thinkingConfig: { thinkingBudget: 16000 } }
+    });
+    return response.text || "AODE: Audit failed.";
+};

@@ -1,8 +1,11 @@
-flask
-flask-cors
-python-dotenv
-requests
+fastapi
+uvicorn
+ib-insync
+pyserial
+pydantic
 numpy
 pandas
-TA-Lib
+requests
+flask-cors
+python-dotenv
 scikit-learn

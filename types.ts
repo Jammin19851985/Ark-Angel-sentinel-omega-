@@ -1,3 +1,4 @@
+
 export interface Message {
     author: 'sentinel' | 'user';
     content: string;
@@ -8,6 +9,10 @@ export interface Holding {
     symbol: string;
     quantity: number;
     avgPrice: number;
+    qualityScore?: number;
+    stability?: number;
+    strikes?: number;
+    isRetired?: boolean;
 }
 
 export interface Portfolio {
@@ -23,10 +28,21 @@ export interface MarketData {
     };
 }
 
+export interface ExternalExchangeData {
+    kraken: Record<string, { last: number; ask: number; bid: number }>;
+}
+
+export interface ArbOpportunity {
+    symbol: string;
+    buyVenue: string;
+    sellVenue: string;
+    spread: number;
+    spreadPercent: number;
+    timestamp: number;
+}
+
 export type BotStatus = 'Executing' | 'Analyzing' | 'Idle' | 'Patrolling' | 'Synthesizing' | 'Defending';
-
 export type AgentRole = 'Hunter' | 'Sentinel' | 'Oracle' | 'Weaver' | 'Saboteur' | 'Infra' | 'Persona' | 'Growth' | 'Legal';
-
 export type LegionName = 'Infrastructure' | 'Seraphim' | 'Voice' | 'Growth' | 'Security';
 
 export interface Bot {
@@ -41,7 +57,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE';
     message: string;
     complianceHash?: string;
 }
@@ -76,9 +92,24 @@ export interface Trade {
     quboEnergyAtExecution?: number;
     mlemVerified?: boolean;
     isPaper?: boolean;
+    qualityAtExecution?: number;
+    capitalScaleAtExecution?: number;
+    isAutonomous?: boolean;
 }
 
-export type TradeMode = 'MANUAL' | 'AUTONOMOUS' | 'SOVEREIGN' | 'AODE_QUANTUM';
+export interface ProposedTrade {
+    id: string;
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    quantity: number;
+    price: number;
+    confidence: number;
+    alphaScore: number;
+    reason: string;
+    timestamp: number;
+}
+
+export type TradeMode = 'MANUAL' | 'AUTONOMOUS' | 'SOVEREIGN' | 'AODE_QUANTUM' | 'LIVE_IBKR';
 
 export interface AnalyticsKPIs {
     winRate: number;
@@ -147,6 +178,68 @@ export interface QuantumMetrics {
     tesScore: number; 
 }
 
+export interface StrategyMetrics {
+    qualityScore: number;
+    drawdown: number;
+    stability: number;
+    capitalScale: number;
+    strikes: number;
+    isRetired: boolean;
+}
+
+export interface AutonomyMetrics {
+    healthScore: number;
+    hesitationLevel: number;
+    suppressionActive: boolean;
+    confidenceDecayFactor: number;
+    lastRevocationReason: string | null;
+    cooldownRemaining: number;
+    isInRevocation: boolean;
+    anomalyDetected: boolean;
+    lockedContracts: string[]; 
+}
+
+export interface BiometricMetrics {
+    hrv: number;
+    stressIndex: number;
+    isAuthorized: boolean;
+    lastSync: number;
+}
+
+export interface RustSpineMetrics {
+    kernelLatency: number;
+    throughput: number;
+    rateLimitUsage: number;
+    heartbeatStatus: 'HEALTHY' | 'DEGRADED' | 'FAILED';
+    partialFillEfficiency: number;
+}
+
+export interface MevMetrics {
+    mempoolExposure: number;
+    privateRpcActive: boolean;
+    bundlesSent: number;
+    sandwichAttemptsBlocked: number;
+    currentSlippageLimit: number;
+    isFlashbotsBypassActive: boolean;
+}
+
+export interface IbkrAccountInfo {
+    accountNumber: string;
+    isArmed: boolean;
+    latency: number;
+    marginUtilization: number;
+    buyingPower: number;
+    baseCurrency: string;
+}
+
+export interface HardwareDevice {
+    id: string;
+    type: 'ARDUINO_SENTINEL' | 'TPM_MODULE' | 'FIPS_HSM';
+    status: 'CONNECTED' | 'LOCKED' | 'TAMPERED';
+    firmwareVersion: string;
+    lastAttestation: number;
+}
+
 export interface ArchangelCoreState {
     confidence: number;
     approved: boolean;
@@ -162,6 +255,18 @@ export interface ArchangelCoreState {
     survivalDrawdownLimit: number;
     structuralAlphaThreshold: number;
     isAutonomyUnlocked: boolean;
+    // @google/genai Fix: Changed 'bool' to 'boolean' to fix line 258 error.
+    decisionCoreActive: boolean;
+    strategyMetrics: StrategyMetrics;
+    autonomyMetrics: AutonomyMetrics;
+    biometricMetrics: BiometricMetrics;
+    rustSpineMetrics: RustSpineMetrics;
+    mevMetrics: MevMetrics;
+    ibkrState: IbkrAccountInfo;
+    activeDirectives: Record<string, boolean>;
+    profitVault: number;
+    hardwareDevices: HardwareDevice[];
+    lastSystemOp?: 'EXECUTE' | 'INSTALL' | 'RUN';
 }
 
 export interface PrimeSuggestion {

@@ -1,7 +1,8 @@
+
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useArchangel } from '../hooks/useArchangel';
-import { Trade, AnalyticsKPIs, MarketData, Portfolio, Bot, LogEntry, SonarSignal, AiToolkitState, QuantumMetrics, GammaSessionState, CycleLog, InversionEventLog, ArchangelCoreState, TradeMode, PrimeSuggestion, ProtocolNode } from '../types';
-import { runSwarmOptimization } from '../services/geminiService';
+import { Trade, AnalyticsKPIs, MarketData, Portfolio, Bot, LogEntry, SonarSignal, AiToolkitState, QuantumMetrics, GammaSessionState, CycleLog, InversionEventLog, ArchangelCoreState, TradeMode, PrimeSuggestion, ProtocolNode, ProposedTrade, ExternalExchangeData, ArbOpportunity } from '../types';
+import { runSwarmOptimization, sendMessageToSentinelA } from '../services/geminiService';
 
 // --- MATH HELPERS FOR GAMMA SCALPER ---
 function normCdf(x: number) {
@@ -80,8 +81,10 @@ interface AppContextType {
     isSovereign: boolean;
     setIsSovereign: React.Dispatch<React.SetStateAction<boolean>>;
     quantumMetrics: QuantumMetrics;
+    setQuantumMetrics: React.Dispatch<React.SetStateAction<QuantumMetrics>>;
     inversionLogs: InversionEventLog[];
     coreState: ArchangelCoreState;
+    setCoreState: React.Dispatch<React.SetStateAction<ArchangelCoreState>>;
     wallpaperVideoSrc: string | null;
     setWallpaperVideoSrc: (src: string | null) => void;
     heartbeat: () => void;
@@ -93,16 +96,23 @@ interface AppContextType {
     primeSuggestions: PrimeSuggestion[];
     executeAllPrimeDirectives: (suggestions: string[]) => Promise<void>;
     protocolNodes: ProtocolNode[];
+    pendingProposals: ProposedTrade[];
+    setPendingProposals: React.Dispatch<React.SetStateAction<ProposedTrade[]>>;
+    apiConnected: boolean;
+    externalExchangeData: ExternalExchangeData;
+    arbOpportunities: ArbOpportunity[];
+    armLiveGate: () => Promise<void>;
+    disarmLiveGate: () => void;
+    attestHardware: (deviceId: string) => Promise<void>;
+    executeOperation: () => Promise<void>;
+    installProtocol: () => Promise<void>;
+    runSystem: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { 
-        addLog, kpis, setTrades, setKpis, quantumMetrics, marketData, inversionLogs, coreState,
-        tradeMode, setTradeMode, primeSuggestions, executeAllPrimeDirectives, protocolNodes,
-        triggerKillSwitch, heartbeat, signDevice, ...archangelState 
-    } = useArchangel();
+    const archangel = useArchangel();
     
     const [isGodMode, setIsGodModeState] = useState(false);
     const [isGodModeUnlocked, setIsGodModeUnlocked] = useState(() => localStorage.getItem('archangel_godModeUnlocked') === 'true');
@@ -122,15 +132,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [gammaState, setGammaState] = useState<GammaSessionState>({ isRunning: false, cycleCount: 0, logs: [], totalPnl: 0, iv: 0.45, spotPrice: 65000 });
 
     const gammaStateRef = useRef(gammaState);
-    const marketDataRef = useRef(marketData);
+    const marketDataRef = useRef(archangel.marketData);
 
     useEffect(() => { gammaStateRef.current = gammaState; }, [gammaState]);
-    useEffect(() => { marketDataRef.current = marketData; }, [marketData]);
+    useEffect(() => { marketDataRef.current = archangel.marketData; }, [archangel.marketData]);
 
     const addNexusLog = useCallback((msg: string) => {
         setNexusLogs(prev => [...prev, msg]);
-        if (msg.startsWith(">> SYSTEM STATUS") || msg.includes("ERROR")) addLog('NEXUS', msg);
-    }, [addLog]);
+        if (msg.startsWith(">> SYSTEM STATUS") || msg.includes("ERROR")) archangel.addLog('NEXUS', msg);
+    }, [archangel.addLog]);
 
     const toggleGammaScalper = useCallback(() => {
         setGammaState(prev => ({ ...prev, isRunning: !prev.isRunning }));
@@ -161,14 +171,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const clearNexusLogs = useCallback(() => setNexusLogs([]), []);
     
     const optimizeSwarm = useCallback(async (): Promise<string> => {
-        addLog('SYSTEM', 'Quantum Synthesis protocol engaged...');
+        archangel.addLog('SYSTEM', 'Quantum Synthesis protocol engaged...');
         try {
-            const report = await runSwarmOptimization(kpis);
+            const report = await runSwarmOptimization(archangel.kpis);
             setIsSwarmOptimized(true);
             setSwarmOptimizationReport(report);
             return report;
         } catch (err) { throw err; }
-    }, [kpis, addLog]);
+    }, [archangel.kpis, archangel.addLog]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -177,12 +187,96 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     useEffect(() => { localStorage.setItem('archangel_godModeUnlocked', String(isGodModeUnlocked)); }, [isGodModeUnlocked]);
     useEffect(() => { localStorage.setItem('archangel_isSovereign', String(isSovereign)); }, [isSovereign]);
+
+    const executeOperation = useCallback(async () => {
+        archangel.addLog('DIRECTIVE', 'SOVEREIGN_EXECUTE: Initiating global SICO cascade...');
+        addNexusLog('>> SYSTEM_OP: EXECUTE - ARMING PRIMARY MANIFOLD');
+        await sendMessageToSentinelA("EXECUTE: Authorize all pending SICO orders across 7D topological substrate.");
+    }, [archangel.addLog, addNexusLog]);
+
+    const installProtocol = useCallback(async () => {
+        archangel.addLog('DIRECTIVE', 'SOVEREIGN_INSTALL: Transmuting new operational axioms...');
+        addNexusLog('>> SYSTEM_OP: INSTALL - UPDATING ARCHANGEL_CORE');
+        await sendMessageToSentinelA("INSTALL: Inject next-gen alpha features into the UPB-1 compliance layer.");
+    }, [archangel.addLog, addNexusLog]);
+
+    const runSystem = useCallback(async () => {
+        archangel.addLog('DIRECTIVE', 'SOVEREIGN_RUN: Engaging Living System v204.0...');
+        addNexusLog('>> SYSTEM_OP: RUN - AWAKENING TURMOX Ω');
+        await sendMessageToSentinelA("RUN: Initiate full-scale market hunting. Maximize Stochastic Alpha.");
+    }, [archangel.addLog, addNexusLog]);
     
     const value: AppContextType = {
-        ...archangelState, addLog, kpis, setTrades, setKpis, isGodMode, setIsGodMode: setIsGodModeState, isGodModeUnlocked, setIsGodModeUnlocked,
-        optimizeSwarm, isSwarmOptimized, swarmOptimizationReport, aiToolkitState, setAiToolkitState, isNexusOnline, setNexusOnline, nexusLogs, addNexusLog, clearNexusLogs,
-        sonarState, setSonarState, isSovereign, setIsSovereign, quantumMetrics, inversionLogs, coreState, gammaState, toggleGammaScalper, marketData, wallpaperVideoSrc, setWallpaperVideoSrc,
-        tradeMode, setTradeMode, primeSuggestions, executeAllPrimeDirectives, protocolNodes, triggerKillSwitch, heartbeat, signDevice
+        marketData: archangel.marketData,
+        portfolio: archangel.portfolio,
+        setPortfolio: archangel.setPortfolio,
+        paperPortfolio: archangel.paperPortfolio,
+        setPaperPortfolio: archangel.setPaperPortfolio,
+        fiatBalance: archangel.fiatBalance,
+        paperBalance: archangel.paperBalance,
+        depositFiat: archangel.depositFiat,
+        withdrawFiat: archangel.withdrawFiat,
+        executeTrade: archangel.executeTrade,
+        bots: archangel.bots,
+        logs: archangel.logs,
+        addLog: archangel.addLog,
+        historicalMarketData: archangel.historicalMarketData,
+        marketFilter: archangel.marketFilter,
+        setMarketFilter: archangel.setMarketFilter,
+        sonarSignals: archangel.sonarSignals,
+        isGodMode, 
+        setIsGodMode: setIsGodModeState, 
+        isGodModeUnlocked, 
+        setIsGodModeUnlocked,
+        trades: archangel.trades,
+        setTrades: archangel.setTrades,
+        paperTrades: archangel.paperTrades,
+        kpis: archangel.kpis,
+        setKpis: archangel.setKpis,
+        optimizeSwarm, 
+        isSwarmOptimized, 
+        swarmOptimizationReport, 
+        estimatedAlpha: archangel.estimatedAlpha,
+        aiToolkitState, 
+        setAiToolkitState, 
+        isNexusOnline, 
+        setNexusOnline, 
+        nexusLogs, 
+        addNexusLog, 
+        clearNexusLogs,
+        gammaState, 
+        toggleGammaScalper, 
+        sonarState, 
+        setSonarState, 
+        isSovereign, 
+        setIsSovereign, 
+        quantumMetrics: archangel.quantumMetrics,
+        setQuantumMetrics: archangel.setQuantumMetrics,
+        inversionLogs: archangel.inversionLogs,
+        coreState: archangel.coreState,
+        setCoreState: archangel.setCoreState,
+        wallpaperVideoSrc, 
+        setWallpaperVideoSrc,
+        heartbeat: archangel.heartbeat,
+        triggerKillSwitch: archangel.triggerKillSwitch,
+        signDevice: archangel.signDevice,
+        killSwitchActive: archangel.killSwitchActive,
+        tradeMode: archangel.tradeMode,
+        setTradeMode: archangel.setTradeMode,
+        primeSuggestions: archangel.primeSuggestions,
+        executeAllPrimeDirectives: archangel.executeAllPrimeDirectives,
+        protocolNodes: archangel.protocolNodes,
+        pendingProposals: archangel.pendingProposals,
+        setPendingProposals: archangel.setPendingProposals,
+        apiConnected: archangel.apiConnected,
+        externalExchangeData: archangel.externalExchangeData,
+        arbOpportunities: archangel.arbOpportunities,
+        armLiveGate: archangel.armLiveGate,
+        disarmLiveGate: archangel.disarmLiveGate,
+        attestHardware: archangel.attestHardware,
+        executeOperation,
+        installProtocol,
+        runSystem
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

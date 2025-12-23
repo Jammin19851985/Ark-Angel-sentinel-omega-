@@ -6,7 +6,11 @@ interface IntelProps { id: string; }
 const ADVANCED_DESCRIPTIONS: Record<number, { technicalAlias: string; description: string }> = {
     1: { technicalAlias: "Quantum Entropy Trade Timer", description: "Randomized timing sequences based on quantum entropy backend (Aer Simulator) to avoid HFT pattern detection and adverse selection." },
     2: { technicalAlias: "Entangled Correlation Fracture Detector", description: "Detects breakdowns in historical correlations using Bell state violation simulations, predicting liquidity shifts before they manifest." },
+    4: { technicalAlias: "Quantum Mempool Entropy Shield", description: "Shields transaction intent by injecting randomized entropy into the local mempool observer, preventing sandwich attacks." },
+    11: { technicalAlias: "Entangled Flash Loan Defense", description: "Predicts flash loan cascades using multi-state entanglement simulations to pre-halt exposure." },
     21: { technicalAlias: "Neuromorphic Order Book Fingerprinter", description: "Uses Leaky Integrate-and-Fire (LIF) neurons to identify topological signatures in the order book imbalance." },
+    24: { technicalAlias: "Spiking Unknown Unknown Hunter", description: "Identifies anomalies outside known statistical bounds using spiking neural nets tuned for low-probability events." },
+    31: { technicalAlias: "Neuromorphic Exchange Halt Predictor", description: "Predicts exchange-level trading halts by monitoring spiking volume topology across venue clusters." },
     41: { technicalAlias: "Manager Officer Network Miner", description: "Extracts alternative data from corporate networks to identify non-public behavioral shifts in institutional management." },
     51: { technicalAlias: "Private Equity Exit Timing Predictor", description: "Models the exit windows for large private equity positions using behavioral entropy mapping." },
     61: { technicalAlias: "Quantum Spiking Drawdown Airbag", description: "Hybrid risk circuit that collapses the wavefunction to force a halt state if drawdown exceeds 5%." },

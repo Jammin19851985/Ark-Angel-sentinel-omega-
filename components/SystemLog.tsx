@@ -4,7 +4,6 @@ import { LogEntry } from '../types';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { useAppContext } from '../contexts/AppContext';
 
-// Added missing 'PAPER' source color to satisfy LogEntry['source'] exhaustive mapping
 const logSourceColors: { [key in LogEntry['source']]: string } = {
     SYSTEM: 'text-sky-400',
     SENTINEL: 'text-amber-400',
@@ -32,6 +31,16 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     SENTRY: 'text-rose-400',
     SPINE: 'text-blue-400 font-bold',
     PAPER: 'text-cyan-400',
+    VAULT: 'text-amber-500 font-bold',
+    AUTONOMY: 'text-purple-400 font-bold',
+    AUDIT: 'text-blue-500 font-bold',
+    BIOMETRIC: 'text-rose-500 font-bold',
+    DIRECTIVE: 'text-amber-500 font-bold',
+    EXCHANGE: 'text-yellow-500 font-bold',
+    RUST_KRNL: 'text-red-400 font-bold',
+    MEV_GUARD: 'text-emerald-400 font-bold',
+    IBKR: 'text-orange-500 font-bold',
+    HARDWARE: 'text-indigo-500 font-bold',
 };
 
 const SystemLog: React.FC<{ id: string }> = ({ id }) => {
@@ -77,13 +86,9 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
             <div className="px-4 py-2 border-b border-slate-800 flex flex-wrap gap-2">
                 <LogFilterButton filter="ALL" label="All" />
                 <LogFilterButton filter="ERROR" label="Errors" />
-                <LogFilterButton filter="SPINE" label="Spine" />
-                <LogFilterButton filter="XEDO" label="XEDO" />
-                <LogFilterButton filter="MLEM" label="MLEM" />
+                <LogFilterButton filter="HARDWARE" label="Hardware" />
                 <LogFilterButton filter="TRADE" label="Trades" />
-                <LogFilterButton filter="LEGION" label="Legion" />
-                {/* Added PAPER filter button */}
-                <LogFilterButton filter="PAPER" label="Paper" />
+                <LogFilterButton filter="SPINE" label="Spine" />
             </div>
             <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-[10px] text-slate-400 space-y-0.5">
                 {filteredLogs.map((log, index) => (

@@ -12,6 +12,8 @@ import { FunctionDeclaration } from '@google/genai';
 import { ShieldIcon } from './icons/ShieldIcon';
 import { CpuChipIcon } from './icons/CpuChipIcon';
 import { NetworkIcon } from './icons/NetworkIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
+import { CrosshairIcon } from './icons/CrosshairIcon';
 import { useAppContext } from '../contexts/AppContext';
 
 interface AgentOrchestratorProps {
@@ -34,7 +36,11 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         optimizeSwarm,
         isSwarmOptimized,
         swarmOptimizationReport,
-        bots
+        bots,
+        executeOperation,
+        installProtocol,
+        runSystem,
+        killSwitchActive
     } = useAppContext();
 
     const [plan, setPlan] = useState<OrchestrationStep[]>([]);
@@ -42,6 +48,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
     const [isExecuting, setIsExecuting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isOptimizing, setIsOptimizing] = useState(false);
+    const [activeSovereignOp, setActiveSovereignOp] = useState<string | null>(null);
 
     const allTools = useMemo(() => {
         const toolMap = new Map<string, FunctionDeclaration>();
@@ -113,6 +120,15 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         setFinalResult(result);
     }, [addLog]);
 
+    const triggerSovereignOp = async (op: 'EXECUTE' | 'INSTALL' | 'RUN') => {
+        if (killSwitchActive) return;
+        setActiveSovereignOp(op);
+        if (op === 'EXECUTE') await executeOperation();
+        if (op === 'INSTALL') await installProtocol();
+        if (op === 'RUN') await runSystem();
+        setTimeout(() => setActiveSovereignOp(null), 1500);
+    };
+
     const StatusIcon: React.FC<{ status: OrchestrationStep['status'] }> = ({ status }) => {
         switch (status) {
             case 'completed': return <CheckCircleIcon className="w-5 h-5 text-green-500" />;
@@ -143,6 +159,34 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
             </div>
             <div className="flex-1 p-4 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
                 <div className="flex flex-col space-y-4">
+                     {/* SOVEREIGN QUICK ACTIONS */}
+                     <div className="flex gap-2">
+                        <button 
+                            onClick={() => triggerSovereignOp('EXECUTE')}
+                            disabled={!!activeSovereignOp || killSwitchActive}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'EXECUTE' ? 'bg-amber-600 text-black border-amber-400 scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-black/40 border-amber-900/50 text-amber-500 hover:bg-amber-950/30'}`}
+                        >
+                            {activeSovereignOp === 'EXECUTE' ? <Loader /> : <CrosshairIcon className="w-3 h-3" />}
+                            EXECUTE
+                        </button>
+                        <button 
+                            onClick={() => triggerSovereignOp('INSTALL')}
+                            disabled={!!activeSovereignOp || killSwitchActive}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'INSTALL' ? 'bg-cyan-600 text-black border-cyan-400 scale-95 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-black/40 border-cyan-900/50 text-cyan-500 hover:bg-cyan-950/30'}`}
+                        >
+                            {activeSovereignOp === 'INSTALL' ? <Loader /> : <DownloadIcon className="w-3 h-3" />}
+                            INSTALL
+                        </button>
+                        <button 
+                            onClick={() => triggerSovereignOp('RUN')}
+                            disabled={!!activeSovereignOp || killSwitchActive}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'RUN' ? 'bg-green-600 text-black border-green-400 scale-95 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-black/40 border-green-900/50 text-green-500 hover:bg-green-950/30'}`}
+                        >
+                            {activeSovereignOp === 'RUN' ? <Loader /> : <PlayCircleIcon className="w-3 h-3" />}
+                            RUN
+                        </button>
+                     </div>
+
                      <div>
                         <label htmlFor="mission-prompt" className="block text-sm font-medium text-slate-300 mb-2">Mission Objective</label>
                         <textarea

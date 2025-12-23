@@ -10,7 +10,6 @@ import { getSignalAnalysis, analyzeSentiment, analyzeQuantumVolatility } from '.
 import Loader from './Loader';
 import { useAppContext } from '../contexts/AppContext';
 
-
 // A simplified, valid SVG path for the world map to ensure it renders without errors.
 const WorldMapSVG: React.FC = () => (
     <svg viewBox="0 0 1000 500" className="w-full h-full object-contain" preserveAspectRatio="xMidYMid meet">
@@ -92,12 +91,11 @@ const WavefunctionVisualizer: React.FC = () => {
 }
 
 interface SonarProps {
-    id: string; // New: Add ID prop for tour targeting
+    id: string; 
 }
 
 const Sonar: React.FC<SonarProps> = ({ id }) => {
-    // Consume global Sonar State to prevent jumping
-    const { sonarSignals: signals, addLog, sonarState, setSonarState } = useAppContext();
+    const { sonarSignals: signals, addLog, sonarState, setSonarState, quantumMetrics } = useAppContext();
     const { zoom, pan, activeFilters } = sonarState;
 
     const [selectedSignal, setSelectedSignal] = useState<SonarSignal | null>(null);
@@ -108,7 +106,6 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
     const [isSentimentAnalyzing, setIsSentimentAnalyzing] = useState(false);
     const [sentimentError, setSentimentError] = useState<string | null>(null);
     
-    // NANO BANANAS MODE (Visual Enhancement Toggle)
     const [isNanoMode, setIsNanoMode] = useState(true);
 
     const PAN_STEP = 50;
@@ -123,13 +120,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
     useEffect(() => {
         if (signals.length > 0) {
             const latestSignal = signals[signals.length - 1];
-            if (signals.length > prevSignalsLength.current) {
-                // Reduced logging to prevent console spam, only log major events if needed
-            }
             if (!selectedSignal || selectedSignal.id !== latestSignal.id) {
-                // Do NOT auto-select latest signal if user is inspecting another one, 
-                // but for now we stick to original behavior or maybe only if nothing selected.
-                // Keeping original behavior:
                 setSelectedSignal(latestSignal);
             }
         }
@@ -146,8 +137,6 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                 setIsSentimentAnalyzing(true);
                 setSentimentResult(null);
                 setSentimentError(null);
-
-                // addLog('AI_TOOLKIT', `Analyzing Sonar signal ${selectedSignal.id}...`);
 
                 if (selectedSignal.type === 'Quantum') {
                     analyzeQuantumVolatility(selectedSignal.details)
@@ -167,7 +156,6 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                         .finally(() => setIsAnalyzing(false));
                 }
 
-                // @google/genai Fix: Removed 'addLog' argument from analyzeSentiment call (expected 1 argument).
                 analyzeSentiment(selectedSignal.details)
                     .then(result => setSentimentResult(result))
                     .catch(e => {
@@ -180,7 +168,6 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
         }
     }, [selectedSignal, addLog]);
 
-    // Update Global State Helpers
     const setZoom = (newZoom: number) => {
         setSonarState(prev => ({ ...prev, zoom: Math.max(0.5, Math.min(newZoom, 5)) }));
     };
@@ -291,7 +278,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                 onMouseLeave={handleMouseUp}
             >
                 <div 
-                    className="w-full h-full transition-transform duration-300 ease-out will-change-transform" // Use ease-out and will-change for smoothness
+                    className="w-full h-full transition-transform duration-300 ease-out will-change-transform" 
                     style={{ transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)` }}
                 >
                     <div className="absolute inset-0 z-0 text-amber-500/30 opacity-50">
@@ -304,7 +291,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                         return (
                             <div
                                 key={signal.id}
-                                className="absolute z-10 transition-all duration-500 ease-out" // Animate position changes smoothly
+                                className="absolute z-10 transition-all duration-500 ease-out" 
                                 style={{ left: `${signal.x}%`, top: `${signal.y}%` }}
                             >
                                 <button 
@@ -321,7 +308,6 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                     })}
                 </div >
                 
-                {/* Nano Bananas Visuals: High-tech grid and scanning rings */}
                 {isNanoMode && (
                     <>
                         <div className="sonar-grid opacity-30 pointer-events-none"></div>
@@ -465,6 +451,13 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                                     {analysis && renderMarkdown(analysis)}
                                 </div >
                             </div >
+                            <div className="border-t border-slate-800 pt-4">
+                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono uppercase">
+                                    <span>Market Entropy:</span>
+                                    {/* @google/genai Fix: Guard against undefined quantumMetrics to prevent sonar crash */}
+                                    <span className="text-cyan-400">{(quantumMetrics?.entropy || 0.45).toFixed(4)}</span>
+                                </div>
+                            </div>
                         </div >
                     ) : (
                         <div className="h-full flex items-center justify-center text-center text-slate-500">

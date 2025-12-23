@@ -14,9 +14,9 @@ export const RadarIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
         strokeLinejoin="round" 
         {...props}
     >
-        <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-        <path d="M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
-        <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="5" />
+        <circle cx="12" cy="12" r="1" />
         <path d="M12 3v9" />
         <path d="M12 12l5.4 5.4" />
     </svg>

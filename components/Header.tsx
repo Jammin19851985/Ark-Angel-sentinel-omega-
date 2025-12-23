@@ -26,6 +26,10 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment }) => {
     };
 
     const triggerUpload = () => {
+        if (!isGodMode) {
+            addLog('ERROR', 'Access Denied: Wallpaper configuration requires God Mode clearance.');
+            return;
+        }
         fileInputRef.current?.click();
     };
 
@@ -42,27 +46,35 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment }) => {
                             ARK Ω // TURMOX
                         </h1>
                         {isSovereign && (
-                            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-to-r from-violet-900 to-fuchsia-900 border border-violet-500 text-white shadow-[0_0_10px_rgba(139,92,246,0.5)] animate-pulse">
+                            <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-r from-violet-900 to-fuchsia-900 border border-violet-500 text-white shadow-[0_0_10px_rgba(139,92,246,0.5)] animate-pulse">
                                 SOVEREIGN STATE
                             </span>
                         )}
                     </div>
                     <div className="flex items-center space-x-4 md:space-x-6">
-                        <input 
-                            type="file" 
-                            accept="video/mp4,video/webm" 
-                            className="hidden" 
-                            ref={fileInputRef} 
-                            onChange={handleWallpaperUpload} 
-                        />
-                        <button
-                            onClick={triggerUpload}
-                            className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-600/30 rounded text-slate-300 text-xs font-mono transition-all group"
-                            title="Set Live Wallpaper (.mp4)"
-                        >
-                            <VideoIcon className="w-4 h-4 group-hover:text-amber-400" />
-                            <span className="group-hover:text-amber-400">WALLPAPER</span>
-                        </button>
+                        {/* Only available and interactable in God Mode */}
+                        {isGodMode && (
+                            <div className="relative group">
+                                <input 
+                                    type="file" 
+                                    accept="video/mp4,video/webm" 
+                                    className="hidden" 
+                                    ref={fileInputRef} 
+                                    onChange={handleWallpaperUpload} 
+                                />
+                                <button
+                                    onClick={triggerUpload}
+                                    className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-amber-900/30 hover:bg-amber-800/40 border border-amber-500/50 rounded text-amber-400 text-xs font-mono transition-all animate-pulse"
+                                    title="Set Live Wallpaper (.mp4) - GOD MODE AUTHORIZED"
+                                >
+                                    <VideoIcon className="w-4 h-4" />
+                                    <span>WALLPAPER</span>
+                                </button>
+                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black border border-amber-500 text-[10px] text-amber-500 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                    GOD MODE UNLOCKED
+                                </div>
+                            </div>
+                        )}
 
                         {onAnalyzeSentiment && (
                             <button
