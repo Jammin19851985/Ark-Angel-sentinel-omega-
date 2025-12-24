@@ -1,11 +1,12 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import SentinelTerminal from './components/SentinelTerminal';
 import MarketWatch from './components/MarketWatch';
 import Portfolio from './components/Portfolio';
 import SwarmVisualizer from './components/SwarmVisualizer';
 import SystemLog from './components/SystemLog';
-import AIToolkit from './AIToolkit';
+import AIToolkit from './components/AIToolkit';
 import { Backtester } from './components/Backtester';
 import AgentOrchestrator from './components/AgentOrchestrator';
 import Analytics from './components/Analytics';
@@ -34,11 +35,47 @@ import { BeakerIcon } from './components/icons/BeakerIcon';
 import Loader from './components/Loader';
 import AlphaGauge from './components/AlphaGauge';
 
-const INITIAL_SUGGESTIONS = [
-    "Quantum Entropy Trade Timer", "Entangled Correlation Fracture Detector", "Quantum Half-Life Alpha Estimator", 
-    "Neuromorphic Order Book Fingerprinter", "Spiking Volume Sincerity Scorer", "Quantum Black Swan Pre-Stress Simulator",
-    "Entangled Flash Loan Defense", "SICO Singly Indivisible Composite Orders", "Temporal Drift Nullifier", "MLEM Hash Verifier"
-];
+// Context-Aware Suggestions Map
+const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
+    nexus: [
+        "Quantum Entropy Trade Timer", "Entangled Correlation Fracture Detector", "SICO Singly Indivisible Composite Orders",
+        "Temporal Drift Nullifier", "MLEM Hash Verifier", "System Health Check", "Toggle Reality Corrector"
+    ],
+    sentinel: [
+        "INITIATE_SWARM_PROTOCOL", "RUN_DIAGNOSTICS", "SYSTEM_STATUS", 
+        "VERIFY_INTEGRITY", "OVERRIDE_AUTH", "LIST_ACTIVE_AGENTS", "PURGE_CACHE"
+    ],
+    orchestrator: [
+        "DEPLOY_LEGION_ALPHA", "OPTIMIZE_HIVE_MIND", "EXECUTE_COMPLEX_ARBITRAGE",
+        "INITIATE_SWARM_PROTOCOL --agents 2500", "MONITOR_SWARM_HEALTH"
+    ],
+    toolkit: [
+        "GENERATE_IMAGE --prompt 'Cyberpunk Market'", "ANALYZE_SENTIMENT --symbol BTC",
+        "AUDIT_CODE --lang Python", "RAG_QUERY 'Quantum Finance'", "START_LIVE_AUDIO"
+    ],
+    backtester: [
+        "RUN_BACKTEST --strategy tri_arb", "OPTIMIZE_PARAMETERS --metric sharpe",
+        "SIMULATE_BLACK_SWAN", "EXPORT_EQUITY_CURVE", "ANALYZE_DRAWDOWN"
+    ],
+    analytics: [
+        "PREDICT_PRICE --symbol BTC", "ANALYZE_VOLATILITY", "CALCULATE_KELLY_CRITERION",
+        "SHOW_CORRELATION_MATRIX", "FORECAST_TREND"
+    ],
+    intel: [
+        "SEARCH_PROTOCOL --id F172", "DECRYPT_CODEX", "LIST_OMEGA_PROTOCOLS",
+        "SCAN_NEWS_FEED", "VERIFY_PROTOCOL_HASH"
+    ],
+    sonar: [
+        "SCAN_THREATS --region GLOBAL", "ANALYZE_SIGNAL --id LATEST",
+        "FILTER_NOISE --threshold 0.8", "QUANTUM_WAVE_COLLAPSE", "DETECT_ANOMALIES"
+    ],
+    paper_terminal: [
+        "PAPER_BUY BTC 1.0", "PAPER_SELL ETH 10.0",
+        "RESET_PAPER_BALANCE", "SIMULATE_FILL_DELAY", "VIEW_PAPER_HISTORY"
+    ]
+};
+
+const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;
 
 const App: React.FC = () => {
     const { 
@@ -59,7 +96,12 @@ const App: React.FC = () => {
     const [showOverlay, setShowOverlay] = useState(false);
     const [isHolographicEngaged, setIsHolographicEngaged] = useState(false);
     const [mission, setMission] = useState<string>('INITIATE_SWARM_PROTOCOL --agents 2500 --mode OMEGA');
-    const [suggestions] = useState<string[]>(INITIAL_SUGGESTIONS);
+    
+    // Memoize suggestions based on active view
+    const suggestions = useMemo(() => {
+        return VIEW_SPECIFIC_SUGGESTIONS[activeView] || INITIAL_SUGGESTIONS;
+    }, [activeView]);
+
     const hasInitialized = useRef(false);
 
     const [showOnboardingTour, setShowOnboardingTour] = useState(false);
@@ -88,7 +130,12 @@ const App: React.FC = () => {
         if (localStorage.getItem('archangel_onboarding_completed') !== 'true') setShowOnboardingTour(true);
     }, []);
 
-    const startTour = useCallback(() => { setActiveView('sentinel'); setTimeout(() => setCurrentTourStepIndex(0), 100); }, []);
+    const startTour = useCallback(() => { 
+        setShowOnboardingTour(true);
+        setActiveView('nexus'); // Start tour from Nexus view
+        setTimeout(() => setCurrentTourStepIndex(0), 100); 
+    }, []);
+    
     const skipTour = useCallback(() => { setShowOnboardingTour(false); setCurrentTourStepIndex(-1); localStorage.setItem('archangel_onboarding_completed', 'true'); }, []);
     const completeTour = useCallback(() => { setShowOnboardingTour(false); setCurrentTourStepIndex(-1); localStorage.setItem('archangel_onboarding_completed', 'true'); }, []);
 
@@ -162,6 +209,12 @@ const App: React.FC = () => {
     
     const handleCloseOverlay = () => { setShowOverlay(false); setIsHolographicEngaged(true); addLog('SYSTEM', 'Interface engaged.'); };
     
+    // Suggestion Rail Handler
+    const handleSuggestionClick = (suggestion: string) => {
+        setInput(suggestion);
+        setActiveView('sentinel');
+    };
+
     const TabButton: React.FC<{view: ActiveView, label: string, icon: React.ReactNode, id: string}> = ({ view, label, icon, id }) => (
          <button id={id} onClick={() => setActiveView(view)} className={`flex items-center space-x-2 px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 transition-all duration-300 uppercase tracking-widest ${activeView === view ? 'border-amber-500 text-amber-400 bg-amber-900/20' : 'border-transparent text-slate-500 hover:text-amber-400 bg-black/30'}`}>
             {icon}<span>{label}</span>
@@ -189,12 +242,11 @@ const App: React.FC = () => {
             );
         }
 
-        if (activeView === 'sonar') return <Sonar id="sonar-view" />;
-        if (activeView === 'nexus') return <Nexus id="nexus-view" />;
-        if (activeView === 'paper_terminal') return <PaperTerminal id="paper-terminal" />;
-
         const viewContent = () => {
             switch (activeView) {
+                case 'sonar': return <Sonar id="sonar-view" />;
+                case 'nexus': return <Nexus id="nexus-view" />;
+                case 'paper_terminal': return <PaperTerminal id="paper-terminal" />;
                 case 'sentinel': return <SentinelTerminal id="sentinel-terminal" messages={messages} input={input} setInput={setInput} isLoading={isLoading} error={error} handleSendMessage={handleSendMessage} handleTroubleshoot={handleTroubleshoot} suggestions={suggestions} onAddAllSuggestions={handleAddAllSuggestions} />;
                 case 'orchestrator': return <AgentOrchestrator id="agent-orchestrator" mission={mission} handleMissionChange={(e)=>setMission(e.target.value)} />;
                 case 'toolkit': return <AIToolkit id="ai-toolkit" />;
@@ -207,7 +259,26 @@ const App: React.FC = () => {
 
         return (
             <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 flex-1">
-                <div className="lg:col-span-2 flex flex-col h-full">{viewContent()}</div>
+                <div className="lg:col-span-2 flex flex-col h-full space-y-4">
+                    <div className="flex-1 flex flex-col min-h-0">
+                        {viewContent()}
+                    </div>
+                    {/* Context Suggestion Rail */}
+                    {activeView !== 'sentinel' && (
+                        <div className="h-12 bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg flex items-center px-4 space-x-3 overflow-x-auto custom-scrollbar flex-shrink-0 animate-fade-in-fast">
+                            <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap uppercase tracking-widest mr-2">// SUGGESTED_OPS:</div>
+                            {suggestions.map((suggestion, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                    className="flex-shrink-0 px-3 py-1 bg-black/50 hover:bg-amber-900/30 border border-slate-700 hover:border-amber-500/50 rounded-full text-[10px] font-mono text-slate-400 hover:text-amber-300 transition-all whitespace-nowrap"
+                                >
+                                    {suggestion}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 <div className="flex flex-col gap-6 lg:gap-8 h-full">
                     <MarketWatch id="market-watch" />
                     <Portfolio id="portfolio-overview" />
@@ -248,7 +319,7 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            <Header onAnalyzeSentiment={()=>{}} />
+            <Header onAnalyzeSentiment={()=>{}} onStartTour={startTour} />
             
             <div className="flex-1 flex flex-col relative z-10">
                 <div className="flex items-end border-b border-slate-800 px-4 flex-wrap bg-black/60 backdrop-blur-sm">

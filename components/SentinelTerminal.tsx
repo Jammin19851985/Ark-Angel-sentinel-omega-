@@ -46,8 +46,9 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
         setCurrentSuggestions(shuffled.slice(0, 10));
     };
 
+    // Update internal suggestions when props change (view switch)
     useEffect(() => {
-        if (currentSuggestions.length === 0 && suggestions.length > 0) {
+        if (suggestions.length > 0) {
             rotateSuggestions();
         }
     }, [suggestions]);

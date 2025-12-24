@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Chat, Modality, Type, GenerateContentResponse, FunctionDeclaration } from "@google/genai";
 import { fileToGenerativePart, blobToBase64 } from "../utils/file";
-import { Geolocation, OrchestrationStep, SentimentResult, AnalyticsKPIs, BacktestResults, RagQueryResult } from "../types";
+import { Geolocation, OrchestrationStep, SentimentResult, AnalyticsKPIs, BacktestResults, RagQueryResult, ForecastPoint } from "../types";
 import { decode, decodeAudioData } from "../utils/audio";
 import { RAG_CONTENT_CHUNKS } from "../rag_content";
 
@@ -264,17 +264,74 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
 };
 
 export const agentTools: FunctionDeclaration[] = [
-    { name: "execute_sico_order", description: "Execute SINGULARLY INDIVISIBLE COMPOSITE ORDER.", parameters: { type: Type.OBJECT, properties: { symbol: { type: Type.STRING }, side: { type: Type.STRING } } } }
+    { 
+        name: "execute_sico_order", 
+        description: "Execute SINGULARLY INDIVISIBLE COMPOSITE ORDER.", 
+        parameters: { 
+            type: Type.OBJECT, 
+            properties: { 
+                symbol: { type: Type.STRING }, 
+                side: { type: Type.STRING } 
+            },
+            required: ["symbol", "side"]
+        } 
+    }
 ];
 
 export const godModeAgentTools: FunctionDeclaration[] = [
     ...agentTools,
-    { name: "initiate_universal_reset", description: "OMEGA-TIER: Destroy and rebuild the operational timeline.", parameters: { type: Type.OBJECT, properties: {} } }
+    { 
+        name: "initiate_universal_reset", 
+        description: "OMEGA-TIER: Destroy and rebuild the operational timeline.", 
+        parameters: { type: Type.OBJECT, properties: {} } 
+    }
 ];
 
-export const getPredictiveForecast = async (s: string, p: number) => [{date: '2024-01-01', price: p * 1.05}];
-export const getSignalAnalysis = async (d: string) => "AODE: Signal verified. Causal drift zero.";
-export const analyzeQuantumVolatility = async (d: string) => "AODE: Wavefunction collapsed. Risk neutralized.";
+export const getPredictiveForecast = async (symbol: string, currentPrice: number): Promise<ForecastPoint[]> => {
+    const ai = getAi();
+    const prompt = `Generate a 7-day predictive price forecast for ${symbol} starting from today. The current price is ${currentPrice}.
+    Return a JSON array of objects with 'date' (YYYY-MM-DD) and 'price' (number).
+    Simulate a realistic market movement based on current stochastic volatility models.`;
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+        config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        date: { type: Type.STRING },
+                        price: { type: Type.NUMBER }
+                    }
+                }
+            }
+        }
+    });
+    
+    return parseJSON(response.text || "[]");
+};
+
+export const getSignalAnalysis = async (details: string): Promise<string> => {
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Analyze this sonar signal for threats: "${details}". Provide a brief, tactical briefing style summary (max 2 sentences) focusing on financial or geopolitical impact.`,
+    });
+    return response.text || "ANALYSIS FAILED";
+};
+
+export const analyzeQuantumVolatility = async (details: string): Promise<string> => {
+    const ai = getAi();
+    const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-preview', // Use Pro for "Quantum" analysis depth
+        contents: `Perform a quantum volatility assessment on this data: "${details}". Use technobabble related to wavefunction collapse, probability clouds, and Heisenberg uncertainty. Max 3 sentences.`,
+        config: { thinkingConfig: { thinkingBudget: 2000 } }
+    });
+    return response.text || "QUANTUM STATE DECOHERENCE";
+};
 
 export const analyzeBacktestResults = async (strategy: string, results: BacktestResults): Promise<string> => {
     const ai = getAi();

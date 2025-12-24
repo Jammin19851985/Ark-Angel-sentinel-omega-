@@ -35,7 +35,8 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
         isNexusOnline, setNexusOnline, nexusLogs, addNexusLog, 
         quantumMetrics, inversionLogs, killSwitchActive,
         tradeMode, setTradeMode, coreState, signDevice,
-        apiConnected, armLiveGate, disarmLiveGate, setCoreState
+        apiConnected, armLiveGate, disarmLiveGate, setCoreState,
+        primeSuggestions
     } = useAppContext();
     
     const logRef = useRef<HTMLDivElement>(null);
@@ -186,6 +187,18 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                 {/* COLUMN 2-3: SOVEREIGN CORE */}
                 <div className="lg:col-span-2 flex flex-col space-y-4">
                     <div className="flex-1 flex flex-col items-center justify-center relative min-h-[400px]">
+                        {/* 100 SUGGESTIONS GRID (Background Glow) */}
+                        {primeSuggestions.length > 0 && (
+                            <div className="absolute inset-0 grid grid-cols-10 grid-rows-10 gap-1 opacity-10 pointer-events-none p-4">
+                                {primeSuggestions.map(ps => (
+                                    <div 
+                                        key={ps.id} 
+                                        className={`w-full h-full border ${ps.status === 'ACTIVE' ? 'bg-cyan-400/20 border-cyan-400/30' : 'bg-transparent border-slate-900'}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
                         {/* Reality Anchor Visualizer */}
                         <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${isNexusOnline ? 'opacity-30' : 'opacity-5'}`}>
                             <div className="w-full h-full border-[0.5px] border-cyan-500/20 rounded-full animate-ping"></div>

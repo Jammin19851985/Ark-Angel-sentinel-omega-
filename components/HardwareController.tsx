@@ -47,7 +47,8 @@ const HardwareController: React.FC = () => {
                 {hardwareDevices.map(device => {
                     const isSigned = hardwareSignedDevices.includes(device.id);
                     const isTampered = device.status === 'TAMPERED';
-                    const processing = isProcessing?.includes(device.id);
+                    // Correctly check processing state by comparing strings
+                    const processingAction = isProcessing && isProcessing.endsWith(device.id);
 
                     return (
                         <div key={device.id} className={`p-3 rounded border transition-all duration-500 ${isTampered ? 'bg-red-950/20 border-red-500 shadow-[0_0_15px_rgba(255,0,0,0.2)]' : 'bg-black/40 border-slate-700 hover:border-slate-500'}`}>
@@ -69,7 +70,7 @@ const HardwareController: React.FC = () => {
                                     disabled={!!isProcessing || isTampered || killSwitchActive}
                                     className="flex items-center justify-center gap-1.5 py-1.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-slate-800 text-[9px] font-bold text-slate-300 transition-all disabled:opacity-30 disabled:cursor-not-allowed group/btn"
                                 >
-                                    {processing === `ATTEST_${device.id}` ? <Loader /> : <ShieldCheckIcon className="w-3 h-3 group-hover/btn:text-cyan-400" />}
+                                    {isProcessing === `ATTEST_${device.id}` ? <Loader /> : <ShieldCheckIcon className="w-3 h-3 group-hover/btn:text-cyan-400" />}
                                     ATTEST
                                 </button>
                                 <button 
@@ -77,7 +78,7 @@ const HardwareController: React.FC = () => {
                                     disabled={!!isProcessing || isTampered || isSigned || killSwitchActive}
                                     className={`flex items-center justify-center gap-1.5 py-1.5 rounded border text-[9px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed group/btn ${isSigned ? 'bg-green-950/30 border-green-500 text-green-400' : 'bg-slate-900 border-slate-700 hover:border-amber-500 hover:bg-slate-800 text-slate-300'}`}
                                 >
-                                    {processing === `SIGN_${device.id}` ? <Loader /> : <KeyIcon className="w-3 h-3 group-hover/btn:text-amber-400" />}
+                                    {isProcessing === `SIGN_${device.id}` ? <Loader /> : <KeyIcon className="w-3 h-3 group-hover/btn:text-amber-400" />}
                                     {isSigned ? 'VERIFIED' : 'SIGN_CHALLENGE'}
                                 </button>
                             </div>

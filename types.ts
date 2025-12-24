@@ -196,6 +196,7 @@ export interface AutonomyMetrics {
     cooldownRemaining: number;
     isInRevocation: boolean;
     anomalyDetected: boolean;
+    performanceMilestoneMet: boolean;
     lockedContracts: string[]; 
 }
 
@@ -255,7 +256,6 @@ export interface ArchangelCoreState {
     survivalDrawdownLimit: number;
     structuralAlphaThreshold: number;
     isAutonomyUnlocked: boolean;
-    // @google/genai Fix: Changed 'bool' to 'boolean' to fix line 258 error.
     decisionCoreActive: boolean;
     strategyMetrics: StrategyMetrics;
     autonomyMetrics: AutonomyMetrics;

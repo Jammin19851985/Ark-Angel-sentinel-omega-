@@ -7,12 +7,14 @@ import { useAppContext } from '../contexts/AppContext';
 import { ShieldIcon } from './icons/ShieldIcon';
 import { NewspaperIcon } from './icons/NewspaperIcon';
 import { VideoIcon } from './icons/VideoIcon';
+import { QuestionMarkCircleIcon } from './icons/QuestionMarkCircleIcon';
 
 interface HeaderProps {
     onAnalyzeSentiment?: () => void;
+    onStartTour?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment }) => {
+const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
     const { isGodMode, isSovereign, setWallpaperVideoSrc, addLog } = useAppContext();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,6 +76,16 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment }) => {
                                     GOD MODE UNLOCKED
                                 </div>
                             </div>
+                        )}
+
+                        {onStartTour && (
+                            <button
+                                onClick={onStartTour}
+                                className="hidden md:flex items-center justify-center p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-full hover:bg-slate-800"
+                                title="Restart Onboarding Tour"
+                            >
+                                <QuestionMarkCircleIcon className="w-5 h-5" />
+                            </button>
                         )}
 
                         {onAnalyzeSentiment && (

@@ -77,6 +77,7 @@
     .glow-text-cyan { text-shadow: 0 0 15px var(--neon-glow-cyan); }
     .glow-text-purple { text-shadow: 0 0 15px var(--neon-glow-purple); }
     .glow-text-amber { text-shadow: 0 0 15px var(--amber-glow); }
+    .glow-text-red { text-shadow: 0 0 15px rgba(255, 0, 68, 0.6); }
     
     .glow-border {
        box-shadow: 0 0 20px rgba(0, 243, 255, 0.05);
@@ -144,6 +145,53 @@
         100% { width: 1000px; height: 1000px; opacity: 0; }
     }
 
+    .sonar-grid {
+      background-image: 
+        linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+      background-size: 40px 40px;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+    }
+
+    .sonar-sweep {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 50%; height: 50%;
+      background: linear-gradient(45deg, transparent 50%, rgba(0, 243, 255, 0.2) 100%);
+      transform-origin: top left;
+      animation: sweep 4s infinite linear;
+      border-right: 1px solid rgba(0, 243, 255, 0.5);
+    }
+
+    @keyframes sweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Animation Utilities */
+    .animate-spin-slow { animation: spin 8s linear infinite; }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    .animate-fade-in-fast { animation: fadeIn 0.3s ease-out forwards; }
+    .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
     .holographic-engaged .glow-border {
         backdrop-filter: blur(12px);
         background: var(--glass-panel);
@@ -165,6 +213,45 @@
       color: black;
       box-shadow: 0 0 30px var(--neon-cyan);
     }
+
+    /* God Protocol Effects */
+    .god-protocol-levitate { animation: levitate 3s ease-in-out infinite; }
+    @keyframes levitate {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); filter: drop-shadow(0 20px 10px rgba(0,0,0,0.5)); }
+    }
+
+    .god-protocol-lightning { animation: flash 0.1s infinite; }
+    @keyframes flash {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; filter: brightness(2); }
+    }
+
+    .god-protocol-reset { animation: collapse 2s ease-in-out forwards; }
+    @keyframes collapse {
+        0% { transform: scale(1); filter: blur(0); }
+        50% { transform: scale(0.01); filter: blur(20px); opacity: 0; }
+        100% { transform: scale(1); filter: blur(0); opacity: 1; }
+    }
+
+    .god-protocol-heal { animation: heal 1.5s ease-out; }
+    @keyframes heal {
+        0% { box-shadow: inset 0 0 0 0 rgba(16, 185, 129, 0); }
+        50% { box-shadow: inset 0 0 50px 20px rgba(16, 185, 129, 0.5); }
+        100% { box-shadow: inset 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .god-protocol-create { animation: create 1s ease-out; }
+    @keyframes create {
+        0% { transform: scale(0.9); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.3); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 0.6); }
+
   </style>
   <script type="importmap">
 {
