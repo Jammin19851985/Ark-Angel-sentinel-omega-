@@ -15,7 +15,16 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
-    const { isGodMode, isSovereign, setWallpaperVideoSrc, addLog } = useAppContext();
+    const { 
+        isGodMode, 
+        isSovereign, 
+        setWallpaperVideoSrc, 
+        addLog,
+        wallpaperOpacity,
+        setWallpaperOpacity,
+        wallpaperBlur,
+        setWallpaperBlur
+    } = useAppContext();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,10 +37,6 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
     };
 
     const triggerUpload = () => {
-        if (!isGodMode) {
-            addLog('ERROR', 'Access Denied: Wallpaper configuration requires God Mode clearance.');
-            return;
-        }
         fileInputRef.current?.click();
     };
 
@@ -45,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
                             className="text-xl font-bold text-slate-100 font-mono tracking-wider"
                             style={{ textShadow: '0 0 10px rgba(252, 211, 77, 0.4)' }}
                         >
-                            ARK Ω // TURMOX
+                            ARCHANGEL
                         </h1>
                         {isSovereign && (
                             <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gradient-r from-violet-900 to-fuchsia-900 border border-violet-500 text-white shadow-[0_0_10px_rgba(139,92,246,0.5)] animate-pulse">
@@ -65,15 +70,62 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
                                     onChange={handleWallpaperUpload} 
                                 />
                                 <button
-                                    onClick={triggerUpload}
                                     className="hidden md:flex items-center space-x-2 px-3 py-1.5 bg-amber-900/30 hover:bg-amber-800/40 border border-amber-500/50 rounded text-amber-400 text-xs font-mono transition-all animate-pulse"
-                                    title="Set Live Wallpaper (.mp4) - GOD MODE AUTHORIZED"
+                                    title="Live Wallpaper Settings - GOD MODE AUTHORIZED"
                                 >
                                     <VideoIcon className="w-4 h-4" />
                                     <span>WALLPAPER</span>
                                 </button>
-                                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-black border border-amber-500 text-[10px] text-amber-500 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                                    GOD MODE UNLOCKED
+                                
+                                {/* Dropdown Menu for Wallpaper Settings */}
+                                <div className="absolute top-full right-0 mt-2 w-64 bg-black/90 border border-amber-500/50 rounded-lg p-4 shadow-[0_0_30px_rgba(0,0,0,0.8)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto z-50 backdrop-blur-md">
+                                    <div className="flex flex-col space-y-4">
+                                        <div className="border-b border-amber-500/30 pb-2 mb-1">
+                                            <h4 className="text-amber-500 text-[10px] font-bold uppercase tracking-widest">Wallpaper Matrix</h4>
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={triggerUpload}
+                                            className="w-full bg-amber-600/20 hover:bg-amber-600/40 border border-amber-500/50 text-amber-400 text-[10px] font-bold py-2 rounded transition-colors uppercase tracking-wider"
+                                        >
+                                            Upload Source (.mp4)
+                                        </button>
+
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                                                <span>OPACITY</span>
+                                                <span className="text-amber-300">{(wallpaperOpacity * 100).toFixed(0)}%</span>
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="1" 
+                                                step="0.05" 
+                                                value={wallpaperOpacity} 
+                                                onChange={(e) => setWallpaperOpacity(parseFloat(e.target.value))}
+                                                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                                                <span>BLUR</span>
+                                                <span className="text-amber-300">{wallpaperBlur}px</span>
+                                            </div>
+                                            <input 
+                                                type="range" 
+                                                min="0" 
+                                                max="20" 
+                                                step="1" 
+                                                value={wallpaperBlur} 
+                                                onChange={(e) => setWallpaperBlur(parseInt(e.target.value))}
+                                                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                            />
+                                        </div>
+                                        <div className="text-[9px] text-slate-500 text-center pt-1 italic">
+                                            GOD MODE UNLOCKED
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -103,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour }) => {
                             {isGodMode ? (
                                 <BatmanIcon className="h-8 w-8 holographic-gold-icon" />
                             ) : (
-                                <ShieldIcon className="h-8 w-8 text-amber-400" style={{ filter: 'drop-shadow(0 0 5px var(--glow-color-gold))' }} />
+                                <ShieldIcon className="h-8 w-8 text-cyan-400 animate-spin-slow" style={{ filter: 'drop-shadow(0 0 5px var(--neon-cyan))' }} />
                             )}
                         </div>
                     </div>

@@ -36,6 +36,27 @@ function calculateGreeks(S: number, K: number, T: number, r: number, sigma: numb
     return { delta, gamma };
 }
 
+// Daily Risk Guard Class
+class DailyRiskGuard {
+    maxLoss: number;
+    initialEquity: number;
+    enabled: boolean;
+
+    constructor(maxLossPct: number = 0.05, initialEquity: number = 100000) {
+        this.maxLoss = initialEquity * maxLossPct;
+        this.initialEquity = initialEquity;
+        this.enabled = true;
+    }
+
+    check(currentEquity: number): { halted: boolean, loss: number } {
+        const loss = this.initialEquity - currentEquity;
+        if (this.enabled && loss >= this.maxLoss) {
+            return { halted: true, loss };
+        }
+        return { halted: false, loss };
+    }
+}
+
 interface AppContextType {
     marketData: MarketData;
     portfolio: Portfolio;
@@ -54,6 +75,7 @@ interface AppContextType {
     marketFilter: string;
     setMarketFilter: (filter: string) => void;
     sonarSignals: SonarSignal[];
+    setSonarSignals: React.Dispatch<React.SetStateAction<SonarSignal[]>>;
     isGodMode: boolean;
     setIsGodMode: (isGodMode: boolean) => void;
     isGodModeUnlocked: boolean;
@@ -87,6 +109,10 @@ interface AppContextType {
     setCoreState: React.Dispatch<React.SetStateAction<ArchangelCoreState>>;
     wallpaperVideoSrc: string | null;
     setWallpaperVideoSrc: (src: string | null) => void;
+    wallpaperOpacity: number;
+    setWallpaperOpacity: (opacity: number) => void;
+    wallpaperBlur: number;
+    setWallpaperBlur: (blur: number) => void;
     heartbeat: () => void;
     triggerKillSwitch: () => void;
     signDevice: (deviceId: string) => void;
@@ -107,6 +133,7 @@ interface AppContextType {
     executeOperation: () => Promise<void>;
     installProtocol: () => Promise<void>;
     runSystem: () => Promise<void>;
+    systemStatus: string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -118,8 +145,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isGodModeUnlocked, setIsGodModeUnlocked] = useState(() => localStorage.getItem('archangel_godModeUnlocked') === 'true');
     const [isSovereign, setIsSovereign] = useState(() => localStorage.getItem('archangel_isSovereign') === 'true');
     const [wallpaperVideoSrc, setWallpaperVideoSrc] = useState<string | null>(null);
+    const [wallpaperOpacity, setWallpaperOpacity] = useState(0.6);
+    const [wallpaperBlur, setWallpaperBlur] = useState(0);
     const [isSwarmOptimized, setIsSwarmOptimized] = useState(false);
     const [swarmOptimizationReport, setSwarmOptimizationReport] = useState<string | null>(null);
+    const [systemStatus, setSystemStatus] = useState<string>("STANDBY");
 
     const [aiToolkitState, setAiToolkitState] = useState<AiToolkitState>({
         activeTab: 'chat',
@@ -133,6 +163,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const gammaStateRef = useRef(gammaState);
     const marketDataRef = useRef(archangel.marketData);
+    const riskGuardRef = useRef(new DailyRiskGuard(0.05, 100000));
 
     useEffect(() => { gammaStateRef.current = gammaState; }, [gammaState]);
     useEffect(() => { marketDataRef.current = archangel.marketData; }, [archangel.marketData]);
@@ -145,6 +176,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const toggleGammaScalper = useCallback(() => {
         setGammaState(prev => ({ ...prev, isRunning: !prev.isRunning }));
     }, []);
+
+    // Risk Guard Check Interval
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const status = riskGuardRef.current.check(archangel.fiatBalance); // Assuming fiatBalance is equity for now
+            if (status.halted && !archangel.killSwitchActive) {
+                archangel.triggerKillSwitch();
+                addNexusLog(`>> DAILY MAX LOSS HIT ($${status.loss.toFixed(2)}). TRADING HALTED.`);
+                archangel.addLog('SYSTEM', 'CRITICAL: DAILY LOSS LIMIT EXCEEDED. KILL SWITCH ENGAGED.');
+            }
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [archangel.fiatBalance, archangel.killSwitchActive, archangel.triggerKillSwitch, archangel.addLog, addNexusLog]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -188,23 +232,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useEffect(() => { localStorage.setItem('archangel_godModeUnlocked', String(isGodModeUnlocked)); }, [isGodModeUnlocked]);
     useEffect(() => { localStorage.setItem('archangel_isSovereign', String(isSovereign)); }, [isSovereign]);
 
+    // Enhanced Sovereign Operations
     const executeOperation = useCallback(async () => {
+        if (archangel.killSwitchActive) return;
+        setSystemStatus("EXECUTING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_EXECUTE: Initiating global SICO cascade...');
         addNexusLog('>> SYSTEM_OP: EXECUTE - ARMING PRIMARY MANIFOLD');
+        await new Promise(r => setTimeout(r, 1000));
         await sendMessageToSentinelA("EXECUTE: Authorize all pending SICO orders across 7D topological substrate.");
-    }, [archangel.addLog, addNexusLog]);
+        archangel.setCoreState(prev => ({...prev, lastSystemOp: 'EXECUTE'}));
+        setSystemStatus("OPERATIONAL");
+    }, [archangel.addLog, addNexusLog, archangel.killSwitchActive, archangel.setCoreState]);
 
     const installProtocol = useCallback(async () => {
+        if (archangel.killSwitchActive) return;
+        setSystemStatus("INSTALLING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_INSTALL: Transmuting new operational axioms...');
         addNexusLog('>> SYSTEM_OP: INSTALL - UPDATING ARCHANGEL_CORE');
+        await new Promise(r => setTimeout(r, 1500));
         await sendMessageToSentinelA("INSTALL: Inject next-gen alpha features into the UPB-1 compliance layer.");
-    }, [archangel.addLog, addNexusLog]);
+        archangel.setCoreState(prev => ({...prev, lastSystemOp: 'INSTALL'}));
+        setSystemStatus("INSTALLED");
+    }, [archangel.addLog, addNexusLog, archangel.killSwitchActive, archangel.setCoreState]);
 
     const runSystem = useCallback(async () => {
+        if (archangel.killSwitchActive) return;
+        setSystemStatus("RUNNING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_RUN: Engaging Living System v204.0...');
         addNexusLog('>> SYSTEM_OP: RUN - AWAKENING TURMOX Ω');
+        await new Promise(r => setTimeout(r, 2000));
         await sendMessageToSentinelA("RUN: Initiate full-scale market hunting. Maximize Stochastic Alpha.");
-    }, [archangel.addLog, addNexusLog]);
+        archangel.setCoreState(prev => ({...prev, lastSystemOp: 'RUN'}));
+        setSystemStatus("LIVE");
+    }, [archangel.addLog, addNexusLog, archangel.killSwitchActive, archangel.setCoreState]);
     
     const value: AppContextType = {
         marketData: archangel.marketData,
@@ -224,6 +284,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         marketFilter: archangel.marketFilter,
         setMarketFilter: archangel.setMarketFilter,
         sonarSignals: archangel.sonarSignals,
+        setSonarSignals: archangel.setSonarSignals,
         isGodMode, 
         setIsGodMode: setIsGodModeState, 
         isGodModeUnlocked, 
@@ -257,6 +318,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCoreState: archangel.setCoreState,
         wallpaperVideoSrc, 
         setWallpaperVideoSrc,
+        wallpaperOpacity,
+        setWallpaperOpacity,
+        wallpaperBlur,
+        setWallpaperBlur,
         heartbeat: archangel.heartbeat,
         triggerKillSwitch: archangel.triggerKillSwitch,
         signDevice: archangel.signDevice,
@@ -276,7 +341,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         attestHardware: archangel.attestHardware,
         executeOperation,
         installProtocol,
-        runSystem
+        runSystem,
+        systemStatus
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

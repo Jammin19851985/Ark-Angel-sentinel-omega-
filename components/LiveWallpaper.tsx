@@ -3,7 +3,7 @@ import React from 'react';
 import { useAppContext } from '../contexts/AppContext';
 
 const LiveWallpaper: React.FC = () => {
-    const { wallpaperVideoSrc } = useAppContext();
+    const { wallpaperVideoSrc, wallpaperOpacity, wallpaperBlur } = useAppContext();
 
     if (!wallpaperVideoSrc) {
         return null; // Fallback to CSS background if no video is set
@@ -16,13 +16,17 @@ const LiveWallpaper: React.FC = () => {
                 loop
                 muted
                 playsInline
-                className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto -translate-x-1/2 -translate-y-1/2 object-cover opacity-60"
+                className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto -translate-x-1/2 -translate-y-1/2 object-cover"
+                style={{ 
+                    opacity: wallpaperOpacity, 
+                    filter: `blur(${wallpaperBlur}px)` 
+                }}
             >
                 <source src={wallpaperVideoSrc} type="video/mp4" />
                 Your browser does not support the video tag.
             </video>
-            {/* Overlay to ensure text readability */}
-            <div className="absolute inset-0 bg-black/40 mix-blend-overlay"></div>
+            {/* Overlay to ensure text readability - reduced opacity slightly since user can control video opacity now */}
+            <div className="absolute inset-0 bg-black/20 mix-blend-overlay"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
         </div>
     );

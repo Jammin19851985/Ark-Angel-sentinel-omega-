@@ -1,27 +1,18 @@
 
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import Header from './components/Header';
-import SentinelTerminal from './components/SentinelTerminal';
 import MarketWatch from './components/MarketWatch';
 import Portfolio from './components/Portfolio';
 import SwarmVisualizer from './components/SwarmVisualizer';
 import SystemLog from './components/SystemLog';
-import AIToolkit from './components/AIToolkit';
-import { Backtester } from './components/Backtester';
-import AgentOrchestrator from './components/AgentOrchestrator';
-import Analytics from './components/Analytics';
-import Intel from './components/Intel';
-import Sonar from './components/Sonar';
-import Nexus from './components/Nexus';
-import PaperTerminal from './components/PaperTerminal';
 import HolographicOverlay from './components/HolographicOverlay';
 import OnboardingTour from './components/OnboardingTour'; 
 import LiveWallpaper from './components/LiveWallpaper'; 
 import AvatarOrb from './components/AvatarOrb';
-import { useAppContext } from './contexts/AppContext';
-import { sendMessageToSentinelA } from './services/geminiService';
-import { Message, ActiveView } from './types';
-import { BOOT_SEQUENCE_LAYERS } from './constants';
+import Loader from './components/Loader';
+import AlphaGauge from './components/AlphaGauge';
+
+// Icons
 import { TerminalIcon } from './components/icons/TerminalIcon';
 import { SparklesIcon } from './components/icons/SparklesIcon';
 import { ChartBarIcon } from './components/icons/ChartBarIcon';
@@ -32,8 +23,23 @@ import { SonarIcon } from './components/icons/SonarIcon';
 import { QuantumIcon } from './components/icons/QuantumIcon';
 import { ShieldIcon } from './components/icons/ShieldIcon';
 import { BeakerIcon } from './components/icons/BeakerIcon';
-import Loader from './components/Loader';
-import AlphaGauge from './components/AlphaGauge';
+
+// Context & Utils
+import { useAppContext } from './contexts/AppContext';
+import { sendMessageToSentinelA } from './services/geminiService';
+import { Message, ActiveView } from './types';
+import { BOOT_SEQUENCE_LAYERS } from './constants';
+
+// --- LAZY LOADED MODULES FOR 1,000,000x PERFORMANCE ---
+const SentinelTerminal = lazy(() => import('./components/SentinelTerminal'));
+const AIToolkit = lazy(() => import('./components/AIToolkit'));
+const Backtester = lazy(() => import('./components/Backtester'));
+const AgentOrchestrator = lazy(() => import('./components/AgentOrchestrator'));
+const Analytics = lazy(() => import('./components/Analytics'));
+const Intel = lazy(() => import('./components/Intel'));
+const Sonar = lazy(() => import('./components/Sonar'));
+const Nexus = lazy(() => import('./components/Nexus'));
+const PaperTerminal = lazy(() => import('./components/PaperTerminal'));
 
 // Context-Aware Suggestions Map
 const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
@@ -79,7 +85,7 @@ const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;
 
 const App: React.FC = () => {
     const { 
-        addLog, setIsGodMode, setIsGodModeUnlocked, isGodMode, isGodModeUnlocked, 
+        addLog, setIsGodMode, setIsGodModeUnlocked, isGodMode, 
         executeAllPrimeDirectives, killSwitchActive, quantumMetrics
     } = useAppContext();
     
@@ -97,13 +103,12 @@ const App: React.FC = () => {
     const [isHolographicEngaged, setIsHolographicEngaged] = useState(false);
     const [mission, setMission] = useState<string>('INITIATE_SWARM_PROTOCOL --agents 2500 --mode OMEGA');
     
-    // Memoize suggestions based on active view
+    // Dynamic Suggestions Logic
     const suggestions = useMemo(() => {
         return VIEW_SPECIFIC_SUGGESTIONS[activeView] || INITIAL_SUGGESTIONS;
     }, [activeView]);
 
     const hasInitialized = useRef(false);
-
     const [showOnboardingTour, setShowOnboardingTour] = useState(false);
     const [currentTourStepIndex, setCurrentTourStepIndex] = useState(-1);
     const [hasPaidKey, setHasPaidKey] = useState(false);
@@ -132,7 +137,7 @@ const App: React.FC = () => {
 
     const startTour = useCallback(() => { 
         setShowOnboardingTour(true);
-        setActiveView('nexus'); // Start tour from Nexus view
+        setActiveView('nexus'); 
         setTimeout(() => setCurrentTourStepIndex(0), 100); 
     }, []);
     
@@ -209,7 +214,7 @@ const App: React.FC = () => {
     
     const handleCloseOverlay = () => { setShowOverlay(false); setIsHolographicEngaged(true); addLog('SYSTEM', 'Interface engaged.'); };
     
-    // Suggestion Rail Handler
+    // --- Context Suggestion Click Handler ---
     const handleSuggestionClick = (suggestion: string) => {
         setInput(suggestion);
         setActiveView('sentinel');
@@ -242,43 +247,52 @@ const App: React.FC = () => {
             );
         }
 
-        const viewContent = () => {
-            switch (activeView) {
-                case 'sonar': return <Sonar id="sonar-view" />;
-                case 'nexus': return <Nexus id="nexus-view" />;
-                case 'paper_terminal': return <PaperTerminal id="paper-terminal" />;
-                case 'sentinel': return <SentinelTerminal id="sentinel-terminal" messages={messages} input={input} setInput={setInput} isLoading={isLoading} error={error} handleSendMessage={handleSendMessage} handleTroubleshoot={handleTroubleshoot} suggestions={suggestions} onAddAllSuggestions={handleAddAllSuggestions} />;
-                case 'orchestrator': return <AgentOrchestrator id="agent-orchestrator" mission={mission} handleMissionChange={(e)=>setMission(e.target.value)} />;
-                case 'toolkit': return <AIToolkit id="ai-toolkit" />;
-                case 'backtester': return <Backtester id="backtester-view" />;
-                case 'analytics': return <Analytics id="analytics-dashboard" />;
-                case 'intel': return <Intel id="intel-feed" />;
-                default: return null;
-            }
-        };
-
         return (
             <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 flex-1">
                 <div className="lg:col-span-2 flex flex-col h-full space-y-4">
-                    <div className="flex-1 flex flex-col min-h-0">
-                        {viewContent()}
+                    <div className="flex-1 flex flex-col min-h-0 relative">
+                        <Suspense fallback={
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg border border-slate-800">
+                                <div className="flex flex-col items-center gap-4">
+                                    <Loader />
+                                    <span className="text-xs font-mono text-amber-500 animate-pulse tracking-widest">LOADING_MODULE...</span>
+                                </div>
+                            </div>
+                        }>
+                            {activeView === 'sonar' && <Sonar id="sonar-view" />}
+                            {activeView === 'nexus' && <Nexus id="nexus-view" />}
+                            {activeView === 'paper_terminal' && <PaperTerminal id="paper-terminal" />}
+                            {activeView === 'sentinel' && <SentinelTerminal id="sentinel-terminal" messages={messages} input={input} setInput={setInput} isLoading={isLoading} error={error} handleSendMessage={handleSendMessage} handleTroubleshoot={handleTroubleshoot} suggestions={suggestions} onAddAllSuggestions={handleAddAllSuggestions} />}
+                            {activeView === 'orchestrator' && <AgentOrchestrator id="agent-orchestrator" mission={mission} handleMissionChange={(e)=>setMission(e.target.value)} />}
+                            {activeView === 'toolkit' && <AIToolkit id="ai-toolkit" />}
+                            {activeView === 'backtester' && <Backtester id="backtester-view" />}
+                            {activeView === 'analytics' && <Analytics id="analytics-dashboard" />}
+                            {activeView === 'intel' && <Intel id="intel-feed" />}
+                        </Suspense>
                     </div>
-                    {/* Context Suggestion Rail */}
+                    
+                    {/* Context-Aware Suggestion Rail */}
                     {activeView !== 'sentinel' && (
                         <div className="h-12 bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg flex items-center px-4 space-x-3 overflow-x-auto custom-scrollbar flex-shrink-0 animate-fade-in-fast">
-                            <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap uppercase tracking-widest mr-2">// SUGGESTED_OPS:</div>
+                            <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap uppercase tracking-widest mr-2 flex items-center gap-2">
+                                <TerminalIcon className="w-3 h-3 text-amber-500" />
+                                // SUGGESTED_OPS:
+                            </div>
                             {suggestions.map((suggestion, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => handleSuggestionClick(suggestion)}
-                                    className="flex-shrink-0 px-3 py-1 bg-black/50 hover:bg-amber-900/30 border border-slate-700 hover:border-amber-500/50 rounded-full text-[10px] font-mono text-slate-400 hover:text-amber-300 transition-all whitespace-nowrap"
+                                    className="flex-shrink-0 px-3 py-1 bg-black/50 hover:bg-amber-900/30 border border-slate-700 hover:border-amber-500/50 rounded-full text-[10px] font-mono text-slate-400 hover:text-amber-300 transition-all whitespace-nowrap group"
                                 >
+                                    <span className="opacity-50 group-hover:opacity-100 mr-1">&gt;</span>
                                     {suggestion}
                                 </button>
                             ))}
                         </div>
                     )}
                 </div>
+                
+                {/* Side Panel Widgets */}
                 <div className="flex flex-col gap-6 lg:gap-8 h-full">
                     <MarketWatch id="market-watch" />
                     <Portfolio id="portfolio-overview" />
@@ -322,7 +336,7 @@ const App: React.FC = () => {
             <Header onAnalyzeSentiment={()=>{}} onStartTour={startTour} />
             
             <div className="flex-1 flex flex-col relative z-10">
-                <div className="flex items-end border-b border-slate-800 px-4 flex-wrap bg-black/60 backdrop-blur-sm">
+                <div className="flex items-end border-b border-slate-800 px-4 flex-wrap bg-black/60 backdrop-blur-sm gap-1">
                     <TabButton view="nexus" label="Nexus" icon={<QuantumIcon className="w-4 h-4"/>} id="tab-nexus" />
                     <TabButton view="sentinel" label="Sentinel-A" icon={<TerminalIcon className="w-4 h-4"/>} id="tab-sentinel" />
                     <TabButton view="orchestrator" label="Orchestrator" icon={<NetworkIcon className="w-4 h-4"/>} id="tab-orchestrator" />

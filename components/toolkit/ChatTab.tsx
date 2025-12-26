@@ -136,43 +136,44 @@ const ChatTab: React.FC = () => {
     }), []);
 
     const renderMessageContent = (msg: ChatMessage) => {
-        // Regex to find <grok:render_inline_citation citation_id="X"/>
-        const citationRegex = /<grok:render_inline_citation\s+citation_id="(\d+)"\s*\/>/g;
-        let processedContent = msg.content;
-        
         const validSources = Array.isArray(msg.sources) && msg.sources.length > 0;
-
-        if (validSources) {
-            processedContent = processedContent.replace(citationRegex, (match, citationIdStr) => {
-                const citationId = parseInt(citationIdStr, 10);
-                if (citationId > 0 && msg.sources && citationId <= msg.sources.length) {
-                    return `<sup><a href="#source-${citationId}" class="text-amber-300 hover:text-amber-200">[${citationId}]</a></sup>`;
-                }
-                return ''; 
-            });
-        } else {
-            processedContent = processedContent.replace(citationRegex, '');
-        }
 
         return (
             <>
                 <div className="prose prose-sm prose-invert max-w-none text-slate-300">
                     <ReactMarkdown components={markdownComponents}>
-                        {processedContent}
+                        {msg.content}
                     </ReactMarkdown>
                 </div>
                 {validSources && (
-                    <div className="mt-3 pt-2 border-t border-slate-600">
-                        <p className="text-xs font-bold text-slate-400 mb-1">Sources:</p>
-                        <ul className="list-disc list-inside text-xs space-y-1">
-                            {msg.sources!.map((chunk, i) => (
-                                (chunk.web || (chunk.maps && chunk.maps.uri)) &&
-                                <li key={i}>
-                                    <a id={`source-${i + 1}`} href={chunk.web?.uri || chunk.maps?.uri} target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline">
-                                        [{i + 1}] {chunk.web?.title || chunk.maps?.title || 'Google Source'}
-                                    </a>
-                                </li>
-                            ))}
+                    <div className="mt-4 pt-3 border-t border-slate-700/50 bg-black/20 -mx-4 px-4 pb-2 rounded-b-lg">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                            Verified Sources
+                        </p>
+                        <ul className="space-y-1.5">
+                            {msg.sources!.map((chunk, i) => {
+                                // Extract URI and Title based on whether it is a Web or Maps chunk
+                                const uri = chunk.web?.uri || chunk.maps?.uri;
+                                const title = chunk.web?.title || chunk.maps?.title || 'Source';
+                                
+                                if (!uri) return null;
+
+                                return (
+                                    <li key={i} className="flex items-start space-x-2 text-xs group">
+                                        <span className="text-slate-600 font-mono mt-0.5">[{i + 1}]</span>
+                                        <a 
+                                            href={uri} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="text-amber-400 hover:text-amber-300 hover:underline transition-colors break-all"
+                                            title={title}
+                                        >
+                                            {title}
+                                        </a>
+                                    </li>
+                                );
+                            })}
                         </ul>
                     </div>
                 )}

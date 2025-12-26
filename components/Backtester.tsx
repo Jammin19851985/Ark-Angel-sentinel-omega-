@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BacktestResults, EquityDataPoint, BacktestStrategy } from '../types';
 import Loader from './Loader';
 import { PlayCircleIcon } from './icons/PlayCircleIcon';
@@ -31,8 +31,8 @@ const PRESET_DATA = `Date,Open,High,Low,Close
 2023-01-30,109,110,105,106
 2023-01-31,106,109,106,108`;
 
-const EquityChart: React.FC<{ data: EquityDataPoint[] }> = ({ data }) => {
-    if (data.length < 2) return <div className="text-center text-slate-500">Not enough data for chart.</div>;
+const EquityChart: React.FC<{ data: EquityDataPoint[], viewMode: 'equity' | 'drawdown' }> = ({ data, viewMode }) => {
+    if (data.length < 2) return <div className="text-center text-slate-500 text-[10px] mt-10">Not enough data for chart.</div>;
 
     const values = data.map(d => d.value);
     const max = Math.max(...values);
@@ -45,12 +45,29 @@ const EquityChart: React.FC<{ data: EquityDataPoint[] }> = ({ data }) => {
         return `${x},${y}`;
     }).join(' ');
 
+    const strokeColor = viewMode === 'equity' ? 'text-amber-500' : 'text-red-500';
+    const tradeBuyColor = viewMode === 'equity' ? '#10B981' : '#4ade80';
+    const tradeSellColor = viewMode === 'equity' ? '#EF4444' : '#f87171';
+
     return (
         <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+            {/* Drawdown Zero Line (The Surface) */}
+            {viewMode === 'drawdown' && (
+                <line 
+                    x1="0" 
+                    y1={100 - ((0 - min) / (range || 1)) * 100} 
+                    x2="100" 
+                    y2={100 - ((0 - min) / (range || 1)) * 100} 
+                    stroke="rgba(255, 255, 255, 0.2)" 
+                    strokeWidth="0.5" 
+                    strokeDasharray="2,2" 
+                />
+            )}
+
             <polyline
                 fill="none"
                 stroke="currentColor"
-                className="text-amber-500"
+                className={strokeColor}
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -61,14 +78,14 @@ const EquityChart: React.FC<{ data: EquityDataPoint[] }> = ({ data }) => {
                 if (!point.trade) return null;
                 const x = (i / (data.length - 1)) * 100;
                 const y = 100 - ((point.value - min) / (range || 1)) * 100;
-                const color = point.trade === 'buy' ? '#10B981' : '#EF4444';
+                const color = point.trade === 'buy' ? tradeBuyColor : tradeSellColor;
                 const shape = point.trade === 'buy' 
                     ? `M ${x} ${y-4} L ${x-3.5} ${y+2} L ${x+3.5} ${y+2} Z` 
                     : `M ${x} ${y+4} L ${x-3.5} ${y-2} L ${x+3.5} ${y-2} Z`;
 
                 return (
                      <path key={`trade-${i}`} d={shape} fill={color} vectorEffect="non-scaling-stroke">
-                        <title>{`${point.trade.toUpperCase()} @ ${point.value.toFixed(2)}`}</title>
+                        <title>{`${point.trade.toUpperCase()} @ ${viewMode === 'equity' ? '$' : ''}${point.value.toFixed(2)}${viewMode === 'drawdown' ? '%' : ''}`}</title>
                     </path>
                 );
             })}
@@ -76,7 +93,7 @@ const EquityChart: React.FC<{ data: EquityDataPoint[] }> = ({ data }) => {
     );
 };
 
-export const Backtester: React.FC<{ id: string }> = ({ id }) => {
+const Backtester: React.FC<{ id: string }> = ({ id }) => {
     const { addLog } = useAppContext();
     const [historicalData, setHistoricalData] = useState(PRESET_DATA);
     const [strategy, setStrategy] = useState<BacktestStrategy>('tri_arb');
@@ -86,6 +103,7 @@ export const Backtester: React.FC<{ id: string }> = ({ id }) => {
     const [analysis, setAnalysis] = useState<string | null>(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisError, setAnalysisError] = useState<string | null>(null);
+    const [chartView, setChartView] = useState<'equity' | 'drawdown'>('equity');
 
     const runBacktest = useCallback(() => {
         setIsLoading(true);
@@ -180,6 +198,20 @@ export const Backtester: React.FC<{ id: string }> = ({ id }) => {
         } catch (err) { setAnalysisError("Analysis Engine failed."); } finally { setIsAnalyzing(false); }
     }, [results, strategy, isAnalyzing]);
 
+    // Compute chart data based on view mode (Equity vs Drawdown)
+    const chartData = useMemo(() => {
+        if (!results) return [];
+        if (chartView === 'equity') return results.equityCurve;
+        
+        let peak = -Infinity;
+        return results.equityCurve.map(pt => {
+            if (pt.value > peak) peak = pt.value;
+            // Calculate underwater percentage (e.g., -5% from peak)
+            const dd = peak > 0 ? ((pt.value - peak) / peak) * 100 : 0;
+            return { ...pt, value: dd };
+        });
+    }, [results, chartView]);
+
     return (
         <div id={id} className="h-full flex flex-col font-mono">
             <h3 className="text-lg font-bold text-slate-200 mb-1 tracking-tighter uppercase">// PROPRIETARY BACKTESTER // VECTORIZED ENGINE</h3>
@@ -222,9 +254,25 @@ export const Backtester: React.FC<{ id: string }> = ({ id }) => {
 
                 <div className="flex flex-col space-y-4">
                     <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[250px] flex flex-col">
-                        <h4 className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">// Equity Curve Visualization</h4>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">// Simulation Visualizer</h4>
+                            <div className="flex bg-black/60 rounded p-0.5 border border-slate-700">
+                                <button 
+                                    onClick={() => setChartView('equity')} 
+                                    className={`text-[9px] px-2 py-0.5 rounded font-mono transition-all ${chartView === 'equity' ? 'bg-amber-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    EQUITY
+                                </button>
+                                <button 
+                                    onClick={() => setChartView('drawdown')} 
+                                    className={`text-[9px] px-2 py-0.5 rounded font-mono transition-all ${chartView === 'drawdown' ? 'bg-red-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                >
+                                    DRAWDOWN
+                                </button>
+                            </div>
+                        </div>
                         <div className="flex-1 min-h-[150px] flex items-center justify-center relative">
-                            {isLoading ? <Loader /> : results ? <EquityChart data={results.equityCurve} /> : <p className="text-slate-600 text-[10px]">Awaiting simulation initialization...</p>}
+                            {isLoading ? <Loader /> : results ? <EquityChart data={chartData} viewMode={chartView} /> : <p className="text-slate-600 text-[10px]">Awaiting simulation initialization...</p>}
                         </div>
                         {results && (
                             <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-800 pt-3 text-[10px]">
@@ -255,3 +303,5 @@ export const Backtester: React.FC<{ id: string }> = ({ id }) => {
         </div>
     );
 };
+
+export default Backtester;

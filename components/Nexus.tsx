@@ -36,7 +36,7 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
         quantumMetrics, inversionLogs, killSwitchActive,
         tradeMode, setTradeMode, coreState, signDevice,
         apiConnected, armLiveGate, disarmLiveGate, setCoreState,
-        primeSuggestions
+        primeSuggestions, systemStatus
     } = useAppContext();
     
     const logRef = useRef<HTMLDivElement>(null);
@@ -90,6 +90,9 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                         {realityCorrectorActive && (
                             <span className="bg-cyan-500 text-black px-1.5 py-0.5 rounded text-[8px] font-bold animate-pulse shadow-[0_0_10px_#00f3ff]">CAUSAL_CORRECTION_ACTIVE</span>
                         )}
+                        <span className="bg-slate-900 border border-slate-700 text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ml-2">
+                            OP_STATUS: <span className="text-amber-400">{systemStatus}</span>
+                        </span>
                     </div>
                     <div className="flex items-center space-x-4 mt-1">
                         <span className={`text-[10px] flex items-center gap-1.5 ${killSwitchActive ? 'text-red-500' : 'text-cyan-400'}`}>
