@@ -247,7 +247,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
     }, [signals, activeFilters]);
 
     const ControlButton: React.FC<{ onClick: () => void; children: React.ReactNode; className?: string }> = ({ onClick, children, className }) => (
-        <button onClick={onClick} className={`bg-black/80 hover:bg-slate-700/80 text-slate-300 rounded-md p-1.5 transition-colors ${className}`}>
+        <button onClick={onClick} className={`bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-md p-1.5 transition-colors shadow-sm ${className}`}>
             {children}
         </button>
     );
@@ -255,8 +255,10 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
     const FilterButton: React.FC<{ type: SonarSignal['type'], isActive: boolean, onClick: (type: SonarSignal['type']) => void }> = ({ type, isActive, onClick }) => (
         <button
             onClick={() => onClick(type)}
-            className={`px-3 py-1 text-xs font-mono rounded-full transition-colors ${
-                isActive ? 'bg-amber-600 text-white' : 'bg-black/50 backdrop-blur-sm hover:bg-slate-600/50 text-slate-300'
+            className={`px-3 py-1 text-xs font-mono rounded-full border transition-all ${
+                isActive 
+                ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.5)]' 
+                : 'bg-black border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400'
             }`}
         >
             {type}
@@ -321,7 +323,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                 )}
 
                 <div className="absolute bottom-4 right-4 z-30 flex flex-col items-end space-y-2">
-                    <div className="flex bg-black/80 rounded-md p-1 border border-slate-700">
+                    <div className="flex bg-black rounded-md p-1 border border-slate-700">
                         <ControlButton onClick={() => handleZoom(1.2)}>
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                         </ControlButton>
@@ -329,7 +331,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
                         </ControlButton>
                     </div >
-                    <div className="bg-black/80 rounded-md p-1 w-24 grid grid-cols-3 grid-rows-3 gap-1 border border-slate-700">
+                    <div className="bg-black rounded-md p-1 w-24 grid grid-cols-3 grid-rows-3 gap-1 border border-slate-700">
                         <div className="col-start-2 row-start-1">
                             <ControlButton onClick={() => handlePan(0, PAN_STEP)}><ArrowUpIcon className="w-5 h-5 mx-auto" /></ControlButton>
                         </div >
@@ -355,7 +357,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                         <h2 className="text-sm font-bold text-amber-400 font-mono">// SONAR // THREAT ANALYSIS</h2>
                         <button 
                             onClick={() => setIsNanoMode(!isNanoMode)} 
-                            className={`text-[10px] font-mono border px-2 py-0.5 rounded ${isNanoMode ? 'border-amber-500 text-amber-400' : 'border-slate-600 text-slate-500'}`}
+                            className={`text-[10px] font-mono border px-2 py-0.5 rounded transition-all ${isNanoMode ? 'bg-amber-900 border-amber-500 text-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)]' : 'bg-black border-slate-700 text-slate-500'}`}
                         >
                             VISUALS: {isNanoMode ? 'ON' : 'OFF'}
                         </button>

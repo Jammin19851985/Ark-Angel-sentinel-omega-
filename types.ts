@@ -84,7 +84,7 @@ export interface Trade {
     quantity: number;
     price: number;
     pnl: number;
-    type: 'STANDARD' | 'SICO';
+    type: 'STANDARD' | 'SICO' | 'BRACKET_EXIT';
     status: OrderState;
     auditHash?: string;
     tesScore?: number;
@@ -95,6 +95,18 @@ export interface Trade {
     qualityAtExecution?: number;
     capitalScaleAtExecution?: number;
     isAutonomous?: boolean;
+}
+
+export interface ActiveOrder {
+    id: string;
+    parentId: string; // Link to the original entry trade
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    quantity: number;
+    type: 'STOP_LOSS' | 'TAKE_PROFIT';
+    triggerPrice: number;
+    status: 'PENDING' | 'TRIGGERED' | 'CANCELLED';
+    timestamp: number;
 }
 
 export interface ProposedTrade {

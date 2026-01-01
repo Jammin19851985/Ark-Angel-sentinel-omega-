@@ -73,7 +73,11 @@ const VideoStudioTab: React.FC<VideoStudioTabProps> = () => {
     };
 
     const ModeButton: React.FC<{ m: Mode, label: string }> = ({ m, label }) => (
-        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition ${mode === m ? 'bg-amber-600 text-white' : 'bg-black/50 backdrop-blur-sm hover:bg-slate-600/50 text-slate-300'}`}>
+        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition border ${
+            mode === m 
+            ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.5)]' 
+            : 'bg-black border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400'
+        }`}>
             {label}
         </button>
     );
@@ -83,7 +87,6 @@ const VideoStudioTab: React.FC<VideoStudioTabProps> = () => {
             <h3 className="text-lg font-bold text-slate-200 mb-1">Video Studio</h3>
             <p className="text-sm text-slate-400 mb-4">Generate high-quality videos from text or images using Veo, or analyze video content.</p>
             
-            {/* @google/genai Fix: Render mode selection buttons to allow users to switch between 'Generate' and 'Analyze'. */}
             <div className="flex space-x-2 mb-4">
                 <ModeButton m="generate" label="Generate" />
                 <ModeButton m="analyze" label="Analyze" />
@@ -93,36 +96,35 @@ const VideoStudioTab: React.FC<VideoStudioTabProps> = () => {
             <div className="flex flex-col space-y-4">
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">Prompt / Instructions</label>
-                    <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} placeholder={mode === 'generate' ? "e.g., A majestic eagle soaring over mountains..." : "e.g., Describe the subject of this video."} className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+                    <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={3} placeholder={mode === 'generate' ? "e.g., A majestic eagle soaring over mountains..." : "e.g., Describe the subject of this video."} className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                    {/* @google/genai Fix: Render appropriate file input (image for generation, video for analysis) based on the current mode. */}
                     {mode === 'generate' ? (
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Starting Image (Optional)</label>
-                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900/50 backdrop-blur-sm file:text-amber-300 hover:file:bg-amber-900" />
+                            <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900 file:text-amber-300 hover:file:bg-amber-800" />
                         </div>
                     ) : (
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">Target Video</label>
-                            <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'video')} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900/50 backdrop-blur-sm file:text-amber-300 hover:file:bg-amber-900" />
+                            <input type="file" accept="video/*" onChange={(e) => handleFileChange(e, 'video')} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900 file:text-amber-300 hover:file:bg-amber-800" />
                         </div>
                     )}
                     <div>
                         <label htmlFor="aspect-ratio-vid" className="block text-sm font-medium text-slate-300 mb-2">Aspect Ratio</label>
-                         <select id="aspect-ratio-vid" value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                         <select id="aspect-ratio-vid" value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className="w-full bg-black border border-slate-700 rounded-md p-2.5 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
                             <option value="16:9">Landscape (16:9)</option>
                             <option value="9:16">Portrait (9:16)</option>
                         </select>
                     </div>
                 </div>
-                 <button onClick={handleSubmit} disabled={isLoading} className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600">
+                 <button onClick={handleSubmit} disabled={isLoading} className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all">
                     {isLoading ? 'Processing...' : (mode === 'generate' ? 'Generate Video' : 'Analyze Video')}
                 </button>
             </div>
 
             {/* Output */}
-            <div className="mt-4 flex-1 bg-black/30 backdrop-blur-sm rounded-lg border border-slate-800 p-4 flex items-center justify-center min-h-[250px]">
+            <div className="mt-4 flex-1 bg-black/40 backdrop-blur-sm rounded-lg border border-slate-800 p-4 flex items-center justify-center min-h-[250px]">
                 {isLoading && (
                     <div className="text-center">
                         <Loader />
@@ -134,9 +136,8 @@ const VideoStudioTab: React.FC<VideoStudioTabProps> = () => {
                 {!isLoading && !error && (
                     <>
                         {generatedVideoUrl && (
-                            <video src={generatedVideoUrl} controls autoPlay loop className="max-h-full max-w-full object-contain rounded-md" />
+                            <video src={generatedVideoUrl} controls autoPlay loop className="max-h-full max-w-full object-contain rounded-md shadow-lg" />
                         )}
-                        {/* @google/genai Fix: Render analysisResult if it exists when in analysis mode. */}
                         {analysisResult && (
                              <div className="text-sm text-slate-300 overflow-y-auto w-full h-full p-2">
                                  <h4 className="text-amber-400 font-mono font-bold mb-2 uppercase tracking-tighter">// VIDEO ANALYSIS</h4>

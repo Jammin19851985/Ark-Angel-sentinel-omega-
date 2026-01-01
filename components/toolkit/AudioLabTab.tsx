@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLiveAudio } from '../../hooks/useLiveAudio';
 import { generateSpeech } from '../../services/geminiService';
@@ -52,7 +53,11 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
     };
     
     const ModeButton: React.FC<{ m: Mode, label: string }> = ({ m, label }) => (
-        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition ${mode === m ? 'bg-amber-600 text-white' : 'bg-black/50 backdrop-blur-sm hover:bg-slate-600/50 text-slate-300'}`}>
+        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition border ${
+            mode === m 
+            ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.5)]' 
+            : 'bg-black border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400'
+        }`}>
             {label}
         </button>
     );
@@ -63,7 +68,7 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
             case 'transcribe':
                 return (
                     <div className="h-full flex flex-col">
-                        <div className="flex-1 bg-black/30 backdrop-blur-sm rounded-lg border border-slate-800 p-4 space-y-2 overflow-y-auto">
+                        <div className="flex-1 bg-black/40 backdrop-blur-sm rounded-lg border border-slate-800 p-4 space-y-2 overflow-y-auto">
                             {transcriptionHistory.map((entry, index) => (
                                 <div key={index} className={`p-2 rounded-md ${entry.author === 'user' ? 'text-amber-300' : 'text-slate-300'}`}>
                                     <span className="font-bold capitalize">{entry.author}: </span>{entry.text}
@@ -78,8 +83,8 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
                         <div className="pt-4 flex justify-center">
                             <button
                                 onClick={isSessionActive ? closeSession : () => startSession(mode)}
-                                className={`flex items-center space-x-2 px-6 py-3 rounded-full text-white font-bold transition ${
-                                    isSessionActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                                className={`flex items-center space-x-2 px-6 py-3 rounded-full text-white font-bold transition shadow-lg ${
+                                    isSessionActive ? 'bg-red-600 hover:bg-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)]' : 'bg-green-600 hover:bg-green-700 shadow-[0_0_15px_rgba(22,163,74,0.5)]'
                                 }`}
                             >
                                 {isSessionActive ? <StopCircleIcon className="w-6 h-6" /> : <MicrophoneIcon className="w-6 h-6" />}
@@ -98,15 +103,15 @@ const AudioLabTab: React.FC<AudioLabTabProps> = () => {
                                 id="voice-select"
                                 value={selectedVoice}
                                 onChange={(e) => setSelectedVoice(e.target.value)}
-                                className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
                             >
                                 {VOICES.map(voice => (
                                     <option key={voice} value={voice}>{voice}</option>
                                 ))}
                             </select>
                         </div>
-                        <textarea value={ttsText} onChange={(e) => setTtsText(e.target.value)} rows={5} placeholder="Enter text to generate speech..." className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
-                        <button onClick={handleTtsSubmit} disabled={isLoading} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600">
+                        <textarea value={ttsText} onChange={(e) => setTtsText(e.target.value)} rows={5} placeholder="Enter text to generate speech..." className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-1 focus:ring-amber-500 focus:border-amber-500" />
+                        <button onClick={handleTtsSubmit} disabled={isLoading} className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all">
                            {isLoading ? <span className="flex items-center justify-center"><Loader /> Generating...</span> : 'Generate & Play Audio'}
                         </button>
                         {error && <p className="text-red-400 text-sm">{error}</p>}

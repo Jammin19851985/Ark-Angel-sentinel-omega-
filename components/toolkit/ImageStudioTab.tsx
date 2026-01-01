@@ -1,9 +1,10 @@
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { generateImage, analyzeImage, editImage } from '../../services/geminiService';
 import Loader from '../Loader';
 import { useAppContext } from '../../contexts/AppContext';
-import { CameraIcon } from '../icons/CameraIcon'; // Assuming you have or will create this icon
-import { UploadCloudIcon } from '../UploadCloudIcon'; // Corrected import path
+import { CameraIcon } from '../icons/CameraIcon'; 
+import { UploadCloudIcon } from '../UploadCloudIcon';
 
 interface ImageStudioTabProps {}
 
@@ -14,11 +15,11 @@ type AspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
     const { addLog } = useAppContext();
     const [mode, setMode] = useState<Mode>('generate');
-    const [inputMethod, setInputMethod] = useState<InputMethod>('file'); // New state for input method
+    const [inputMethod, setInputMethod] = useState<InputMethod>('file'); 
     const [prompt, setPrompt] = useState('');
     const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imageUrl, setImageUrl] = useState<string | null>(null); // URL for uploaded/captured image preview
-    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null); // URL for generated/edited image
+    const [imageUrl, setImageUrl] = useState<string | null>(null); 
+    const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
     const [analysisResult, setAnalysisResult] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -170,7 +171,11 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
     };
 
     const ModeButton: React.FC<{ m: Mode, label: string }> = ({ m, label }) => (
-        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition ${mode === m ? 'bg-amber-600 text-white' : 'bg-black/50 backdrop-blur-sm hover:bg-slate-600/50 text-slate-300'}`}>
+        <button onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-medium rounded-md transition border ${
+            mode === m 
+            ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.5)]' 
+            : 'bg-black border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400'
+        }`}>
             {label}
         </button>
     );
@@ -178,10 +183,10 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
     const InputMethodButton: React.FC<{ method: InputMethod, label: string, icon: React.ReactNode }> = ({ method, label, icon }) => (
         <button
             onClick={() => setInputMethod(method)}
-            className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md transition ${
+            className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md transition border ${
                 inputMethod === method
-                    ? 'bg-amber-900/50 text-amber-300'
-                    : 'bg-black/50 backdrop-blur-sm hover:bg-slate-600/50 text-slate-400'
+                    ? 'bg-amber-900 border-amber-500 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                    : 'bg-black border-slate-700 hover:border-amber-500/50 hover:text-amber-400 text-slate-400'
             }`}
         >
             {icon}
@@ -212,10 +217,10 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                             </div>
 
                             {inputMethod === 'file' && (
-                                <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900/50 backdrop-blur-sm file:text-amber-300 hover:file:bg-amber-900" />
+                                <input type="file" accept="image/*" onChange={handleFileChange} className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-amber-900 file:text-amber-300 hover:file:bg-amber-800" />
                             )}
                             {inputMethod === 'camera' && (
-                                <div className="flex flex-col items-center justify-center p-4 bg-black/50 backdrop-blur-sm rounded-md border border-slate-700">
+                                <div className="flex flex-col items-center justify-center p-4 bg-black border border-slate-700 rounded-md">
                                     {cameraError && <p className="text-red-400 text-sm mb-2">{cameraError}</p>}
                                     {!isCameraActive && !cameraError && <Loader />}
                                     <video ref={videoRef} className="w-full h-auto rounded-md" autoPlay muted playsInline style={{ display: isCameraActive ? 'block' : 'none' }} />
@@ -223,7 +228,7 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                                     <button
                                         onClick={takePhoto}
                                         disabled={!isCameraActive}
-                                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600 mt-3" // Added consistent button styling
+                                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600 mt-3 shadow-[0_0_10px_rgba(245,158,11,0.4)]" 
                                     >
                                         Take Photo
                                     </button>
@@ -234,7 +239,7 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                     {mode === 'generate' && (
                          <div>
                             <label htmlFor="aspect-ratio" className="block text-sm font-medium text-slate-300 mb-2">Aspect Ratio</label>
-                             <select id="aspect-ratio" value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                             <select id="aspect-ratio" value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as AspectRatio)} className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500">
                                 <option value="1:1">Square (1:1)</option>
                                 <option value="16:9">Landscape (16:9)</option>
                                 <option value="9:16">Portrait (9:16)</option>
@@ -249,20 +254,20 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                             mode === 'generate' ? 'e.g., A futuristic city skyline at dusk...' :
                             mode === 'analyze' ? 'e.g., What is the main subject of this image?' :
                             'e.g., Add a retro sci-fi filter...'
-                        } className="w-full bg-black/50 backdrop-blur-sm border-slate-700 rounded-md p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+                        } className="w-full bg-black border border-slate-700 rounded-md p-2 text-sm focus:ring-1 focus:ring-amber-500 focus:border-amber-500" />
                     </div>
-                     <button onClick={handleSubmit} disabled={isLoading} className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600">
+                     <button onClick={handleSubmit} disabled={isLoading} className="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-md disabled:bg-slate-600 shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all">
                         {isLoading ? 'Processing...' : 'Execute'}
                     </button>
                 </div>
 
                 {/* Right/Bottom Panel: Output */}
-                <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-slate-800 p-4 flex items-center justify-center min-h-[250px]">
+                <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-slate-800 p-4 flex items-center justify-center min-h-[250px]">
                     {isLoading && <Loader />}
                     {error && <p className="text-red-400 text-sm text-center">{error}</p>}
                     {!isLoading && !error && (
                         <>
-                            {mode === 'generate' && generatedImageUrl && <img src={generatedImageUrl} alt="Generated" className="max-h-full max-w-full object-contain rounded-md" />}
+                            {mode === 'generate' && generatedImageUrl && <img src={generatedImageUrl} alt="Generated" className="max-h-full max-w-full object-contain rounded-md shadow-lg" />}
                             {mode === 'analyze' && (
                                 <div className="flex flex-col md:flex-row gap-4 w-full h-full">
                                     {(imageUrl || imageFile) && <img src={imageUrl || URL.createObjectURL(imageFile as File)} alt="For analysis" className="max-h-full md:max-h-64 md:max-w-[50%] object-contain rounded-md" />}
@@ -272,7 +277,7 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                             {(mode === 'edit') && (
                                 <div className="flex gap-2 w-full h-full">
                                     {(imageUrl || imageFile) && <img src={imageUrl || URL.createObjectURL(imageFile as File)} alt="Original" className="max-h-full max-w-[50%] object-contain rounded-md" />}
-                                    {generatedImageUrl && <img src={generatedImageUrl} alt="Edited" className="max-h-full max-w-[50%] object-contain rounded-md" />}
+                                    {generatedImageUrl && <img src={generatedImageUrl} alt="Edited" className="max-h-full max-w-[50%] object-contain rounded-md shadow-lg" />}
                                 </div>
                             )}
                              {!imageUrl && !generatedImageUrl && !analysisResult && <p className="text-slate-500 text-sm">Output will appear here</p>}

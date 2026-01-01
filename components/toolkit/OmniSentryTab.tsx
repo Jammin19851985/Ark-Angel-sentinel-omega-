@@ -77,7 +77,7 @@ const OmniSentryTab: React.FC = () => {
                     <button 
                         onClick={startScan}
                         disabled={isScanning}
-                        className="bg-amber-600 hover:bg-amber-500 text-black px-4 py-2 rounded font-bold transition-all flex items-center gap-2"
+                        className="bg-amber-600 hover:bg-amber-500 text-white border border-amber-400 px-4 py-2 rounded font-bold transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
                     >
                         {isScanning ? <Loader /> : <CrosshairIcon className="w-4 h-4" />}
                         {isScanning ? 'SCANNING...' : 'INITIATE RECON'}
@@ -98,7 +98,11 @@ const OmniSentryTab: React.FC = () => {
                                 <span className="text-[10px] text-slate-400 uppercase tracking-widest">Private RPC Bypass</span>
                                 <button 
                                     onClick={toggleFlashbots}
-                                    className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${coreState.mevMetrics.isFlashbotsBypassActive ? 'bg-emerald-600 text-white shadow-[0_0_10px_emerald]' : 'bg-slate-800 text-slate-500'}`}
+                                    className={`px-3 py-1 rounded text-[10px] font-bold transition-all border ${
+                                        coreState.mevMetrics.isFlashbotsBypassActive 
+                                        ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_10px_rgba(16,185,129,0.6)]' 
+                                        : 'bg-slate-900 border-slate-700 text-slate-500'
+                                    }`}
                                 >
                                     {coreState.mevMetrics.isFlashbotsBypassActive ? 'ACTIVE' : 'INACTIVE'}
                                 </button>
@@ -161,7 +165,7 @@ const OmniSentryTab: React.FC = () => {
                             <div key={i} className="bg-black/40 border border-slate-700 p-2 rounded hover:border-amber-500/50 transition-colors">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="font-bold text-slate-200 uppercase">{target.alias}</span>
-                                    <span className="text-[8px] bg-red-950 text-red-400 px-1 rounded">THREAT: {target.threatLevel}</span>
+                                    <span className="text-[8px] bg-black/80 border border-red-500/50 text-red-400 px-2 py-0.5 rounded shadow-[0_0_5px_rgba(239,68,68,0.4)]">THREAT: {target.threatLevel}</span>
                                 </div>
                                 <div className="text-[10px] text-slate-500 flex justify-between">
                                     <span className="font-mono">{target.address}</span>

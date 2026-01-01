@@ -1,8 +1,9 @@
 
 import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useArchangel } from '../hooks/useArchangel';
-import { Trade, AnalyticsKPIs, MarketData, Portfolio, Bot, LogEntry, SonarSignal, AiToolkitState, QuantumMetrics, GammaSessionState, CycleLog, InversionEventLog, ArchangelCoreState, TradeMode, PrimeSuggestion, ProtocolNode, ProposedTrade, ExternalExchangeData, ArbOpportunity } from '../types';
+import { Trade, AnalyticsKPIs, MarketData, Portfolio, Bot, LogEntry, SonarSignal, AiToolkitState, QuantumMetrics, GammaSessionState, CycleLog, InversionEventLog, ArchangelCoreState, TradeMode, PrimeSuggestion, ProtocolNode, ProposedTrade, ExternalExchangeData, ArbOpportunity, ActiveOrder } from '../types';
 import { runSwarmOptimization, sendMessageToSentinelA } from '../services/geminiService';
+import { HardwareAuthority } from '../utils/hardwareAuthority';
 
 // --- MATH HELPERS FOR GAMMA SCALPER ---
 function normCdf(x: number) {
@@ -36,7 +37,7 @@ function calculateGreeks(S: number, K: number, T: number, r: number, sigma: numb
     return { delta, gamma };
 }
 
-// Daily Risk Guard Class
+// Daily Risk Guard Class (Strict)
 class DailyRiskGuard {
     maxLoss: number;
     initialEquity: number;
@@ -67,7 +68,7 @@ interface AppContextType {
     paperBalance: number;
     depositFiat: (amount: number, source: string) => void;
     withdrawFiat: (amount: number, destination: string) => boolean;
-    executeTrade: (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number, isPaper?: boolean) => void;
+    executeTrade: (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number, isPaper?: boolean, bracket?: { stopLoss?: number, takeProfit?: number }) => void;
     bots: Bot[];
     logs: LogEntry[];
     addLog: (source: LogEntry['source'], message: string) => void;
@@ -83,6 +84,7 @@ interface AppContextType {
     trades: Trade[];
     setTrades: React.Dispatch<React.SetStateAction<Trade[]>>;
     paperTrades: Trade[];
+    activeOrders: ActiveOrder[];
     kpis: AnalyticsKPIs;
     setKpis: React.Dispatch<React.SetStateAction<AnalyticsKPIs>>;
     optimizeSwarm: () => Promise<string>;
@@ -168,6 +170,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     useEffect(() => { gammaStateRef.current = gammaState; }, [gammaState]);
     useEffect(() => { marketDataRef.current = archangel.marketData; }, [archangel.marketData]);
 
+    // Initial Host Attestation
+    useEffect(() => {
+        HardwareAuthority.getHostFingerprint().then(fingerprint => {
+            archangel.setCoreState(prev => ({
+                ...prev,
+                hardwareDevices: [
+                    ...prev.hardwareDevices,
+                    { 
+                        id: "HOST_NODE_PRIMARY", 
+                        type: "TPM_MODULE", 
+                        status: "CONNECTED", 
+                        firmwareVersion: fingerprint, 
+                        lastAttestation: Date.now() 
+                    }
+                ]
+            }));
+            archangel.addLog('HARDWARE', `HOST BINDING ESTABLISHED: ${fingerprint}`);
+        });
+    }, []);
+
     const addNexusLog = useCallback((msg: string) => {
         setNexusLogs(prev => [...prev, msg]);
         if (msg.startsWith(">> SYSTEM STATUS") || msg.includes("ERROR")) archangel.addLog('NEXUS', msg);
@@ -180,13 +202,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     // Risk Guard Check Interval
     useEffect(() => {
         const interval = setInterval(() => {
-            const status = riskGuardRef.current.check(archangel.fiatBalance); // Assuming fiatBalance is equity for now
+            const status = riskGuardRef.current.check(archangel.fiatBalance); 
             if (status.halted && !archangel.killSwitchActive) {
                 archangel.triggerKillSwitch();
                 addNexusLog(`>> DAILY MAX LOSS HIT ($${status.loss.toFixed(2)}). TRADING HALTED.`);
                 archangel.addLog('SYSTEM', 'CRITICAL: DAILY LOSS LIMIT EXCEEDED. KILL SWITCH ENGAGED.');
             }
-        }, 2000);
+        }, 1000);
         return () => clearInterval(interval);
     }, [archangel.fiatBalance, archangel.killSwitchActive, archangel.triggerKillSwitch, archangel.addLog, addNexusLog]);
 
@@ -238,7 +260,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSystemStatus("EXECUTING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_EXECUTE: Initiating global SICO cascade...');
         addNexusLog('>> SYSTEM_OP: EXECUTE - ARMING PRIMARY MANIFOLD');
-        await new Promise(r => setTimeout(r, 1000));
         await sendMessageToSentinelA("EXECUTE: Authorize all pending SICO orders across 7D topological substrate.");
         archangel.setCoreState(prev => ({...prev, lastSystemOp: 'EXECUTE'}));
         setSystemStatus("OPERATIONAL");
@@ -249,7 +270,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSystemStatus("INSTALLING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_INSTALL: Transmuting new operational axioms...');
         addNexusLog('>> SYSTEM_OP: INSTALL - UPDATING ARCHANGEL_CORE');
-        await new Promise(r => setTimeout(r, 1500));
         await sendMessageToSentinelA("INSTALL: Inject next-gen alpha features into the UPB-1 compliance layer.");
         archangel.setCoreState(prev => ({...prev, lastSystemOp: 'INSTALL'}));
         setSystemStatus("INSTALLED");
@@ -260,7 +280,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSystemStatus("RUNNING");
         archangel.addLog('DIRECTIVE', 'SOVEREIGN_RUN: Engaging Living System v204.0...');
         addNexusLog('>> SYSTEM_OP: RUN - AWAKENING TURMOX Ω');
-        await new Promise(r => setTimeout(r, 2000));
         await sendMessageToSentinelA("RUN: Initiate full-scale market hunting. Maximize Stochastic Alpha.");
         archangel.setCoreState(prev => ({...prev, lastSystemOp: 'RUN'}));
         setSystemStatus("LIVE");
@@ -292,6 +311,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         trades: archangel.trades,
         setTrades: archangel.setTrades,
         paperTrades: archangel.paperTrades,
+        activeOrders: archangel.activeOrders,
         kpis: archangel.kpis,
         setKpis: archangel.setKpis,
         optimizeSwarm, 

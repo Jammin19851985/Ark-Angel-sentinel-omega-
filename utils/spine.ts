@@ -47,6 +47,10 @@ export interface ExecutionIntent {
     side: 'BUY' | 'SELL';
     quantity: number;
     price: number;
+    bracket?: {
+        stopLoss?: number;
+        takeProfit?: number;
+    };
 }
 
 export class SpineEngine {
@@ -101,6 +105,25 @@ export class SpineEngine {
 
         // --- CAPITAL GATE ---
         this.authorizeCapital(intent, context.equity);
+
+        // --- BRACKET ORDER VALIDATION ---
+        if (intent.bracket) {
+            if (intent.side === 'BUY') {
+                if (intent.bracket.stopLoss && intent.bracket.stopLoss >= intent.price) {
+                    throw new ExecutionBlockedError(`INVALID BRACKET: Buy Stop Loss (${intent.bracket.stopLoss}) must be below Entry (${intent.price}).`);
+                }
+                if (intent.bracket.takeProfit && intent.bracket.takeProfit <= intent.price) {
+                    throw new ExecutionBlockedError(`INVALID BRACKET: Buy Take Profit (${intent.bracket.takeProfit}) must be above Entry (${intent.price}).`);
+                }
+            } else if (intent.side === 'SELL') {
+                if (intent.bracket.stopLoss && intent.bracket.stopLoss <= intent.price) {
+                    throw new ExecutionBlockedError(`INVALID BRACKET: Sell Stop Loss (${intent.bracket.stopLoss}) must be above Entry (${intent.price}).`);
+                }
+                if (intent.bracket.takeProfit && intent.bracket.takeProfit >= intent.price) {
+                    throw new ExecutionBlockedError(`INVALID BRACKET: Sell Take Profit (${intent.bracket.takeProfit}) must be below Entry (${intent.price}).`);
+                }
+            }
+        }
 
         // --- SURVIVAL ENGINE ---
         if (context.drawdown >= this.MAX_DRAWDOWN) {

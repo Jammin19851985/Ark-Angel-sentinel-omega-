@@ -164,7 +164,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                         <button 
                             onClick={() => triggerSovereignOp('EXECUTE')}
                             disabled={!!activeSovereignOp || killSwitchActive}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'EXECUTE' ? 'bg-amber-600 text-black border-amber-400 scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]' : 'bg-black/40 border-amber-900/50 text-amber-500 hover:bg-amber-950/30'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border-2 border-b-4 font-mono text-[10px] font-bold tracking-widest transition-all active:border-b-2 active:translate-y-[2px] ${activeSovereignOp === 'EXECUTE' ? 'bg-amber-600 text-black border-amber-400' : 'bg-zinc-900 border-amber-900/50 text-amber-500 hover:bg-amber-950/30'}`}
                         >
                             {activeSovereignOp === 'EXECUTE' ? <Loader /> : <CrosshairIcon className="w-3 h-3" />}
                             EXECUTE
@@ -172,7 +172,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                         <button 
                             onClick={() => triggerSovereignOp('INSTALL')}
                             disabled={!!activeSovereignOp || killSwitchActive}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'INSTALL' ? 'bg-cyan-600 text-black border-cyan-400 scale-95 shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'bg-black/40 border-cyan-900/50 text-cyan-500 hover:bg-cyan-950/30'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border-2 border-b-4 font-mono text-[10px] font-bold tracking-widest transition-all active:border-b-2 active:translate-y-[2px] ${activeSovereignOp === 'INSTALL' ? 'bg-cyan-600 text-black border-cyan-400' : 'bg-zinc-900 border-cyan-900/50 text-cyan-500 hover:bg-cyan-950/30'}`}
                         >
                             {activeSovereignOp === 'INSTALL' ? <Loader /> : <DownloadIcon className="w-3 h-3" />}
                             INSTALL
@@ -180,7 +180,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                         <button 
                             onClick={() => triggerSovereignOp('RUN')}
                             disabled={!!activeSovereignOp || killSwitchActive}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border font-mono text-[10px] font-bold tracking-widest transition-all ${activeSovereignOp === 'RUN' ? 'bg-green-600 text-black border-green-400 scale-95 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'bg-black/40 border-green-900/50 text-green-500 hover:bg-green-950/30'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded border-2 border-b-4 font-mono text-[10px] font-bold tracking-widest transition-all active:border-b-2 active:translate-y-[2px] ${activeSovereignOp === 'RUN' ? 'bg-green-600 text-black border-green-400' : 'bg-zinc-900 border-green-900/50 text-green-500 hover:bg-green-950/30'}`}
                         >
                             {activeSovereignOp === 'RUN' ? <Loader /> : <PlayCircleIcon className="w-3 h-3" />}
                             RUN
@@ -202,7 +202,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                         <button
                             onClick={executeMission}
                             disabled={isExecuting || !mission.trim() || isOptimizing}
-                            className="inline-flex flex-grow items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors group shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                            className="inline-flex flex-grow items-center justify-center px-6 py-3 border-2 border-b-4 border-amber-600 text-base font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 active:border-b-2 active:translate-y-[2px] disabled:bg-slate-600 disabled:border-slate-500 disabled:cursor-not-allowed transition-all group"
                         >
                             {isExecuting ? (
                                 <>
@@ -236,7 +236,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                          <button
                             onClick={handleOptimizeSwarm}
                             disabled={isExecuting || isOptimizing || isSwarmOptimized}
-                            className="w-full inline-flex items-center justify-center px-4 py-2 border text-sm font-medium rounded-md shadow-sm transition-colors group disabled:cursor-not-allowed bg-black/50 backdrop-blur-sm border-slate-600 text-slate-200 hover:bg-slate-600 disabled:opacity-50"
+                            className="w-full inline-flex items-center justify-center px-4 py-2 border-2 border-b-4 text-sm font-medium rounded-md shadow-sm transition-all active:border-b-2 active:translate-y-[2px] group disabled:cursor-not-allowed bg-zinc-900 border-slate-600 text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-50"
                         >
                             {isOptimizing ? (
                                 <>

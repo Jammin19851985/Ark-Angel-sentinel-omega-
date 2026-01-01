@@ -64,10 +64,10 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
     const LogFilterButton: React.FC<{ filter: 'ALL' | LogEntry['source']; label: string }> = ({ filter, label }) => (
         <button
             onClick={() => setActiveFilter(filter)}
-            className={`px-3 py-1 text-[10px] font-mono border rounded transition-colors ${
+            className={`px-3 py-1 text-[10px] font-mono border rounded transition-all ${
                 activeFilter === filter
-                    ? 'bg-amber-600 border-amber-400 text-white'
-                    : 'bg-black/50 border-slate-800 hover:bg-slate-700/50 text-slate-400'
+                    ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.5)]'
+                    : 'bg-black border-slate-700 text-slate-400 hover:border-amber-500/50 hover:text-amber-400'
             }`}
         >
             {label}
@@ -76,25 +76,25 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
     
     return (
         <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg shadow-lg flex flex-col flex-1 h-full glow-border"> 
-             <div className="p-4 border-b border-slate-800 flex justify-between items-center">
+             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/40">
                 <h2 className="text-sm font-bold text-amber-400 font-mono tracking-widest">// v17.0 FORENSIC LOG</h2>
-                 <button className="flex items-center space-x-1.5 px-2 py-1 text-xs font-medium rounded-md bg-black/50 border border-slate-800 text-slate-300 transition-colors">
+                 <button className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-md bg-slate-900 border border-slate-700 text-slate-300 hover:text-cyan-400 hover:border-cyan-500 transition-colors shadow-sm">
                     <DownloadIcon className="w-4 h-4" />
                     <span>EXPORT</span>
                 </button>
             </div>
-            <div className="px-4 py-2 border-b border-slate-800 flex flex-wrap gap-2">
+            <div className="px-4 py-2 border-b border-slate-800 flex flex-wrap gap-2 bg-black/20">
                 <LogFilterButton filter="ALL" label="All" />
                 <LogFilterButton filter="ERROR" label="Errors" />
                 <LogFilterButton filter="HARDWARE" label="Hardware" />
                 <LogFilterButton filter="TRADE" label="Trades" />
                 <LogFilterButton filter="SPINE" label="Spine" />
             </div>
-            <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-[10px] text-slate-400 space-y-0.5">
+            <div ref={logContainerRef} className="flex-1 overflow-y-auto p-4 font-mono text-[10px] text-slate-400 space-y-0.5 bg-black/10">
                 {filteredLogs.map((log, index) => (
-                    <div key={index} className="flex">
-                        <span className="text-slate-600 mr-3">[{log.timestamp}]</span>
-                        <span className={`w-20 ${logSourceColors[log.source]}`}>[{log.source}]</span>
+                    <div key={index} className="flex hover:bg-white/5 transition-colors p-0.5 rounded">
+                        <span className="text-slate-600 mr-3 select-none">[{log.timestamp}]</span>
+                        <span className={`w-20 ${logSourceColors[log.source]} font-bold select-none`}>[{log.source}]</span>
                         <span className="flex-1 whitespace-pre-wrap">{log.message}</span>
                     </div>
                 ))}

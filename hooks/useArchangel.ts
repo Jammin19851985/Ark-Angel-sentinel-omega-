@@ -4,11 +4,12 @@ import {
     MarketData, Portfolio, Bot, LogEntry, SonarSignal, Trade, AnalyticsKPIs, 
     QuantumMetrics, InversionEventLog, ArchangelCoreState, TradeMode, 
     PrimeSuggestion, ProtocolNode, ProposedTrade, ExternalExchangeData, 
-    ArbOpportunity, OrderState, Holding
+    ArbOpportunity, OrderState, Holding, ActiveOrder
 } from '../types';
-import { generateInitialTrades } from '../utils/analytics';
 import { SpineEngine, SpineContext, ExecutionIntent } from '../utils/spine';
 import { HardwareAuthority } from '../utils/hardwareAuthority';
+import { StrategyGate, CapitalScaleEngine } from '../utils/strategy';
+import { AutonomyEngine } from '../utils/autonomy';
 
 const INITIAL_MARKET_DATA: MarketData = {
     'BTC': { price: 64230.50, change: 2.4, changeAbsolute: 1541.53, volume: 1500000000 },
@@ -17,10 +18,7 @@ const INITIAL_MARKET_DATA: MarketData = {
     'ADA': { price: 0.45, change: 0.1, changeAbsolute: 0.00045, volume: 50000000 },
 };
 
-const INITIAL_PORTFOLIO: Portfolio = {
-    'BTC': { symbol: 'BTC', quantity: 0.5, avgPrice: 60000, qualityScore: 1.2, stability: 0.9, strikes: 0, isRetired: false },
-    'ETH': { symbol: 'ETH', quantity: 10, avgPrice: 3200, qualityScore: 1.5, stability: 0.95, strikes: 0, isRetired: false },
-};
+const INITIAL_PORTFOLIO: Portfolio = {};
 
 const INITIAL_BOTS: Bot[] = [
     { id: 1, status: 'Executing', role: 'Hunter', legion: 'Infrastructure', efficiency: 98, xp: 1250 },
@@ -34,7 +32,7 @@ const INITIAL_CORE_STATE: ArchangelCoreState = {
     lastHash: "genesis",
     ledgerSize: 1024,
     quorumStatus: "VERIFIED",
-    buyingPower: 500000,
+    buyingPower: 0,
     spineHeartbeatAge: 0,
     monotonicTime: Date.now(),
     killSwitchActive: false,
@@ -44,14 +42,14 @@ const INITIAL_CORE_STATE: ArchangelCoreState = {
     structuralAlphaThreshold: 0.7,
     isAutonomyUnlocked: true,
     decisionCoreActive: true,
-    strategyMetrics: { qualityScore: 1.5, drawdown: 0.02, stability: 0.9, capitalScale: 1.0, strikes: 0, isRetired: false },
+    strategyMetrics: { qualityScore: 1.5, drawdown: 0.00, stability: 0.9, capitalScale: 1.0, strikes: 0, isRetired: false },
     autonomyMetrics: { healthScore: 0.95, hesitationLevel: 0.1, suppressionActive: false, confidenceDecayFactor: 0.01, lastRevocationReason: null, cooldownRemaining: 0, isInRevocation: false, anomalyDetected: false, performanceMilestoneMet: true, lockedContracts: [] },
     biometricMetrics: { hrv: 65, stressIndex: 0.2, isAuthorized: true, lastSync: Date.now() },
     rustSpineMetrics: { kernelLatency: 0.04, throughput: 1000, rateLimitUsage: 0.1, heartbeatStatus: 'HEALTHY', partialFillEfficiency: 0.99 },
     mevMetrics: { mempoolExposure: 0.05, privateRpcActive: true, bundlesSent: 150, sandwichAttemptsBlocked: 12, currentSlippageLimit: 0.001, isFlashbotsBypassActive: true },
-    ibkrState: { accountNumber: "U*******999", isArmed: false, latency: 45, marginUtilization: 0.3, buyingPower: 250000, baseCurrency: "USD" },
+    ibkrState: { accountNumber: "U*******999", isArmed: false, latency: 45, marginUtilization: 0.0, buyingPower: 0, baseCurrency: "USD" },
     activeDirectives: {},
-    profitVault: 15000,
+    profitVault: 0,
     hardwareDevices: [
         { id: "SENTINEL_MK1_A", type: "ARDUINO_SENTINEL", status: "CONNECTED", firmwareVersion: "v1.0.4", lastAttestation: Date.now() },
         { id: "TPM_MAINBOARD", type: "TPM_MODULE", status: "LOCKED", firmwareVersion: "2.0", lastAttestation: Date.now() }
@@ -62,11 +60,11 @@ export const useArchangel = () => {
     const [marketData, setMarketData] = useState<MarketData>(INITIAL_MARKET_DATA);
     const [portfolio, setPortfolio] = useState<Portfolio>(INITIAL_PORTFOLIO);
     const [paperPortfolio, setPaperPortfolio] = useState<Portfolio>({});
-    const [fiatBalance, setFiatBalance] = useState(100000);
-    const [paperBalance, setPaperBalance] = useState(100000);
+    const [fiatBalance, setFiatBalance] = useState(0);
+    const [paperBalance, setPaperBalance] = useState(0);
     const [bots, setBots] = useState<Bot[]>(INITIAL_BOTS);
     const [logs, setLogs] = useState<LogEntry[]>([
-        { timestamp: new Date().toLocaleTimeString(), source: 'BOOT', message: 'System Initialized.' }
+        { timestamp: new Date().toLocaleTimeString(), source: 'BOOT', message: 'System Initialized. Zero-State Verified.' }
     ]);
     const [historicalMarketData, setHistoricalMarketData] = useState<Record<string, number[]>>({
         'BTC': [64000, 64100, 64200, 64150, 64230],
@@ -74,10 +72,11 @@ export const useArchangel = () => {
     });
     const [marketFilter, setMarketFilter] = useState('');
     const [sonarSignals, setSonarSignals] = useState<SonarSignal[]>([]);
-    const [trades, setTrades] = useState<Trade[]>(generateInitialTrades());
+    const [trades, setTrades] = useState<Trade[]>([]);
     const [paperTrades, setPaperTrades] = useState<Trade[]>([]);
-    const [kpis, setKpis] = useState<AnalyticsKPIs>({ winRate: 65, sharpeRatio: 1.8, maxDrawdown: 5.2, totalPnl: 12500, pnlPercent: 12.5 });
-    const [estimatedAlpha, setEstimatedAlpha] = useState(15.4);
+    const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
+    const [kpis, setKpis] = useState<AnalyticsKPIs>({ winRate: 0, sharpeRatio: 0, maxDrawdown: 0, totalPnl: 0, pnlPercent: 0 });
+    const [estimatedAlpha, setEstimatedAlpha] = useState(0);
     const [quantumMetrics, setQuantumMetrics] = useState<QuantumMetrics>({
         qubitCoherence: 120.5, fsfMetric: 0.00000005, quboEnergy: -24.5, acmdStatus: 'IDLE', gpGenerations: 14500, boredom: 0.2, entropy: 0.45, drift: 0.001, trustScore: 0.99, regime: 'STABLE', dnaIntegrity: 0.99, satelliteLink: 3, atmosphericNoise: 0.78, realityAnchorStability: 0.99, selfAuditProgress: 45, executionLatency: 0.04, tesScore: 0.98
     });
@@ -92,6 +91,9 @@ export const useArchangel = () => {
     const [apiConnected, setApiConnected] = useState(true);
     const [externalExchangeData, setExternalExchangeData] = useState<ExternalExchangeData>({ kraken: {} });
     const [arbOpportunities, setArbOpportunities] = useState<ArbOpportunity[]>([]);
+
+    // Capital Scaling Engine initialized with base multiplier 1.0
+    const capitalScaleEngineRef = useRef(new CapitalScaleEngine(1.0));
 
     const addLog = useCallback((source: LogEntry['source'], message: string) => {
         setLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), source, message }, ...prev].slice(0, 1000));
@@ -109,8 +111,47 @@ export const useArchangel = () => {
         return true;
     }, [fiatBalance, addLog]);
 
-    const executeTrade = useCallback(async (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number, isPaper: boolean = false) => {
-        const intent: ExecutionIntent = { symbol, side: action, quantity, price };
+    const executeTrade = useCallback(async (
+        symbol: string, 
+        action: 'BUY' | 'SELL', 
+        quantity: number, 
+        price: number, 
+        isPaper: boolean = false,
+        bracket?: { stopLoss?: number, takeProfit?: number }
+    ) => {
+        // --- CAPITAL SCALING ENGINE INTEGRATION ---
+        const currentQuality = kpis.sharpeRatio;
+        const currentRegime = quantumMetrics.regime;
+        
+        // Calculate dynamic scale factor based on quality score (Sharpe) and market regime
+        const riskScale = capitalScaleEngineRef.current.adjust(currentQuality, currentRegime);
+        
+        // Apply scale to requested quantity
+        const scaledQuantity = quantity * riskScale;
+
+        // Log significant scaling adjustments
+        if (!isPaper && Math.abs(riskScale - 1.0) > 0.05) {
+            addLog('SCALPER', `Capital Scale Adjusted: ${riskScale.toFixed(2)}x (Qual: ${currentQuality.toFixed(2)}, Regime: ${currentRegime})`);
+        }
+
+        // Update Core State with new metrics
+        setCoreState(prev => ({
+            ...prev,
+            strategyMetrics: {
+                ...prev.strategyMetrics,
+                qualityScore: currentQuality,
+                capitalScale: riskScale
+            }
+        }));
+
+        const intent: ExecutionIntent = { 
+            symbol, 
+            side: action, 
+            quantity: scaledQuantity, 
+            price, 
+            bracket 
+        };
+        
         const context: SpineContext = {
             device: 'BROWSER_MAIN',
             equity: isPaper ? paperBalance : fiatBalance,
@@ -131,6 +172,16 @@ export const useArchangel = () => {
             return;
         }
 
+        // --- STRATEGY QUALITY FILTER GATE ---
+        if (!isPaper) {
+            const strategyCheck = StrategyGate.validate(kpis);
+            if (!strategyCheck.allowed) {
+                addLog('ERROR', `STRATEGY FILTER GATE: Execution Blocked. ${strategyCheck.reason}`);
+                // Throw error to prevent execution logic flow
+                return; 
+            }
+        }
+
         try {
             if (!isPaper) {
                 // Real Trade Preflight
@@ -144,56 +195,91 @@ export const useArchangel = () => {
                 timestamp: new Date().toLocaleTimeString(),
                 symbol,
                 action,
-                quantity,
+                quantity: scaledQuantity, // Use scaled quantity
                 price,
                 pnl: 0,
                 status: OrderState.FILLED,
                 type: 'STANDARD',
                 isPaper,
                 auditHash: isPaper ? undefined : `HASH_${Date.now()}_${symbol}`,
-                tesScore: quantumMetrics.tesScore
+                tesScore: quantumMetrics.tesScore,
+                capitalScaleAtExecution: riskScale,
+                qualityAtExecution: currentQuality
             };
+
+            // Register Bracket Orders
+            if (bracket) {
+                const childAction = action === 'BUY' ? 'SELL' : 'BUY';
+                if (bracket.stopLoss) {
+                    setActiveOrders(prev => [...prev, {
+                        id: `sl-${Date.now()}`,
+                        parentId: tradeId,
+                        symbol,
+                        action: childAction,
+                        quantity: scaledQuantity,
+                        type: 'STOP_LOSS',
+                        triggerPrice: bracket.stopLoss!,
+                        status: 'PENDING',
+                        timestamp: Date.now()
+                    }]);
+                    addLog('SPINE', `Linked Stop Loss for ${symbol} @ ${bracket.stopLoss}`);
+                }
+                if (bracket.takeProfit) {
+                    setActiveOrders(prev => [...prev, {
+                        id: `tp-${Date.now()}`,
+                        parentId: tradeId,
+                        symbol,
+                        action: childAction,
+                        quantity: scaledQuantity,
+                        type: 'TAKE_PROFIT',
+                        triggerPrice: bracket.takeProfit!,
+                        status: 'PENDING',
+                        timestamp: Date.now()
+                    }]);
+                    addLog('SPINE', `Linked Take Profit for ${symbol} @ ${bracket.takeProfit}`);
+                }
+            }
 
             if (isPaper) {
                 setPaperTrades(prev => [newTrade, ...prev]);
-                setPaperBalance(prev => action === 'BUY' ? prev - (quantity * price) : prev + (quantity * price));
+                setPaperBalance(prev => action === 'BUY' ? prev - (scaledQuantity * price) : prev + (scaledQuantity * price));
                 // Update Paper Portfolio
                 setPaperPortfolio(prev => {
                     const current = prev[symbol] || { symbol, quantity: 0, avgPrice: 0 };
                     let newQty = current.quantity;
                     let newAvg = current.avgPrice;
                     if (action === 'BUY') {
-                        newAvg = ((current.quantity * current.avgPrice) + (quantity * price)) / (current.quantity + quantity);
-                        newQty += quantity;
+                        newAvg = ((current.quantity * current.avgPrice) + (scaledQuantity * price)) / (current.quantity + scaledQuantity);
+                        newQty += scaledQuantity;
                     } else {
-                        newQty -= quantity;
+                        newQty -= scaledQuantity;
                     }
                     return { ...prev, [symbol]: { ...current, quantity: newQty, avgPrice: newAvg } };
                 });
-                addLog('PAPER', `SIMULATED ${action} ${quantity} ${symbol} @ $${price}`);
+                addLog('PAPER', `SIMULATED ${action} ${scaledQuantity.toFixed(4)} ${symbol} @ $${price} (Scale: ${riskScale.toFixed(2)}x)`);
             } else {
                 setTrades(prev => [newTrade, ...prev]);
-                setFiatBalance(prev => action === 'BUY' ? prev - (quantity * price) : prev + (quantity * price));
+                setFiatBalance(prev => action === 'BUY' ? prev - (scaledQuantity * price) : prev + (scaledQuantity * price));
                 // Update Real Portfolio
                 setPortfolio(prev => {
                     const current = prev[symbol] || { symbol, quantity: 0, avgPrice: 0, strikes: 0, isRetired: false };
                     let newQty = current.quantity;
                     let newAvg = current.avgPrice;
                     if (action === 'BUY') {
-                        newAvg = ((current.quantity * current.avgPrice) + (quantity * price)) / (current.quantity + quantity);
-                        newQty += quantity;
+                        newAvg = ((current.quantity * current.avgPrice) + (scaledQuantity * price)) / (current.quantity + scaledQuantity);
+                        newQty += scaledQuantity;
                     } else {
-                        newQty -= quantity;
+                        newQty -= scaledQuantity;
                     }
                     return { ...prev, [symbol]: { ...current, quantity: newQty, avgPrice: newAvg } };
                 });
-                addLog('TRADE', `EXECUTED ${action} ${quantity} ${symbol} @ $${price}`);
+                addLog('TRADE', `EXECUTED ${action} ${scaledQuantity.toFixed(4)} ${symbol} @ $${price} (Scale: ${riskScale.toFixed(2)}x)`);
             }
 
         } catch (e: any) {
             addLog('ERROR', `Trade Execution Failed: ${e.message}`);
         }
-    }, [fiatBalance, paperBalance, coreState, quantumMetrics, addLog]);
+    }, [fiatBalance, paperBalance, coreState, quantumMetrics, addLog, kpis]);
 
     const heartbeat = useCallback(() => {
         setCoreState(prev => ({
@@ -276,12 +362,92 @@ export const useArchangel = () => {
                 realityAnchorStability: Math.min(1.0, prev.realityAnchorStability + 0.00001),
                 gpGenerations: prev.gpGenerations + Math.floor(Math.random() * 100),
                 qubitCoherence: Math.max(90, Math.min(150, prev.qubitCoherence + (Math.random() - 0.5) * 4)),
-                tesScore: Math.max(0.95, Math.min(0.9999, prev.tesScore + (Math.random() - 0.5) * 0.002))
+                tesScore: Math.max(0.95, Math.min(0.9999, prev.tesScore + (Math.random() - 0.5) * 0.002)),
+                // Slight entropy fluctuation for autonomy testing
+                entropy: Math.max(0.1, Math.min(0.95, prev.entropy + (Math.random() - 0.5) * 0.05))
             }));
             
         }, 3000);
         return () => clearInterval(interval);
     }, []);
+
+    // --- BRACKET ORDER MONITORING LOOP ---
+    useEffect(() => {
+        const checkBrackets = () => {
+            if (activeOrders.length === 0) return;
+
+            const ordersToRemove: string[] = [];
+            
+            activeOrders.forEach(order => {
+                const currentPrice = marketData[order.symbol]?.price;
+                if (!currentPrice) return;
+
+                let triggered = false;
+                
+                // SELL Exit (Long position)
+                if (order.action === 'SELL') {
+                    if (order.type === 'STOP_LOSS' && currentPrice <= order.triggerPrice) triggered = true;
+                    if (order.type === 'TAKE_PROFIT' && currentPrice >= order.triggerPrice) triggered = true;
+                }
+                // BUY Exit (Short position)
+                if (order.action === 'BUY') {
+                    if (order.type === 'STOP_LOSS' && currentPrice >= order.triggerPrice) triggered = true;
+                    if (order.type === 'TAKE_PROFIT' && currentPrice <= order.triggerPrice) triggered = true;
+                }
+
+                if (triggered) {
+                    addLog('SPINE', `BRACKET TRIGGERED: ${order.type} for ${order.symbol} @ ${currentPrice.toFixed(2)}`);
+                    // Execute the exit trade
+                    executeTrade(order.symbol, order.action, order.quantity, currentPrice, false); // assuming live for brackets in this scope
+                    
+                    // OCO Logic: Find sibling order to cancel
+                    const siblings = activeOrders.filter(o => o.parentId === order.parentId);
+                    siblings.forEach(s => ordersToRemove.push(s.id));
+                }
+            });
+
+            if (ordersToRemove.length > 0) {
+                setActiveOrders(prev => prev.filter(o => !ordersToRemove.includes(o.id)));
+                addLog('SPINE', `OCO: Cancelled ${ordersToRemove.length} related pending orders.`);
+            }
+        };
+
+        const interval = setInterval(checkBrackets, 1000);
+        return () => clearInterval(interval);
+    }, [activeOrders, marketData, executeTrade, addLog]);
+
+    // --- AUTONOMY GATE CHECKER ---
+    // Evaluates autonomy conditions (Entropy, Volume, Drawdown) periodically.
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Calculate pseudo-volume score (using BTC volume as liquidity proxy)
+            // Assumes ~1B is normal 'high' liquidity
+            const btcVol = marketData['BTC']?.volume || 0;
+            const volumeScore = Math.min(1.0, btcVol / 500000000); 
+
+            const evaluation = AutonomyEngine.evaluate(
+                kpis.totalPnl,
+                kpis.maxDrawdown / 100, // Convert percentage to 0-1
+                quantumMetrics.entropy,
+                volumeScore,
+                coreState.isAutonomyUnlocked
+            );
+
+            if (evaluation.unlocked !== coreState.isAutonomyUnlocked) {
+                setCoreState(prev => ({
+                    ...prev,
+                    isAutonomyUnlocked: evaluation.unlocked,
+                    autonomyMetrics: {
+                        ...prev.autonomyMetrics,
+                        lastRevocationReason: evaluation.reason
+                    }
+                }));
+                const statusType = evaluation.unlocked ? 'AUTONOMY' : 'ERROR';
+                addLog(statusType, `AUTONOMY STATE CHANGE: ${evaluation.unlocked ? 'UNLOCKED' : 'LOCKED'} - ${evaluation.reason}`);
+            }
+        }, 5000); // Check every 5s
+        return () => clearInterval(interval);
+    }, [marketData, kpis, quantumMetrics.entropy, coreState.isAutonomyUnlocked, addLog]);
 
     // Simulating Bot Activity
     useEffect(() => {
@@ -314,6 +480,7 @@ export const useArchangel = () => {
         trades,
         setTrades,
         paperTrades,
+        activeOrders,
         kpis,
         setKpis,
         estimatedAlpha,

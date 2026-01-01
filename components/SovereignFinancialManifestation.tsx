@@ -8,6 +8,10 @@ const SovereignFinancialManifestation: React.FC = () => {
     const [tradeSymbol, setTradeSymbol] = useState('BTC');
     const [tradeSide, setTradeSide] = useState<'BUY' | 'SELL'>('BUY');
     const [tradeQuantity, setTradeQuantity] = useState(0.001);
+    
+    // Bracket Inputs
+    const [stopLoss, setStopLoss] = useState<string>('');
+    const [takeProfit, setTakeProfit] = useState<string>('');
 
     const [depositEmail, setDepositEmail] = useState('creator@archangel.omega');
     const [depositAmount, setDepositAmount] = useState(25000);
@@ -31,7 +35,10 @@ const SovereignFinancialManifestation: React.FC = () => {
             return;
         }
 
-        executeTrade(symbol, tradeSide, tradeQuantity, price);
+        const sl = stopLoss ? parseFloat(stopLoss) : undefined;
+        const tp = takeProfit ? parseFloat(takeProfit) : undefined;
+
+        executeTrade(symbol, tradeSide, tradeQuantity, price, false, { stopLoss: sl, takeProfit: tp });
     };
 
     const handleInteracDeposit = async () => {
@@ -92,6 +99,13 @@ const SovereignFinancialManifestation: React.FC = () => {
     const currentPrice = marketData[tradeSymbol.toUpperCase()]?.price || 0;
     const estMarginImpact = currentPrice * tradeQuantity;
 
+    // Calculate PnL / Risk
+    const slVal = stopLoss ? parseFloat(stopLoss) : 0;
+    const tpVal = takeProfit ? parseFloat(takeProfit) : 0;
+    const potentialRisk = slVal && currentPrice ? Math.abs(currentPrice - slVal) * tradeQuantity : 0;
+    const potentialReward = tpVal && currentPrice ? Math.abs(tpVal - currentPrice) * tradeQuantity : 0;
+    const rrRatio = potentialRisk > 0 ? (potentialReward / potentialRisk).toFixed(2) : '∞';
+
     return (
         <div className={`h-full flex flex-col p-4 rounded-lg border space-y-4 font-mono overflow-y-auto transition-all duration-500 relative ${isLive ? 'bg-red-950/10 border-red-500/40 shadow-[0_0_20px_rgba(255,0,0,0.1)]' : 'bg-black/40 border-slate-800'}`}>
             {vacuumGenesisActive && (
@@ -120,7 +134,13 @@ const SovereignFinancialManifestation: React.FC = () => {
                     <input type="text" value={depositEmail} onChange={e => setDepositEmail(e.target.value)} placeholder="Registration Email" className="w-full bg-black/60 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300" />
                     <div className="flex space-x-1">
                         <input type="number" value={depositAmount} onChange={e => setDepositAmount(parseFloat(e.target.value))} className="flex-1 bg-black/60 border border-slate-800 rounded p-1.5 text-[10px] text-emerald-400 font-bold" placeholder="Amount (CAD)" />
-                        <button onClick={handleInteracDeposit} disabled={isDepositing || !bioAuth} className="bg-emerald-900/50 border border-emerald-500 text-emerald-400 px-3 rounded text-[9px] font-bold hover:bg-emerald-800 transition-all">DEPOSIT</button>
+                        <button 
+                            onClick={handleInteracDeposit} 
+                            disabled={isDepositing || !bioAuth} 
+                            className="bg-emerald-700 hover:bg-emerald-600 text-white border-2 border-b-4 border-emerald-900 px-3 rounded text-[9px] font-bold transition-all active:border-b-2 active:translate-y-[2px]"
+                        >
+                            DEPOSIT
+                        </button>
                     </div>
                 </div>
             </div>
@@ -135,13 +155,13 @@ const SovereignFinancialManifestation: React.FC = () => {
                     <input type="text" value={withdrawalDest} onChange={e => setWithdrawalDest(e.target.value)} placeholder="Destination Email / IBAN" className="w-full bg-black/60 border border-slate-800 rounded p-1.5 text-[10px] text-slate-300" />
                     <div className="flex space-x-1">
                         <input type="number" value={withdrawalAmount} onChange={e => setWithdrawalAmount(parseFloat(e.target.value))} className="flex-1 bg-black/60 border border-slate-800 rounded p-1.5 text-[10px] text-violet-400 font-bold" placeholder="Amount" />
-                        <button onClick={() => setWithdrawalAmount(fiatBalance)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 rounded text-[8px] uppercase">MAX</button>
+                        <button onClick={() => setWithdrawalAmount(fiatBalance)} className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 rounded text-[8px] uppercase border border-slate-600">MAX</button>
                     </div>
                 </div>
                 <button 
                     onClick={handleSovereignWithdrawal} 
                     disabled={isWithdrawing || killSwitchActive || !bioAuth} 
-                    className="w-full py-2 bg-violet-900/30 border border-violet-500 text-violet-400 rounded text-[9px] font-bold tracking-widest hover:bg-violet-900/50 transition-all disabled:opacity-20"
+                    className="w-full py-2 bg-violet-700 border-2 border-b-4 border-violet-900 text-white rounded text-[9px] font-bold tracking-widest hover:bg-violet-600 transition-all disabled:opacity-20 active:border-b-2 active:translate-y-[2px]"
                 >
                     {isWithdrawing ? 'MANIFESTING...' : 'RELEASE CAPITAL'}
                 </button>
@@ -162,8 +182,35 @@ const SovereignFinancialManifestation: React.FC = () => {
                     <input type="number" step="0.0001" value={tradeQuantity} onChange={e => setTradeQuantity(parseFloat(e.target.value))} className="w-full bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-white" />
                 </div>
                 
+                {/* Bracket Inputs */}
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div className="relative">
+                        <label className="absolute -top-1.5 left-2 text-[8px] text-slate-500 bg-black px-1">STOP LOSS</label>
+                        <input 
+                            type="number" 
+                            value={stopLoss} 
+                            onChange={e => setStopLoss(e.target.value)} 
+                            className="w-full bg-slate-900/50 border border-red-900/50 rounded p-1.5 text-[10px] text-red-300 placeholder-red-900/30 focus:border-red-500 outline-none" 
+                            placeholder={currentPrice ? (currentPrice * 0.95).toFixed(2) : "0.00"}
+                        />
+                    </div>
+                    <div className="relative">
+                        <label className="absolute -top-1.5 left-2 text-[8px] text-slate-500 bg-black px-1">TAKE PROFIT</label>
+                        <input 
+                            type="number" 
+                            value={takeProfit} 
+                            onChange={e => setTakeProfit(e.target.value)} 
+                            className="w-full bg-slate-900/50 border border-green-900/50 rounded p-1.5 text-[10px] text-green-300 placeholder-green-900/30 focus:border-green-500 outline-none" 
+                            placeholder={currentPrice ? (currentPrice * 1.05).toFixed(2) : "0.00"}
+                        />
+                    </div>
+                </div>
+
                 <div className="text-[9px] flex justify-between p-2 bg-slate-900/50 rounded border border-white/5">
-                    <span className="text-slate-500 uppercase">Est. Exposure</span>
+                    <div className="flex gap-4">
+                        <span className="text-slate-500">R:R <span className="text-white font-bold">{rrRatio}</span></span>
+                        <span className="text-slate-500">Risk <span className="text-red-400 font-bold">${potentialRisk.toFixed(2)}</span></span>
+                    </div>
                     <span className={`font-bold ${estMarginImpact > coreState.buyingPower ? 'text-red-500 animate-pulse' : 'text-cyan-400'}`}>
                         ${estMarginImpact.toLocaleString()}
                     </span>
@@ -172,7 +219,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                 <button 
                     onClick={handleExecuteTrade} 
                     disabled={killSwitchActive || !bioAuth || (tradeSide === 'BUY' && estMarginImpact > coreState.buyingPower)}
-                    className={`w-full py-2.5 rounded text-[10px] font-bold tracking-widest transition-all border ${isLive ? 'bg-red-600 border-red-400 text-white shadow-[0_0_15px_rgba(255,0,0,0.4)] hover:bg-red-500' : 'bg-cyan-900/50 border-cyan-500 text-cyan-400 hover:bg-cyan-800'}`}
+                    className={`w-full py-2.5 rounded text-[10px] font-bold tracking-widest transition-all border-2 border-b-4 active:border-b-2 active:translate-y-[2px] ${isLive ? 'bg-red-600 border-red-800 text-white shadow-[0_0_15px_rgba(255,0,0,0.4)] hover:bg-red-500' : 'bg-cyan-700 border-cyan-900 text-white hover:bg-cyan-600'}`}
                 >
                     {killSwitchActive ? 'SPINE_LOCKED' : !bioAuth ? 'BIOMETRIC_REJECT' : isLive ? 'SUBMIT_LIVE_SICO' : 'EXECUTE_SICO'}
                 </button>

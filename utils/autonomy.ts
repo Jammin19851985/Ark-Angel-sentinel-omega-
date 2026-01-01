@@ -17,14 +17,43 @@ export class AutonomyEngine {
     static PERFORMANCE_UNLOCK_THRESHOLD = 5000.0; // $5k profit to unlock
     static DRAWDOWN_REVOCATION_THRESHOLD = 0.15; // 15% DD revokes autonomy
     static RECOVERY_COOLDOWN_MS = 60000; // 60s cooldown
+    static MAX_ENTROPY_THRESHOLD = 0.85; // Entropy > 0.85 indicates market chaos
+    static MIN_VOLUME_SCORE = 0.2; // Volume Score < 0.2 indicates liquidity gap
 
     /**
      * AI is not always allowed to act.
      * Unlocks autonomy only if performance + regime allow it.
+     * Updated to include Market Entropy and Volume as hard gates.
      */
-    static evaluate(totalPnl: number, drawdown: number, currentState: boolean): { unlocked: boolean; reason: string } {
+    static evaluate(
+        totalPnl: number, 
+        drawdown: number, 
+        marketEntropy: number,
+        volumeScore: number,
+        currentState: boolean
+    ): { unlocked: boolean; reason: string } {
+        // 1. Drawdown Hard Gate (Survival)
         if (drawdown > this.DRAWDOWN_REVOCATION_THRESHOLD) {
-            return { unlocked: false, reason: "DRAWDOWN_EXCEEDED" };
+            return { unlocked: false, reason: `DRAWDOWN_CRITICAL: ${(drawdown*100).toFixed(1)}% > 15%` };
+        }
+
+        // 2. Entropy Gate (Market Chaos)
+        if (marketEntropy > this.MAX_ENTROPY_THRESHOLD) {
+            return { unlocked: false, reason: `ENTROPY_REJECTION: ${marketEntropy.toFixed(2)} > ${this.MAX_ENTROPY_THRESHOLD}` };
+        }
+
+        // 3. Volume Gate (Liquidity Risk)
+        if (volumeScore < this.MIN_VOLUME_SCORE) {
+            return { unlocked: false, reason: `LIQUIDITY_VOID: VolScore ${volumeScore.toFixed(2)} < ${this.MIN_VOLUME_SCORE}` };
+        }
+
+        // 4. Performance Unlock (Milestone)
+        if (!currentState) {
+            if (totalPnl >= this.PERFORMANCE_UNLOCK_THRESHOLD) {
+                return { unlocked: true, reason: "PERFORMANCE_MILESTONE_MET" };
+            } else {
+                return { unlocked: false, reason: `AWAITING_PROFIT_MILESTONE ($${(this.PERFORMANCE_UNLOCK_THRESHOLD - totalPnl).toFixed(0)} remaining)` };
+            }
         }
 
         // Even if unlocked, if drawdown is spiking, stay cautious
@@ -32,11 +61,7 @@ export class AutonomyEngine {
             return { unlocked: true, reason: "CAUTIOUS_ACTIVE" };
         }
 
-        if (!currentState && totalPnl >= this.PERFORMANCE_UNLOCK_THRESHOLD) {
-            return { unlocked: true, reason: "PERFORMANCE_MILESTONE_MET" };
-        }
-
-        return { unlocked: currentState, reason: currentState ? "NOMINAL_ACTIVE" : "AWAITING_PROFIT_MILESTONE" };
+        return { unlocked: true, reason: "NOMINAL_ACTIVE" };
     }
 
     /**
@@ -94,11 +119,40 @@ export class DirectiveProcessor {
 export class SelfSuppressionEngine {
     /**
      * Logic for AI deciding to stay quiet even if unlocked.
-     * Triggered by low health score or high hesitation.
+     * Incorporates dynamic 'market noise' penalty based on real-time entropy and volatility.
      */
-    static shouldSuppress(healthScore: number, hesitation: number): boolean {
-        // Suppress if health is critical or AI is extremely hesitant due to market noise
-        return healthScore < 0.3 || hesitation > 0.92;
+    static shouldSuppress(
+        healthScore: number, 
+        hesitation: number, 
+        entropy: number = 0, 
+        volatility: number = 0
+    ): boolean {
+        // Calculate Market Noise Metric
+        // Entropy (0-1): Measure of disorder/randomness.
+        // Volatility: Measure of price variance. Normalized assuming > 0.05 is extreme.
+        const normalizedVol = Math.min(volatility * 20, 1.0); 
+        
+        // Weighted Noise Score (0 to 1)
+        // Volatility is weighted slightly higher as it represents immediate risk.
+        const marketNoise = (entropy * 0.4) + (normalizedVol * 0.6);
+
+        // Dynamic Thresholds Calculation
+        // 1. Health Threshold: Base 0.3. 
+        // Increases with noise (AI requires better health to act in chaos).
+        // Example: If noise is 0.8 (high), threshold becomes 0.3 + 0.32 = 0.62.
+        const dynamicHealthThreshold = 0.3 + (marketNoise * 0.4);
+
+        // 2. Hesitation Limit: Base 0.92. 
+        // Decreases with noise (System has less tolerance for hesitation in chaos).
+        // Example: If noise is 0.8, limit becomes 0.92 - 0.24 = 0.68.
+        const dynamicHesitationLimit = 0.92 - (marketNoise * 0.3);
+
+        // Critical Suppression Conditions
+        const isCriticalHealth = healthScore < dynamicHealthThreshold;
+        const isHesitant = hesitation > dynamicHesitationLimit;
+        const isNoiseExcessive = marketNoise > 0.85; // Hard cap on noise
+
+        return isCriticalHealth || isHesitant || isNoiseExcessive;
     }
 }
 
