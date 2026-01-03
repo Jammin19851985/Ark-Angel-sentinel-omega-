@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext';
+import { LivePaperBadge } from './LivePaperBadge';
 
 // Helper function to convert polar to Cartesian coordinates
 const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
@@ -42,8 +44,11 @@ const AlphaGauge: React.FC<AlphaGaugeProps> = ({ id }) => {
     const valueAngle = startAngle + (valuePercentage * range);
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg p-4 shadow-lg glow-border flex flex-col h-full">
-            <h2 className="text-sm font-bold text-amber-400 mb-3 font-mono">// ESTIMATED ALPHA (ANNUALIZED)</h2>
+        <div id={id} className="tech-panel p-4 flex flex-col h-full bg-black/60">
+            <div className="flex justify-between items-center mb-3">
+                <h2 className="text-sm font-bold text-amber-400 font-mono uppercase tracking-widest">// ESTIMATED ALPHA</h2>
+                <LivePaperBadge />
+            </div>
             <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-48 h-48">
                     <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">

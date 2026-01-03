@@ -20,6 +20,7 @@ import OmniSentryTab from './toolkit/OmniSentryTab';
 import { GearsIcon } from './icons/GearsIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { ToolkitTab } from '../types';
+import { LivePaperBadge } from './LivePaperBadge';
 
 interface AIToolkitProps {
     id: string; // New: Add ID prop for tour targeting
@@ -73,8 +74,11 @@ const AIToolkit: React.FC<AIToolkitProps> = ({ id }) => {
     }
 
     return (
-        <div id={id} className="bg-black/40 backdrop-blur-md border border-slate-800 rounded-b-lg rounded-tr-lg shadow-lg flex flex-col lg:flex-row h-full glow-border flex-1">
-            <div className="w-full lg:w-48 p-4 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-row lg:flex-col gap-2 bg-black/60">
+        <div id={id} className="bg-black/40 backdrop-blur-md border border-slate-800 rounded-b-lg rounded-tr-lg shadow-lg flex flex-col lg:flex-row h-full glow-border flex-1 tech-panel">
+            <div className="absolute top-2 right-2 z-50 lg:hidden">
+                <LivePaperBadge />
+            </div>
+            <div className="w-full lg:w-48 p-4 border-b lg:border-b-0 lg:border-r border-slate-800 flex flex-row lg:flex-col gap-2 bg-black/60 overflow-x-auto">
                  <TabButton tab="chat" label="Chat Studio" icon={<ChatBubbleIcon className="w-5 h-5"/>} />
                  <TabButton tab="sentiment" label="Sentiment" icon={<NewspaperIcon className="w-5 h-5"/>} />
                  <TabButton tab="rag" label="Intel RAG" icon={<DatabaseIcon className="w-5 h-5"/>} />
@@ -85,7 +89,10 @@ const AIToolkit: React.FC<AIToolkitProps> = ({ id }) => {
                  <TabButton tab="code" label="Code Auditor" icon={<CodeBracketsIcon className="w-5 h-5"/>} />
                  <TabButton tab="learning_params" label="Learning Config" icon={<GearsIcon className="w-5 h-5"/>} />
             </div>
-            <div className="flex-1 p-4 lg:p-6 overflow-y-auto bg-black/20">
+            <div className="flex-1 p-4 lg:p-6 overflow-y-auto bg-black/20 relative">
+                <div className="hidden lg:block absolute top-4 right-4">
+                    <LivePaperBadge />
+                </div>
                 {renderTabContent()}
             </div>
         </div>

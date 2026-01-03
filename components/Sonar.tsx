@@ -9,6 +9,7 @@ import { RefreshIcon } from './icons/RefreshIcon';
 import { getSignalAnalysis, analyzeSentiment, analyzeQuantumVolatility } from '../services/geminiService';
 import Loader from './Loader';
 import { useAppContext } from '../contexts/AppContext';
+import { LivePaperBadge } from './LivePaperBadge';
 
 // High-contrast World Map Path
 const WorldMapSVG: React.FC = () => (
@@ -267,7 +268,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
 
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm flex flex-col lg:flex-row h-full overflow-hidden relative">
+        <div id={id} className="bg-black/30 backdrop-blur-sm flex flex-col lg:flex-row h-full overflow-hidden relative tech-panel">
             {/* Scanning Overlay Effect */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent animate-[scan_4s_linear_infinite] opacity-30"></div>
@@ -354,7 +355,10 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
             <div className="w-full lg:w-96 bg-black/60 backdrop-blur-md border-l border-slate-800 flex flex-col z-20">
                 <div className="p-4 border-b border-slate-800 bg-black/40">
                     <div className="flex justify-between items-center mb-3">
-                        <h2 className="text-sm font-bold text-amber-400 font-mono">// SONAR // THREAT ANALYSIS</h2>
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-sm font-bold text-amber-400 font-mono">// SONAR // THREAT ANALYSIS</h2>
+                            <LivePaperBadge />
+                        </div>
                         <button 
                             onClick={() => setIsNanoMode(!isNanoMode)} 
                             className={`text-[10px] font-mono border px-2 py-0.5 rounded transition-all ${isNanoMode ? 'bg-amber-900 border-amber-500 text-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)]' : 'bg-black border-slate-700 text-slate-500'}`}

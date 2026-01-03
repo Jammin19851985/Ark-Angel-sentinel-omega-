@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { GRAND_SLAM_FEATURES } from '../constants';
+import { LivePaperBadge } from './LivePaperBadge';
 
 interface IntelProps { id: string; }
 
@@ -28,9 +30,12 @@ const Intel: React.FC<IntelProps> = ({ id }) => {
     );
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg shadow-lg flex flex-col h-full glow-border flex-1 font-mono">
+        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg shadow-lg flex flex-col h-full glow-border flex-1 font-mono tech-panel">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/40">
-                <h2 className="text-sm font-bold text-amber-500 uppercase tracking-tighter">// INTEL FEED // ABSOLUTE MANIFESTATION</h2>
+                <div className="flex items-center gap-4">
+                    <h2 className="text-sm font-bold text-amber-500 uppercase tracking-tighter">// INTEL FEED // ABSOLUTE MANIFESTATION</h2>
+                    <LivePaperBadge />
+                </div>
                 <div className="flex items-center space-x-2">
                     <input 
                         type="text" 

@@ -95,25 +95,21 @@ const ChatTab: React.FC = () => {
     }, [input, isLoading, chatSettings, location, addLog]);
     
     const Toggle: React.FC<{ enabled: boolean; onToggle: () => void; label: string; icon: React.ReactNode }> = ({ enabled, onToggle, label, icon }) => (
-        <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            onClick={onToggle}
-            className={`flex items-center space-x-2 cursor-pointer rounded-md p-1.5 focus:outline-none transition-all duration-200 border ${
-                enabled 
-                ? 'bg-amber-900 border-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.3)]' 
-                : 'bg-black border-slate-700 hover:border-slate-500'
-            }`}
-        >
-            <div className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${enabled ? 'bg-amber-500' : 'bg-slate-700'}`}>
-                <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enabled ? 'translate-x-4' : 'translate-x-0'}`} />
-            </div>
-            <div className={`flex items-center space-x-1.5 text-xs ${enabled ? 'text-amber-300' : 'text-slate-400'}`}>
+        <div className="flex items-center space-x-2">
+            <button
+                type="button"
+                role="switch"
+                aria-checked={enabled}
+                onClick={onToggle}
+                className={`alien-switch ${enabled ? 'active' : ''}`}
+            >
+                <div className="alien-switch-thumb"></div>
+            </button>
+            <div className={`flex items-center space-x-1.5 text-xs font-mono uppercase tracking-wider ${enabled ? 'text-cyan-300' : 'text-slate-500'}`}>
                 {icon}
                 <span>{label}</span>
             </div>
-        </button>
+        </div>
     );
 
     const markdownComponents: Components = useMemo(() => ({
@@ -157,7 +153,6 @@ const ChatTab: React.FC = () => {
                         </p>
                         <ul className="space-y-1.5">
                             {msg.sources!.map((chunk, i) => {
-                                // Extract URI and Title based on whether it is a Web or Maps chunk
                                 const uri = chunk.web?.uri || chunk.maps?.uri;
                                 const title = chunk.web?.title || chunk.maps?.title || 'Source';
                                 
@@ -190,27 +185,27 @@ const ChatTab: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-200 mb-1">Chat Studio</h3>
             <p className="text-sm text-slate-400 mb-4">Converse with Gemini. Enhance responses with real-time information and advanced reasoning.</p>
             
-            <div className="flex items-center space-x-4 mb-4 p-3 bg-black border border-slate-800 rounded-lg">
-                <Toggle enabled={chatSettings.useSearch} onToggle={() => toggleSetting('useSearch')} label="Search Grounding" icon={<SearchIcon className="w-4 h-4" />} />
-                <Toggle enabled={chatSettings.useMaps} onToggle={() => toggleSetting('useMaps')} label="Maps Grounding" icon={<MapPinIcon className="w-4 h-4" />} />
-                <Toggle enabled={chatSettings.useThinking} onToggle={() => toggleSetting('useThinking')} label="Thinking Mode" icon={<BrainCircuitIcon className="w-4 h-4" />} />
+            <div className="flex items-center space-x-6 mb-4 p-3 bg-black/60 border border-slate-800 rounded-lg">
+                <Toggle enabled={chatSettings.useSearch} onToggle={() => toggleSetting('useSearch')} label="Search Grounding" icon={<SearchIcon className="w-3 h-3" />} />
+                <Toggle enabled={chatSettings.useMaps} onToggle={() => toggleSetting('useMaps')} label="Maps Grounding" icon={<MapPinIcon className="w-3 h-3" />} />
+                <Toggle enabled={chatSettings.useThinking} onToggle={() => toggleSetting('useThinking')} label="Thinking Mode" icon={<BrainCircuitIcon className="w-3 h-3" />} />
             </div>
 
             {locationError && <p className="text-xs text-red-400 mb-4">{locationError}</p>}
             
-            <div className="flex-1 overflow-y-auto p-4 bg-black/40 backdrop-blur-sm rounded-lg border border-slate-800 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 bg-black/40 backdrop-blur-sm rounded-lg border border-slate-800 space-y-4 custom-scrollbar">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex flex-col ${msg.author === 'user' ? 'items-end' : 'items-start'}`}>
-                        <div className={`rounded-lg px-4 py-2 max-w-xl border ${msg.author === 'user' ? 'bg-amber-950 border-amber-900 text-amber-100' : 'bg-slate-900 border-slate-800 text-slate-300'}`}>
+                        <div className={`rounded-lg px-4 py-2 max-w-xl border ${msg.author === 'user' ? 'bg-amber-950/40 border-amber-900 text-amber-100' : 'bg-slate-900/60 border-slate-800 text-slate-300'}`}>
                            {renderMessageContent(msg)}
                         </div>
                     </div>
                 ))}
                 {isLoading && (
                     <div className="flex justify-start">
-                        <div className="bg-slate-900 border border-slate-800 rounded-lg px-4 py-2 flex items-center space-x-2">
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg px-4 py-2 flex items-center space-x-2">
                            <Loader />
-                           <span className="text-sm text-slate-300">Thinking...</span>
+                           <span className="text-sm text-slate-300 font-mono">Thinking...</span>
                         </div>
                     </div>
                 )}
@@ -221,14 +216,14 @@ const ChatTab: React.FC = () => {
                 )}
             </div>
 
-            <form onSubmit={handleSendMessage} className="mt-4 relative">
+            <form onSubmit={handleSendMessage} className="mt-4 relative group">
                 <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask Gemini anything..."
                     disabled={isLoading}
-                    className="w-full bg-black border border-slate-700 rounded-lg pl-4 pr-12 py-3 text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
+                    className="w-full bg-black/80 border border-slate-700 rounded-lg pl-4 pr-12 py-3 text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
                 />
                  <button type="submit" disabled={isLoading} className="absolute inset-y-0 right-0 flex items-center pr-3" aria-label="Send message">
                     <svg className={`w-6 h-6 transform rotate-90 ${isLoading ? 'text-slate-600' : 'text-amber-500 hover:text-amber-400'}`} fill="currentColor" viewBox="0 0 20 20">

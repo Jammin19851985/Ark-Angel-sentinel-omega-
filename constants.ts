@@ -1,21 +1,35 @@
 
-import { GrandSlamFeature } from "./types";
+import { GrandSlamFeature, ActiveView } from "./types";
 
 export const PROGRAMMING_LANGUAGES: string[] = [
     "TypeScript", "JavaScript", "Python", "Go", "Rust", "C++", "SQL", "Shell",
 ];
 
+export const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
+    nexus: ["Quantum Entropy Trade Timer", "Entangled Correlation Fracture Detector", "SICO Singly Indivisible Composite Orders", "Temporal Drift Nullifier", "MLEM Hash Verifier", "System Health Check", "Toggle Reality Corrector"],
+    sentinel: ["INITIATE_SWARM_PROTOCOL", "RUN_DIAGNOSTICS", "SYSTEM_STATUS", "VERIFY_INTEGRITY", "OVERRIDE_AUTH", "LIST_ACTIVE_AGENTS", "PURGE_CACHE"],
+    orchestrator: ["DEPLOY_LEGION_ALPHA", "OPTIMIZE_HIVE_MIND", "EXECUTE_COMPLEX_ARBITRAGE", "INITIATE_SWARM_PROTOCOL --agents 2500", "MONITOR_SWARM_HEALTH"],
+    toolkit: ["GENERATE_IMAGE --prompt 'Cyberpunk Market'", "ANALYZE_SENTIMENT --symbol BTC", "AUDIT_CODE --lang Python", "RAG_QUERY 'Quantum Finance'", "START_LIVE_AUDIO"],
+    backtester: ["RUN_BACKTEST --strategy tri_arb", "OPTIMIZE_PARAMETERS --metric sharpe", "SIMULATE_BLACK_SWAN", "EXPORT_EQUITY_CURVE", "ANALYZE_DRAWDOWN"],
+    analytics: ["PREDICT_PRICE --symbol BTC", "ANALYZE_VOLATILITY", "CALCULATE_KELLY_CRITERION", "SHOW_CORRELATION_MATRIX", "FORECAST_TREND"],
+    intel: ["SEARCH_PROTOCOL --id F172", "DECRYPT_CODEX", "LIST_OMEGA_PROTOCOLS", "SCAN_NEWS_FEED", "VERIFY_PROTOCOL_HASH"],
+    sonar: ["SCAN_THREATS --region GLOBAL", "ANALYZE_SIGNAL --id LATEST", "FILTER_NOISE --threshold 0.8", "QUANTUM_WAVE_COLLAPSE", "DETECT_ANOMALIES"],
+    paper_terminal: ["PAPER_BUY BTC 1.0", "PAPER_SELL ETH 10.0", "RESET_PAPER_BALANCE", "SIMULATE_FILL_DELAY", "VIEW_PAPER_HISTORY"]
+};
+
+export const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;
+
 export const BOOT_SEQUENCE_LAYERS = [
-    "AODE Layer 1: Majorana Qubit Simulation Core... STABLE (>120ns)",
+    "AODE Layer 1: Majorana Qubit Simulation Core... STABLE (>40ns)",
     "AODE Layer 2: Instantiating Logical |0> (Self-Identity)... ENCODED",
-    "AODE Layer 3: ACMD Protocol: Activating Autonomous Code Mutation...",
-    "AODE Layer 4: QUBO Quantum Annealing Solver... OPTIMIZING",
-    "AODE Layer 5: FSF (Financial State Fuzziness) Metric... CALIBRATED",
+    "AODE Layer 3: ACMD Protocol: Autonomous Code Mutation... ACTIVE",
+    "AODE Layer 4: QUBO Solver... OPTIMIZING (99.999% Optimality)",
+    "AODE Layer 5: FSF Metric Calibration... <0.0000001 Verified",
     "AODE Layer 6: SICO (Singly Indivisible Composite Order) Engine... ARMED",
-    "AODE Layer 7: UPB-1 Unified Protocol Bill compliance handshake...",
+    "AODE Layer 7: UPB-1 Unified Protocol Bill compliance handshake... SIGNED",
     "AODE Layer 8: Injecting ARK Ω Hash into Cosmological Constant... DONE",
     "AODE Layer 9: HTCP Hyper-Temporal Compression Protocol... ACTIVE",
-    "AODE Layer 10: ATOMIC KILL SWITCH: Hardware Authority Gated...",
+    "AODE Layer 10: Adversarial Mitigation (TES > 0.95)... CHECKED",
     "AODE Layer 11: MLEM (Multi-Layered Encrypted Manifest) Generator... ONLINE",
     "AODE Layer 12: Establishing Quantum Sovereignty... COMPLETE",
     "AODE Layer 13: System Status: CATHOLIC_FINALITY... ONLINE",

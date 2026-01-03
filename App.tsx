@@ -1,81 +1,45 @@
 
-import React, { useState, useCallback, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import MarketWatch from './components/MarketWatch';
 import Portfolio from './components/Portfolio';
 import SwarmVisualizer from './components/SwarmVisualizer';
 import SystemLog from './components/SystemLog';
 import HolographicOverlay from './components/HolographicOverlay';
-import OnboardingTour from './components/OnboardingTour'; 
 import LiveWallpaper from './components/LiveWallpaper'; 
 import AvatarOrb from './components/AvatarOrb';
-import Loader from './components/Loader';
 import AlphaGauge from './components/AlphaGauge';
 import CinematicIntro from './components/CinematicIntro';
+import NavigationDeck from './components/NavigationDeck';
+import ViewManager from './components/ViewManager';
 
-// Icons
 import { TerminalIcon } from './components/icons/TerminalIcon';
-import { SparklesIcon } from './components/icons/SparklesIcon';
-import { ChartBarIcon } from './components/icons/ChartBarIcon';
-import { NetworkIcon } from './components/icons/NetworkIcon';
-import { ChartPieIcon } from './components/icons/ChartPieIcon';
-import { BookOpenIcon } from './components/icons/BookOpenIcon';
-import { SonarIcon } from './components/icons/SonarIcon';
-import { QuantumIcon } from './components/icons/QuantumIcon';
 import { ShieldIcon } from './components/icons/ShieldIcon';
-import { BeakerIcon } from './components/icons/BeakerIcon';
 
-// Context & Utils
 import { useAppContext } from './contexts/AppContext';
 import { sendMessageToSentinelA } from './services/geminiService';
 import { Message, ActiveView } from './types';
-
-// --- LAZY LOADED MODULES ---
-const SentinelTerminal = lazy(() => import('./components/SentinelTerminal'));
-const AIToolkit = lazy(() => import('./components/AIToolkit'));
-const Backtester = lazy(() => import('./components/Backtester'));
-const AgentOrchestrator = lazy(() => import('./components/AgentOrchestrator'));
-const Analytics = lazy(() => import('./components/Analytics'));
-const Intel = lazy(() => import('./components/Intel'));
-const Sonar = lazy(() => import('./components/Sonar'));
-const Nexus = lazy(() => import('./components/Nexus'));
-const PaperTerminal = lazy(() => import('./components/PaperTerminal'));
-
-const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
-    nexus: ["Quantum Entropy Trade Timer", "Entangled Correlation Fracture Detector", "SICO Singly Indivisible Composite Orders", "Temporal Drift Nullifier", "MLEM Hash Verifier", "System Health Check", "Toggle Reality Corrector"],
-    sentinel: ["INITIATE_SWARM_PROTOCOL", "RUN_DIAGNOSTICS", "SYSTEM_STATUS", "VERIFY_INTEGRITY", "OVERRIDE_AUTH", "LIST_ACTIVE_AGENTS", "PURGE_CACHE"],
-    orchestrator: ["DEPLOY_LEGION_ALPHA", "OPTIMIZE_HIVE_MIND", "EXECUTE_COMPLEX_ARBITRAGE", "INITIATE_SWARM_PROTOCOL --agents 2500", "MONITOR_SWARM_HEALTH"],
-    toolkit: ["GENERATE_IMAGE --prompt 'Cyberpunk Market'", "ANALYZE_SENTIMENT --symbol BTC", "AUDIT_CODE --lang Python", "RAG_QUERY 'Quantum Finance'", "START_LIVE_AUDIO"],
-    backtester: ["RUN_BACKTEST --strategy tri_arb", "OPTIMIZE_PARAMETERS --metric sharpe", "SIMULATE_BLACK_SWAN", "EXPORT_EQUITY_CURVE", "ANALYZE_DRAWDOWN"],
-    analytics: ["PREDICT_PRICE --symbol BTC", "ANALYZE_VOLATILITY", "CALCULATE_KELLY_CRITERION", "SHOW_CORRELATION_MATRIX", "FORECAST_TREND"],
-    intel: ["SEARCH_PROTOCOL --id F172", "DECRYPT_CODEX", "LIST_OMEGA_PROTOCOLS", "SCAN_NEWS_FEED", "VERIFY_PROTOCOL_HASH"],
-    sonar: ["SCAN_THREATS --region GLOBAL", "ANALYZE_SIGNAL --id LATEST", "FILTER_NOISE --threshold 0.8", "QUANTUM_WAVE_COLLAPSE", "DETECT_ANOMALIES"],
-    paper_terminal: ["PAPER_BUY BTC 1.0", "PAPER_SELL ETH 10.0", "RESET_PAPER_BALANCE", "SIMULATE_FILL_DELAY", "VIEW_PAPER_HISTORY"]
-};
-
-const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;
+import { VIEW_SPECIFIC_SUGGESTIONS, INITIAL_SUGGESTIONS } from './constants';
 
 const App: React.FC = () => {
     const { addLog, setIsGodMode, setIsGodModeUnlocked, isGodMode, executeAllPrimeDirectives, killSwitchActive, quantumMetrics } = useAppContext();
+    
     const [messages, setMessages] = useState<Message[]>(() => { try { return JSON.parse(localStorage.getItem('archangel_messages') || '[]'); } catch { return []; } });
     const [input, setInput] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [activeView, setActiveView] = useState<ActiveView>('nexus');
     const [showOverlay, setShowOverlay] = useState(false);
-    const [isHolographicEngaged, setIsHolographicEngaged] = useState(false);
     const [mission, setMission] = useState<string>('INITIATE_SWARM_PROTOCOL --agents 2500 --mode OMEGA');
     const [introComplete, setIntroComplete] = useState(false);
     const hasInitialized = useRef(false);
-    const [showOnboardingTour, setShowOnboardingTour] = useState(false);
-    const [currentTourStepIndex, setCurrentTourStepIndex] = useState(-1);
     const [hasPaidKey, setHasPaidKey] = useState(false);
+    const [focusMode, setFocusMode] = useState(false);
 
     const suggestions = useMemo(() => VIEW_SPECIFIC_SUGGESTIONS[activeView] || INITIAL_SUGGESTIONS, [activeView]);
 
     useEffect(() => {
         const body = document.body;
-        // God Mode class handling handled via context, but we ensure class list sync here
         if (isGodMode) body.classList.add('god-mode-active');
         else body.classList.remove('god-mode-active');
     }, [isGodMode]);
@@ -90,29 +54,11 @@ const App: React.FC = () => {
         checkKey();
     }, []);
 
-    const handleSelectKey = async () => {
-        if (window.aistudio?.openSelectKey) {
-            await window.aistudio.openSelectKey();
-            setHasPaidKey(true);
-            addLog('SYSTEM', 'Sovereign API Auth acquired.');
-        }
-    };
-
-    useEffect(() => {
-        const completed = localStorage.getItem('archangel_onboarding_completed');
-        if (completed !== 'true') setShowOnboardingTour(true);
-        else setShowOnboardingTour(false);
-    }, []);
-
-    const startTour = useCallback(() => { setShowOnboardingTour(true); setActiveView('sentinel'); setTimeout(() => setCurrentTourStepIndex(0), 100); }, []);
-    const skipTour = useCallback(() => { setShowOnboardingTour(false); setCurrentTourStepIndex(-1); localStorage.setItem('archangel_onboarding_completed', 'true'); }, []);
-    const completeTour = useCallback(() => { setShowOnboardingTour(false); setCurrentTourStepIndex(-1); localStorage.setItem('archangel_onboarding_completed', 'true'); }, []);
-
     useEffect(() => { localStorage.setItem('archangel_messages', JSON.stringify(messages)); }, [messages]);
 
     const initialize = useCallback(async () => {
         try {
-            if (messages.length === 0) setMessages([{ author: 'sentinel', content: "## ARCHANGEL OMEGA ONLINE.\n\n>> ADMIN ACCESS: GRANTED.\n>> ZERO ERROR PROTOCOL: ENGAGED.\n>> SCOPE: 100,000xBaseline." }]);
+            if (messages.length === 0) setMessages([{ author: 'sentinel', content: "## ARCHANGEL OMEGA ONLINE." }]);
         } catch { setError(`Initialization decoherence.`); } finally { setIsLoading(false); setShowOverlay(true); }
     }, [messages.length]);
 
@@ -121,6 +67,14 @@ const App: React.FC = () => {
         if (introComplete) { hasInitialized.current = true; initialize(); }
     }, [introComplete, initialize]);
 
+    const handleSelectKey = async () => {
+        if (window.aistudio?.openSelectKey) {
+            await window.aistudio.openSelectKey();
+            setHasPaidKey(true);
+            addLog('SYSTEM', 'Sovereign API Auth acquired.');
+        }
+    };
+
     const handleSendMessage = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
@@ -128,7 +82,7 @@ const App: React.FC = () => {
         if (currentInput.includes('godmodeAdam1121#')) {
             setIsGodModeUnlocked(true); setIsGodMode(true);
             addLog('AODE', 'PROTOCOL OVERRIDE: GOD MODE ACTIVE.');
-            setMessages(prev => [...prev, { author: 'sentinel', content: "## Ω OVERRIDE ACTIVE\n\nGod Mode manifest. Sovereign limits removed." }]);
+            setMessages(prev => [...prev, { author: 'sentinel', content: "## Ω OVERRIDE ACTIVE" }]);
             setInput(''); return;
         }
         const userMessage: Message = { author: 'user', content: currentInput };
@@ -162,130 +116,127 @@ const App: React.FC = () => {
         addLog('SYSTEM', 'SWARM PROTOCOL INITIATED VIA HEADER OVERRIDE');
     }, [executeAllPrimeDirectives, addLog]);
     
-    const handleCloseOverlay = useCallback(() => { setShowOverlay(false); setIsHolographicEngaged(true); addLog('SYSTEM', 'Interface engaged.'); }, [addLog]);
+    const handleCloseOverlay = useCallback(() => { setShowOverlay(false); addLog('SYSTEM', 'Neural Link Established.'); }, [addLog]);
     const handleSuggestionClick = (suggestion: string) => { setInput(suggestion); setActiveView('sentinel'); };
 
-    // --- 3D Cyber Chip Key Component ---
-    const CyberKey: React.FC<{view: ActiveView, label: string, icon: React.ReactNode, id: string}> = ({ view, label, icon, id }) => {
-        const isActive = activeView === view;
-        return (
-            <button 
-                id={id}
-                onClick={() => setActiveView(view)}
-                className={`cyber-key flex items-center justify-center space-x-2 px-3 py-3 w-full lg:w-auto flex-1 ${isActive ? 'active' : ''}`}
-            >
-                <div className={`p-1 rounded ${isActive ? 'bg-cyan-900/50 text-cyan-400' : 'text-slate-500'}`}>{icon}</div>
-                <span className="hidden xl:inline">{label}</span>
-            </button>
-        );
-    };
+    const renderAuthScreen = () => (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-20 min-h-0 overflow-hidden">
+            <div className="tech-panel p-12 max-w-md text-center">
+                <ShieldIcon className="w-16 h-16 text-amber-500 mx-auto mb-6 animate-pulse" />
+                <h2 className="text-3xl font-display font-bold text-white mb-4 tracking-widest glow-text-gold">AUTH_REQUIRED</h2>
+                <p className="text-slate-400 mb-8 font-mono text-xs uppercase">Sovereign Authority requires Paid API Key for high-fidelity signal execution.</p>
+                <button onClick={handleSelectKey} className="cyber-key px-8 py-4 w-full text-amber-400 font-bold hover:text-white transition-colors">AUTHENTICATE</button>
+            </div>
+        </div>
+    );
 
-    const renderMainContent = () => {
-        if (!hasPaidKey) {
-            return (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-20">
-                    <div className="cyber-chip p-12 max-w-md text-center cyber-chip-screws">
-                        <ShieldIcon className="w-16 h-16 text-amber-500 mx-auto mb-6 animate-pulse" />
-                        <h2 className="text-3xl font-display font-bold text-white mb-4 tracking-widest glow-text-gold">AUTH_REQUIRED</h2>
-                        <p className="text-slate-400 mb-8 font-mono text-xs">Sovereign Authority requires Paid API Key for high-fidelity signal execution.</p>
-                        <button onClick={handleSelectKey} className="cyber-key px-8 py-4 w-full text-amber-400 font-bold">AUTHENTICATE</button>
+    const renderMainWorkspace = () => (
+        <div className={`flex-1 grid gap-2 p-2 min-h-0 overflow-hidden relative z-10 transition-all duration-500 ${focusMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
+            
+            <div className={`flex flex-col h-full space-y-2 min-h-0 overflow-hidden ${focusMode ? 'col-span-1' : 'lg:col-span-2'}`}>
+                <div className="flex-1 tech-panel flex flex-col min-h-0 relative group border-t-2 border-t-cyan-500/50 overflow-hidden">
+                    <div className="absolute top-2 right-2 z-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                            onClick={() => setFocusMode(!focusMode)} 
+                            className={`px-2 py-0.5 rounded-sm text-[8px] font-bold font-mono tracking-widest border transition-colors ${focusMode ? 'bg-amber-900/50 border-amber-500 text-amber-400' : 'bg-black/60 border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500'}`}
+                        >
+                            {focusMode ? 'COLLAPSE' : 'EXPAND'}
+                        </button>
                     </div>
-                </div>
-            );
-        }
 
-        return (
-            <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 h-full overflow-hidden">
-                <div className="lg:col-span-2 flex flex-col h-full space-y-4 min-h-0">
-                    <div className="flex-1 flex flex-col min-h-0 relative cyber-chip cyber-chip-screws">
-                        <div className="absolute inset-0 bg-black/50 z-0"></div> {/* Darken background */}
-                        <div className="relative z-10 h-full overflow-hidden flex flex-col">
-                            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center"><Loader /><span className="text-xs font-mono text-cyan-500 ml-2">LOADING_MODULE...</span></div>}>
-                                {activeView === 'sonar' && <Sonar id="sonar-view" />}
-                                {activeView === 'nexus' && <Nexus id="nexus-view" />}
-                                {activeView === 'paper_terminal' && <PaperTerminal id="paper-terminal" />}
-                                {activeView === 'sentinel' && <SentinelTerminal id="sentinel-terminal" messages={messages} input={input} setInput={setInput} isLoading={isLoading} error={error} handleSendMessage={handleSendMessage} handleTroubleshoot={handleTroubleshoot} suggestions={suggestions} onAddAllSuggestions={handleAddAllSuggestions} />}
-                                {activeView === 'orchestrator' && <AgentOrchestrator id="agent-orchestrator" mission={mission} handleMissionChange={(e)=>setMission(e.target.value)} />}
-                                {activeView === 'toolkit' && <AIToolkit id="ai-toolkit" />}
-                                {activeView === 'backtester' && <Backtester id="backtester-view" />}
-                                {activeView === 'analytics' && <Analytics id="analytics-dashboard" />}
-                                {activeView === 'intel' && <Intel id="intel-feed" />}
-                            </Suspense>
-                        </div>
-                    </div>
-                    
-                    {activeView !== 'sentinel' && (
-                        <div className="h-10 cyber-inset flex items-center px-4 space-x-3 overflow-x-auto custom-scrollbar flex-shrink-0">
-                            <TerminalIcon className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                            {suggestions.map((suggestion, idx) => (
-                                <button key={idx} onClick={() => handleSuggestionClick(suggestion)} className="flex-shrink-0 px-2 py-0.5 text-[10px] font-mono text-slate-400 hover:text-cyan-400 border border-transparent hover:border-cyan-900/50 rounded transition-colors whitespace-nowrap">
-                                    &gt; {suggestion}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <ViewManager 
+                        activeView={activeView}
+                        messages={messages}
+                        input={input}
+                        setInput={setInput}
+                        isLoading={isLoading}
+                        error={error}
+                        handleSendMessage={handleSendMessage}
+                        handleTroubleshoot={handleTroubleshoot}
+                        suggestions={suggestions}
+                        onAddAllSuggestions={handleAddAllSuggestions}
+                        mission={mission}
+                        setMission={setMission}
+                    />
                 </div>
                 
-                <div className="flex flex-col gap-4 h-full min-h-0">
-                    <div className="cyber-chip p-1 flex-1 flex flex-col min-h-0 overflow-hidden">
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-4">
-                            <MarketWatch id="market-watch" />
-                            <Portfolio id="portfolio-overview" />
-                            <AlphaGauge id="alpha-gauge" />
-                            <SwarmVisualizer id="swarm-visualizer" />
+                {!focusMode && activeView !== 'sentinel' && (
+                    <div className="h-8 tech-panel flex items-center px-2 space-x-2 overflow-x-auto custom-scrollbar flex-shrink-0 bg-black/40 border border-slate-800 min-h-0">
+                        <TerminalIcon className="w-2.5 h-2.5 text-amber-500 flex-shrink-0" />
+                        {suggestions.map((suggestion, idx) => (
+                            <button key={idx} onClick={() => handleSuggestionClick(suggestion)} className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 hover:text-cyan-400 border border-transparent hover:border-cyan-900/50 rounded transition-colors whitespace-nowrap">
+                                &gt; {suggestion}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+            
+            {!focusMode && (
+                <div className="flex flex-col gap-2 h-full min-h-0 overflow-hidden animate-fade-in">
+                    <div className="tech-panel flex-1 flex flex-col min-h-0 overflow-hidden bg-black/40 border border-slate-800">
+                        <div className="tech-header flex-shrink-0 py-1.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <span className="w-1 h-1 bg-green-500 rounded-full shadow-[0_0_5px_#22c55e]"></span>
+                                Live_Substrate
+                            </span>
+                            <div className="flex gap-1">
+                                <div className="w-1 h-1 bg-red-500 rounded-full animate-ping"></div>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-1 space-y-2 min-h-0">
+                            <div className="flex-shrink-0 min-h-[180px]"><MarketWatch id="market-watch" /></div>
+                            <div className="flex-shrink-0 min-h-[180px]"><Portfolio id="portfolio-overview" /></div>
+                            <div className="flex-shrink-0 min-h-[150px]"><AlphaGauge id="alpha-gauge" /></div>
+                            <div className="flex-shrink-0 min-h-[180px]"><SwarmVisualizer id="swarm-visualizer" /></div>
                         </div>
                     </div>
-                    <div className="h-48 cyber-chip">
+                    <div className="h-40 tech-panel overflow-hidden bg-black/40 flex-shrink-0 border border-slate-800 min-h-0">
                         <SystemLog id="system-log" />
                     </div>
                 </div>
-            </div>
-        );
-    };
+            )}
+        </div>
+    );
 
     if (!introComplete) return <CinematicIntro onComplete={() => setIntroComplete(true)} />;
 
     return (
-        <div className={`min-h-screen flex flex-col font-sans relative overflow-hidden transition-colors duration-1000 ${isGodMode ? 'god-mode-active' : ''}`}>
+        <div className={`h-screen w-screen flex flex-col font-sans relative overflow-hidden bg-[#020203] transition-colors duration-1000 ${isGodMode ? 'god-mode-active' : ''}`}>
+            <div className="absolute inset-0 z-0 tech-grid-bg opacity-30 pointer-events-none"></div>
             <LiveWallpaper />
-            <div className="absolute top-24 right-10 z-50 pointer-events-none hidden lg:block"><AvatarOrb /></div>
+            <HolographicOverlay isVisible={showOverlay} onClose={handleCloseOverlay} />
             
-            <HolographicOverlay isVisible={showOverlay} onClose={handleCloseOverlay} isFirstVisit={showOnboardingTour} onStartTour={startTour} onSkipTour={skipTour} />
-            
-            {isHolographicEngaged && showOnboardingTour && currentTourStepIndex !== -1 && (
-                <OnboardingTour currentStepIndex={currentTourStepIndex} onNext={()=>setCurrentTourStepIndex(p=>p+1)} onPrevious={()=>setCurrentTourStepIndex(p=>p-1)} onComplete={completeTour} onSkip={skipTour} />
-            )}
-            
-            {/* Top Status Bar (Physical Metal Look) */}
-            <div className={`h-6 flex items-center justify-between px-4 text-[9px] font-mono border-b z-20 transition-colors ${killSwitchActive ? 'bg-red-950 border-red-500 text-white animate-pulse' : 'bg-[#111] border-[#333] text-slate-500'}`}>
-                <div className="flex gap-4">
-                   <span className="flex items-center gap-2"><span className={`w-1.5 h-1.5 rounded-full ${killSwitchActive ? 'bg-white' : 'bg-green-500 shadow-[0_0_5px_#22c55e]'}`}></span> SPINE: {killSwitchActive ? 'HALTED' : 'STABLE'}</span>
-                   <span>COHERENCE: {(quantumMetrics?.qubitCoherence || 0).toFixed(2)}ns</span>
-                   <span>TES: {(quantumMetrics?.tesScore || 0).toFixed(2)}</span>
+            <div className="h-5 flex items-center justify-between px-3 text-[9px] font-mono border-b z-30 transition-colors shrink-0 bg-[#050508] border-[#1e293b] text-slate-500 min-h-0">
+                <div className="flex gap-4 items-center">
+                   <span className="flex items-center gap-1.5"><span className={`w-1 h-1 rounded-full ${killSwitchActive ? 'bg-white' : 'bg-green-500 shadow-[0_0_5px_#22c55e]'}`}></span> SPINE: {killSwitchActive ? 'HALTED' : 'STABLE'}</span>
+                   <span className="hidden sm:inline uppercase">Coherence: {(quantumMetrics?.qubitCoherence || 0).toFixed(2)}ns</span>
+                   <span className="hidden md:inline uppercase">TES: {(quantumMetrics?.tesScore || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex gap-4">
-                   <span className="text-amber-500 font-bold glow-text-gold">{isGodMode ? 'GOD_MODE_ACTIVE' : 'UPB-1_GATED'}</span>
+                <div className="flex gap-4 items-center uppercase">
+                   <span className={`font-bold ${isGodMode ? 'text-amber-500 glow-text-gold' : 'text-slate-600'}`}>{isGodMode ? 'GOD_MODE_ACTIVE' : 'UPB-1_GATED'}</span>
                    <span>Ω GEN: {(quantumMetrics?.gpGenerations || 0).toLocaleString()}</span>
                 </div>
             </div>
 
-            <Header onAnalyzeSentiment={()=>{}} onStartTour={startTour} onInitiateSwarm={handleInitiateSwarmProtocol} />
-            
-            <div className="flex-1 flex flex-col relative z-10 h-[calc(100vh-64px-24px)]">
-                {/* Navigation Deck */}
-                <div className="px-4 py-2 bg-[#050505] border-b border-[#222] flex gap-1 overflow-x-auto custom-scrollbar flex-shrink-0 items-center shadow-lg relative z-20">
-                    <CyberKey view="nexus" label="Nexus" icon={<QuantumIcon className="w-3 h-3"/>} id="tab-nexus" />
-                    <CyberKey view="sentinel" label="Sentinel" icon={<TerminalIcon className="w-3 h-3"/>} id="tab-sentinel" />
-                    <CyberKey view="orchestrator" label="Orchestrator" icon={<NetworkIcon className="w-3 h-3"/>} id="tab-orchestrator" />
-                    <CyberKey view="paper_terminal" label="Paper" icon={<BeakerIcon className="w-3 h-3"/>} id="tab-paper" />
-                    <CyberKey view="sonar" label="Sonar" icon={<SonarIcon className="w-3 h-3"/>} id="tab-sonar" />
-                    <CyberKey view="analytics" label="Analytics" icon={<ChartPieIcon className="w-3 h-3"/>} id="tab-analytics" />
-                    <CyberKey view="toolkit" label="Toolkit" icon={<SparklesIcon className="w-3 h-3"/>} id="tab-toolkit" />
-                    <CyberKey view="backtester" label="Backtester" icon={<ChartBarIcon className="w-3 h-3"/>} id="tab-backtester" />
-                    <CyberKey view="intel" label="Intel" icon={<BookOpenIcon className="w-3 h-3"/>} id="tab-intel" />
-                </div>
-                {renderMainContent()}
+            <div className="shrink-0 z-30">
+                <Header onAnalyzeSentiment={()=>{}} onStartTour={()=>{}} onInitiateSwarm={handleInitiateSwarmProtocol} />
             </div>
+            
+            <div className="shrink-0 z-30">
+                <NavigationDeck 
+                    activeView={activeView} 
+                    setActiveView={setActiveView} 
+                    focusMode={focusMode}
+                    setFocusMode={setFocusMode}
+                />
+            </div>
+
+            <div className="flex-1 flex flex-col relative z-20 min-h-0 overflow-hidden">
+                {!hasPaidKey ? renderAuthScreen() : renderMainWorkspace()}
+            </div>
+            
+            <div className="absolute top-24 right-8 z-10 pointer-events-none hidden xl:block opacity-30 mix-blend-screen scale-75"><AvatarOrb /></div>
         </div>
     );
 };

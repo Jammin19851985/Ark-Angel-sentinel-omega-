@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { ArrowUpIcon } from './icons/ArrowUpIcon';
 import { ArrowDownIcon } from './icons/ArrowDownIcon';
+import { LivePaperBadge } from './LivePaperBadge';
 
 const PaperTerminal: React.FC<{ id: string }> = ({ id }) => {
     const { paperBalance, paperTrades, executeTrade, marketData } = useAppContext();
@@ -14,15 +16,18 @@ const PaperTerminal: React.FC<{ id: string }> = ({ id }) => {
     };
 
     return (
-        <div id={id} className="h-full flex flex-col bg-black/40 border border-slate-800 rounded-lg overflow-hidden font-mono">
+        <div id={id} className="h-full flex flex-col bg-black/40 border border-slate-800 rounded-lg overflow-hidden font-mono tech-panel">
             <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
                 <div>
                     <h2 className="text-sm font-bold text-cyan-400">// ISOLATED PAPER TERMINAL</h2>
                     <p className="text-[10px] text-slate-500 uppercase tracking-widest">Sandbox Protocol (Zero Capital Risk)</p>
                 </div>
-                <div className="text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase">Paper Balance</span>
-                    <span className="text-lg font-bold text-white">${paperBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <div className="flex flex-col items-end">
+                    <LivePaperBadge />
+                    <div className="mt-1">
+                        <span className="text-[9px] text-slate-500 uppercase mr-2">Paper Balance</span>
+                        <span className="text-lg font-bold text-white">${paperBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                    </div>
                 </div>
             </div>
 

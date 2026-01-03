@@ -15,6 +15,7 @@ import { NetworkIcon } from './icons/NetworkIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 import { CrosshairIcon } from './icons/CrosshairIcon';
 import { useAppContext } from '../contexts/AppContext';
+import { LivePaperBadge } from './LivePaperBadge';
 
 interface AgentOrchestratorProps {
     id: string; 
@@ -150,10 +151,11 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
     };
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-b-lg rounded-tr-lg shadow-lg flex flex-col h-full glow-border flex-1 relative">
+        <div id={id} className="tech-panel flex flex-col h-full overflow-hidden relative">
             <div className="p-4 border-b border-slate-800 flex justify-between items-center">
                 <h2 className="text-sm font-bold text-amber-400 font-mono">// AGENT ORCHESTRATOR</h2>
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
+                    <LivePaperBadge />
                     <div className="text-[10px] font-mono text-slate-500 uppercase">Swarm Load: <span className="text-amber-500">{bots.length} Units</span></div>
                 </div>
             </div>

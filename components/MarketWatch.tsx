@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { MarketData } from '../types';
 import PriceTrendTooltip from './charts/PriceTrendTooltip';
 import { SearchIcon } from './icons/SearchIcon';
 import { useAppContext } from '../contexts/AppContext';
+import { LivePaperBadge } from './LivePaperBadge';
 
 // Helper hook for previous value
 function usePrevious<T>(value: T): T | undefined {
@@ -93,28 +95,32 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
     const currentNewsItem = MARKET_NEWS_HEADLINES[currentNewsIndex];
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg p-4 shadow-lg glow-border flex flex-col h-full">
-            <h2 className="text-sm font-bold text-amber-400 mb-3 font-mono">// MARKET WATCH</h2>
+        <div id={id} className="tech-panel p-3 flex flex-col h-full bg-black/60">
+            <div className="flex justify-between items-center mb-3">
+                <h2 className="text-xs font-bold text-amber-400 font-mono uppercase tracking-widest">// MARKET WATCH</h2>
+                <LivePaperBadge />
+            </div>
+            
             <div className="relative mb-3">
                 <input 
                     type="text"
                     value={marketFilter}
                     onChange={(e) => setMarketFilter(e.target.value)}
-                    placeholder="Filter symbols..."
-                    className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md pl-8 pr-4 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition"
+                    placeholder="SCAN_TICKER..."
+                    className="w-full bg-black/80 border border-slate-700 rounded-sm pl-8 pr-4 py-1 text-[10px] font-mono text-slate-200 placeholder-slate-600 focus:border-amber-500 transition outline-none"
                 />
-                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 pointer-events-none" />
             </div>
             
             <div className="flex-1 flex flex-col min-h-0">
-                <div className="grid grid-cols-12 font-mono text-xs text-slate-500 px-2 pb-1 border-b border-slate-800">
-                    <span className="col-span-3">SYMBOL</span>
-                    <span className="col-span-2 text-right">PRICE</span>
-                    <span className="col-span-2 text-right">%CHANGE</span>
-                    <span className="col-span-2 text-right">ABS</span>
-                    <span className="col-span-3 text-right">VOLUME(24H)</span>
+                <div className="grid grid-cols-12 font-mono text-[9px] text-slate-600 px-2 pb-1 border-b border-slate-800 uppercase tracking-wider">
+                    <span className="col-span-3">Sym</span>
+                    <span className="col-span-2 text-right">Price</span>
+                    <span className="col-span-2 text-right">%Chg</span>
+                    <span className="col-span-2 text-right">Abs</span>
+                    <span className="col-span-3 text-right">Vol (24h)</span>
                 </div>
-                <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1">
+                <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1 custom-scrollbar">
                     {filteredSymbols.map((symbol) => {
                         const data = marketData[symbol];
                         if (!data) return null;
@@ -132,21 +138,21 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                         return (
                             <div 
                                 key={symbol} 
-                                className={`relative grid grid-cols-12 items-center font-mono text-sm p-1.5 rounded-md transition-colors ${rowFlashClass}`}
+                                className={`relative grid grid-cols-12 items-center font-mono text-[10px] p-1 rounded-sm transition-colors cursor-crosshair hover:bg-white/5 ${rowFlashClass}`}
                                 onMouseEnter={() => setHoveredSymbol(symbol)}
                                 onMouseLeave={() => setHoveredSymbol(null)}
                             >
-                                <span className="text-slate-300 col-span-3 truncate">{symbol}</span>
+                                <span className="text-slate-300 col-span-3 truncate font-bold">{symbol}</span>
                                 <span className={`font-medium text-right col-span-2 transition-colors duration-500 ${getPriceColorClass(symbol)}`}>
                                     {data.price.toFixed(data.price > 10 ? 2 : 4)}
                                 </span>
-                                <span className={`text-xs text-right col-span-2 ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <span className={`text-right col-span-2 ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
                                 </span>
-                                <span className={`text-xs text-right col-span-2 ${data.changeAbsolute >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <span className={`text-right col-span-2 ${data.changeAbsolute >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {data.changeAbsolute >= 0 ? '+' : ''}{data.changeAbsolute.toFixed(data.price > 10 ? 2 : 4)}
                                 </span>
-                                <span className="text-xs text-slate-400 text-right col-span-3">
+                                <span className="text-slate-500 text-right col-span-3">
                                     {formattedVolume}
                                 </span>
                                 
@@ -159,12 +165,11 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                 </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-800">
-                <h3 className="text-xs font-bold text-amber-400 mb-2 font-mono">// MARKET INTEL</h3>
+            <div className="mt-3 pt-2 border-t border-slate-800">
+                <h3 className="text-[9px] font-bold text-slate-500 mb-1 font-mono uppercase tracking-widest">// INTEL_FEED</h3>
                 {currentNewsItem && (
-                    <div key={currentNewsIndex} className="animate-fade-in-fast h-10">
-                        <p className="text-xs text-slate-300 leading-snug">{currentNewsItem.headline}</p>
-                        <p className="text-[10px] text-slate-500 mt-1">{currentNewsItem.source}</p>
+                    <div key={currentNewsIndex} className="animate-fade-in-fast min-h-[30px]">
+                        <p className="text-[10px] text-slate-400 leading-tight truncate">{currentNewsItem.headline}</p>
                     </div>
                 )}
             </div>

@@ -6,6 +6,8 @@ import { PlayCircleIcon } from './icons/PlayCircleIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { analyzeBacktestResults } from '../services/geminiService';
 import { useAppContext } from '../contexts/AppContext';
+import { ChartInfoOverlay } from './charts/ChartInfoOverlay';
+import { LivePaperBadge } from './LivePaperBadge';
 
 const PRESET_DATA = `Date,Open,High,Low,Close
 2023-01-02,100,102,99,101
@@ -45,51 +47,74 @@ const EquityChart: React.FC<{ data: EquityDataPoint[], viewMode: 'equity' | 'dra
         return `${x},${y}`;
     }).join(' ');
 
-    const strokeColor = viewMode === 'equity' ? 'text-amber-500' : 'text-red-500';
-    const tradeBuyColor = viewMode === 'equity' ? '#10B981' : '#4ade80';
-    const tradeSellColor = viewMode === 'equity' ? '#EF4444' : '#f87171';
+    const strokeColor = viewMode === 'equity' ? '#f59e0b' : '#ef4444'; // Amber or Red
+    const fillGradient = viewMode === 'equity' ? 'equity-gradient' : 'drawdown-gradient';
 
     return (
-        <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-            {/* Drawdown Zero Line (The Surface) */}
-            {viewMode === 'drawdown' && (
-                <line 
-                    x1="0" 
-                    y1={100 - ((0 - min) / (range || 1)) * 100} 
-                    x2="100" 
-                    y2={100 - ((0 - min) / (range || 1)) * 100} 
-                    stroke="rgba(255, 255, 255, 0.2)" 
-                    strokeWidth="0.5" 
-                    strokeDasharray="2,2" 
+        <div className="relative w-full h-full group/backtest">
+            <ChartInfoOverlay info={{
+                title: viewMode === 'equity' ? "Equity Curve Simulation" : "Drawdown Topology",
+                description: viewMode === 'equity' ? "Simulates portfolio value growth over time based on strategy signals." : "Visualizes peak-to-trough decline percentages to assess risk.",
+                useCase: viewMode === 'equity' ? "Validating profit potential." : "Stress testing survival.",
+                benefits: "Identifies if a strategy is viable or reckless before deploying capital.",
+                howToUse: viewMode === 'equity' ? "Steep upward slope = good." : "Deep spikes = dangerous risk."
+            }} />
+            
+            <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
+                <defs>
+                    <linearGradient id="equity-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
+                    </linearGradient>
+                    <linearGradient id="drawdown-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+                        <stop offset="100%" stopColor="#ef4444" stopOpacity="0.0" />
+                    </linearGradient>
+                    <filter id="glow-backtest">
+                        <feGaussianBlur stdDeviation="1" result="coloredBlur" />
+                        <feMerge>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                {/* Grid Lines */}
+                {[20, 40, 60, 80].map(y => (
+                    <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#1e293b" strokeWidth="0.2" strokeDasharray="2,2" />
+                ))}
+
+                {/* Area Fill */}
+                <polygon 
+                    points={`0,100 ${points} 100,100`} 
+                    fill={`url(#${fillGradient})`} 
                 />
-            )}
 
-            <polyline
-                fill="none"
-                stroke="currentColor"
-                className={strokeColor}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={points}
-                vectorEffect="non-scaling-stroke"
-            />
-            {data.map((point, i) => {
-                if (!point.trade) return null;
-                const x = (i / (data.length - 1)) * 100;
-                const y = 100 - ((point.value - min) / (range || 1)) * 100;
-                const color = point.trade === 'buy' ? tradeBuyColor : tradeSellColor;
-                const shape = point.trade === 'buy' 
-                    ? `M ${x} ${y-4} L ${x-3.5} ${y+2} L ${x+3.5} ${y+2} Z` 
-                    : `M ${x} ${y+4} L ${x-3.5} ${y-2} L ${x+3.5} ${y-2} Z`;
+                {/* Main Line */}
+                <polyline
+                    fill="none"
+                    stroke={strokeColor}
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={points}
+                    vectorEffect="non-scaling-stroke"
+                    filter="url(#glow-backtest)"
+                />
 
-                return (
-                     <path key={`trade-${i}`} d={shape} fill={color} vectorEffect="non-scaling-stroke">
-                        <title>{`${point.trade.toUpperCase()} @ ${viewMode === 'equity' ? '$' : ''}${point.value.toFixed(2)}${viewMode === 'drawdown' ? '%' : ''}`}</title>
-                    </path>
-                );
-            })}
-        </svg>
+                {/* Trade Markers */}
+                {data.map((point, i) => {
+                    if (!point.trade) return null;
+                    const x = (i / (data.length - 1)) * 100;
+                    const y = 100 - ((point.value - min) / (range || 1)) * 100;
+                    const color = point.trade === 'buy' ? '#10B981' : '#EF4444';
+                    
+                    return (
+                         <circle key={i} cx={x} cy={y} r="1" fill={color} stroke="none" vectorEffect="non-scaling-stroke" />
+                    );
+                })}
+            </svg>
+        </div>
     );
 };
 
@@ -213,12 +238,15 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
     }, [results, chartView]);
 
     return (
-        <div id={id} className="h-full flex flex-col font-mono">
-            <h3 className="text-lg font-bold text-slate-200 mb-1 tracking-tighter uppercase">// PROPRIETARY BACKTESTER // VECTORIZED ENGINE</h3>
+        <div id={id} className="h-full flex flex-col font-mono bg-black/60 backdrop-blur-sm border border-slate-800 rounded-lg p-4 shadow-lg glow-border overflow-hidden min-h-0 tech-panel">
+            <div className="flex justify-between items-center mb-1">
+                <h3 className="text-lg font-bold text-slate-200 tracking-tighter uppercase">// PROPRIETARY BACKTESTER // VECTORIZED ENGINE</h3>
+                <LivePaperBadge />
+            </div>
             <p className="text-[10px] text-slate-500 mb-4">AODE-GPT_V4: High-fidelity historical simulation with Kelly Criterion risk management.</p>
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-y-auto">
-                <div className="flex flex-col space-y-4">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden min-h-0">
+                <div className="flex flex-col space-y-4 overflow-y-auto pr-2">
                     <div>
                         <label className="block text-[10px] font-bold text-amber-500 mb-2">STRATEGY VECTOR</label>
                         <select
@@ -252,9 +280,9 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                     {error && <div className="text-red-400 text-[10px] bg-red-950/20 p-2 rounded border border-red-500/30">{error}</div>}
                 </div>
 
-                <div className="flex flex-col space-y-4">
-                    <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[250px] flex flex-col">
-                        <div className="flex justify-between items-center mb-2">
+                <div className="flex flex-col space-y-4 overflow-hidden min-h-0">
+                    <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[200px] flex flex-col overflow-hidden relative">
+                        <div className="flex justify-between items-center mb-2 z-10 relative">
                             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">// Simulation Visualizer</h4>
                             <div className="flex bg-black/60 rounded p-0.5 border border-slate-700">
                                 <button 
@@ -271,11 +299,17 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                                 </button>
                             </div>
                         </div>
-                        <div className="flex-1 min-h-[150px] flex items-center justify-center relative">
-                            {isLoading ? <Loader /> : results ? <EquityChart data={chartData} viewMode={chartView} /> : <p className="text-slate-600 text-[10px]">Awaiting simulation initialization...</p>}
+                        <div className="flex-1 w-full min-h-0 relative z-0">
+                            {isLoading ? (
+                                <div className="absolute inset-0 flex items-center justify-center"><Loader /></div>
+                            ) : results ? (
+                                <EquityChart data={chartData} viewMode={chartView} />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-[10px]">Awaiting simulation initialization...</div>
+                            )}
                         </div>
                         {results && (
-                            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-slate-800 pt-3 text-[10px]">
+                            <div className="mt-2 grid grid-cols-3 gap-2 border-t border-slate-800 pt-2 text-[10px] z-10 relative">
                                 <div className="flex flex-col"><span className="text-slate-500 uppercase">Alpha:</span><span className={results.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}>${results.totalPnl.toFixed(2)}</span></div>
                                 <div className="flex flex-col"><span className="text-slate-500 uppercase">Win Rate:</span><span className="text-amber-400">{results.winRate.toFixed(1)}%</span></div>
                                 <div className="flex flex-col"><span className="text-slate-500 uppercase">Drawdown:</span><span className="text-red-500">{results.maxDrawdownPercentage.toFixed(2)}%</span></div>
@@ -286,15 +320,15 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                     <button
                         onClick={runAnalysis}
                         disabled={!results || isAnalyzing}
-                        className="flex items-center justify-center gap-2 bg-sky-900/50 border border-sky-500 text-sky-400 font-bold py-2 rounded text-[10px] hover:bg-sky-900 transition-all disabled:opacity-20"
+                        className="flex items-center justify-center gap-2 bg-sky-900/50 border border-sky-500 text-sky-400 font-bold py-2 rounded text-[10px] hover:bg-sky-900 transition-all disabled:opacity-20 flex-shrink-0"
                     >
                         {isAnalyzing ? <Loader /> : <SparklesIcon className="w-3 h-3" />}
                         {isAnalyzing ? 'AUDITING METRICS...' : 'EXECUTE FORENSIC AUDIT (GEMINI 3 PRO)'}
                     </button>
                     
-                    <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[150px] overflow-hidden flex flex-col">
-                        <h4 className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">// Forensic Briefing</h4>
-                        <div className="flex-1 overflow-y-auto text-[10px] text-slate-300 leading-relaxed font-mono">
+                    <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[100px] overflow-hidden flex flex-col">
+                        <h4 className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest flex-shrink-0">// Forensic Briefing</h4>
+                        <div className="flex-1 overflow-y-auto text-[10px] text-slate-300 leading-relaxed font-mono custom-scrollbar">
                             {isAnalyzing ? <div className="flex justify-center mt-4"><Loader /></div> : analysisError ? <p className="text-red-400">{analysisError}</p> : analysis ? <div className="whitespace-pre-wrap">{analysis}</div> : <p className="text-slate-600">Awaiting forensic input...</p>}
                         </div>
                     </div>

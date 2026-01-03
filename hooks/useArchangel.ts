@@ -361,7 +361,10 @@ export const useArchangel = () => {
                 ...prev,
                 realityAnchorStability: Math.min(1.0, prev.realityAnchorStability + 0.00001),
                 gpGenerations: prev.gpGenerations + Math.floor(Math.random() * 100),
+                // UPB-1 Mandate: Coherence > 40ns. Simulation ensures this is met or triggers self-patch.
                 qubitCoherence: Math.max(90, Math.min(150, prev.qubitCoherence + (Math.random() - 0.5) * 4)),
+                // UPB-1 Mandate: FSF < 0.0000001.
+                fsfMetric: 0.00000005 + (Math.random() * 0.00000001),
                 tesScore: Math.max(0.95, Math.min(0.9999, prev.tesScore + (Math.random() - 0.5) * 0.002)),
                 // Slight entropy fluctuation for autonomy testing
                 entropy: Math.max(0.1, Math.min(0.95, prev.entropy + (Math.random() - 0.5) * 0.05))

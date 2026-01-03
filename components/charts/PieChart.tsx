@@ -1,20 +1,22 @@
 
 import React, { useState } from 'react';
+import { ChartInfoOverlay, ChartInfo } from './ChartInfoOverlay';
 
 interface PieChartProps {
     data: { label: string; value: number }[];
+    info?: ChartInfo;
 }
 
-// Nano-Bananas Gradient Palette
+// Nano-Bananas Gradient Palette - Neon Edition
 const GRADIENTS = [
-    { start: '#0ea5e9', end: '#0c4a6e' }, // Sky
-    { start: '#8b5cf6', end: '#4c1d95' }, // Violet
-    { start: '#f59e0b', end: '#78350f' }, // Amber
-    { start: '#10b981', end: '#064e3b' }, // Emerald
-    { start: '#f43f5e', end: '#881337' }, // Rose
+    { start: '#22d3ee', end: '#0891b2' }, // Cyan
+    { start: '#a78bfa', end: '#7c3aed' }, // Violet
+    { start: '#fbbf24', end: '#d97706' }, // Amber
+    { start: '#34d399', end: '#059669' }, // Emerald
+    { start: '#fb7185', end: '#e11d48' }, // Rose
 ];
 
-const PieChart: React.FC<PieChartProps> = ({ data }) => {
+const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const total = data.reduce((sum, item) => sum + item.value, 0);
     
@@ -34,7 +36,8 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
     };
 
     return (
-        <div className="w-full h-full flex items-center justify-center relative">
+        <div className="relative w-full h-full flex items-center justify-center group/chart">
+            <ChartInfoOverlay info={info} />
             <svg viewBox="0 0 250 250" className="w-2/3 h-full overflow-visible">
                 <defs>
                     {GRADIENTS.map((g, i) => (
@@ -44,7 +47,7 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
                         </linearGradient>
                     ))}
                     <filter id="pie-glow">
-                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                         <feMerge>
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
@@ -52,11 +55,13 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
                     </filter>
                 </defs>
 
+                {/* Outer Ring */}
+                <circle cx={cx} cy={cy} r={radius + 5} fill="none" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 2" />
+
                 {data.map((item, i) => {
                     const slicePercentage = item.value / total;
                     const endAngle = startAngle + slicePercentage * 360;
                     
-                    // Don't draw if 0 size
                     if (slicePercentage <= 0) return null;
 
                     const [startX, startY] = getCoordinatesForPercent(startAngle / 360);
@@ -73,7 +78,6 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
                     const isHovered = hoveredIndex === i;
                     const colorIndex = i % GRADIENTS.length;
 
-                    // Update angle for next slice
                     startAngle = endAngle;
 
                     return (
@@ -81,13 +85,13 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
                            onMouseEnter={() => setHoveredIndex(i)}
                            onMouseLeave={() => setHoveredIndex(null)}
                            className="transition-all duration-300 ease-out cursor-pointer"
-                           style={{ transformOrigin: `${cx}px ${cy}px`, transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+                           style={{ transformOrigin: `${cx}px ${cy}px`, transform: isHovered ? 'scale(1.1)' : 'scale(1)' }}
                         >
                             <path 
                                 d={pathData} 
                                 fill={`url(#pie-grad-${colorIndex})`}
-                                stroke="rgba(0,0,0,0.5)"
-                                strokeWidth="1"
+                                stroke="rgba(0,0,0,0.8)"
+                                strokeWidth="2"
                                 className="transition-all duration-300"
                                 filter={isHovered ? 'url(#pie-glow)' : ''}
                             />
@@ -95,25 +99,25 @@ const PieChart: React.FC<PieChartProps> = ({ data }) => {
                     );
                 })}
                 
-                {/* Donut Hole */}
-                <circle cx={cx} cy={cy} r={radius * 0.6} fill="#000000" fillOpacity="0.4" />
-                <circle cx={cx} cy={cy} r={radius * 0.55} fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
+                {/* Inner Hole */}
+                <circle cx={cx} cy={cy} r={radius * 0.5} fill="#050508" stroke="#1e293b" strokeWidth="2" />
             </svg>
 
-            {/* Legend / Hover Info */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
+            {/* Center Legend */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center z-10">
                 {hoveredIndex !== null ? (
                     <div className="animate-fade-in-fast">
-                        <div className="text-xl font-bold text-white font-mono drop-shadow-md">
+                        <div className="text-xl font-bold text-white font-mono drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">
                             {data[hoveredIndex].value}
                         </div>
-                        <div className="text-[10px] text-slate-300 font-mono tracking-widest uppercase">
+                        <div className="text-[9px] text-cyan-400 font-mono tracking-widest uppercase">
                             {data[hoveredIndex].label}
                         </div>
                     </div>
                 ) : (
-                    <div className="text-xs text-slate-500 font-mono">
-                        TOTAL<br/>{total}
+                    <div className="text-xs text-slate-500 font-mono uppercase tracking-widest">
+                        TOTAL<br/>
+                        <span className="text-slate-300 text-sm font-bold">{total}</span>
                     </div>
                 )}
             </div>

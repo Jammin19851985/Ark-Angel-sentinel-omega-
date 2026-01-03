@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { BotStatus, Bot, LegionName } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { NetworkIcon } from './icons/NetworkIcon';
+import { LivePaperBadge } from './LivePaperBadge';
 
 const statusColors: { [key in BotStatus]: string } = {
     Executing: 'bg-green-500 shadow-[0_0_5px_#10b981]',
@@ -46,14 +47,17 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
     }, [bots]);
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm border border-slate-800 rounded-lg p-4 shadow-lg glow-border flex flex-col h-full overflow-hidden">
+        <div id={id} className="tech-panel p-4 flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                     <NetworkIcon className="w-5 h-5 text-amber-400" />
-                    <h2 className="text-xs font-bold text-amber-400 font-mono tracking-widest uppercase">// SWARM LEGIONS // 2,500 UNITS</h2>
+                    <h2 className="text-xs font-bold text-amber-400 font-mono tracking-widest uppercase">// SWARM LEGIONS</h2>
                 </div>
-                <div className="text-[10px] font-mono text-green-400 animate-pulse">
-                    ACTIVE: {stats.active}
+                <div className="flex items-center gap-2">
+                    <LivePaperBadge />
+                    <div className="text-[10px] font-mono text-green-400 animate-pulse bg-green-900/20 px-2 py-0.5 rounded border border-green-500/30">
+                        ACTIVE: {stats.active}
+                    </div>
                 </div>
             </div>
 
