@@ -1,73 +1,64 @@
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Holding } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
+import { Sparkline } from './charts/Sparkline';
 
 interface PortfolioDisplayProps {
     id: string;
 }
 
-const PLSparkline: React.FC<{ history: number[], avgPrice: number, quantity: number, color: string }> = ({ history, avgPrice, quantity, color }) => {
-    if (history.length < 2) return null;
-    
-    const plHistory = history.map(price => (price - avgPrice) * quantity);
-    const min = Math.min(...plHistory);
-    const max = Math.max(...plHistory);
-    const range = Math.max(max - min, 1);
-    const width = 100;
-    const height = 30;
-
-    const points = plHistory.map((val, i) => {
-        const x = (i / (plHistory.length - 1)) * width;
-        const y = height - ((val - min) / range) * height;
-        return `${x},${y}`;
-    }).join(' ');
-
-    return (
-        <div className="relative group/spark">
-            <svg width="70" height="24" viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
-                <line 
-                    x1="0" y1={height - ((0 - min) / range) * height} 
-                    x2={width} y2={height - ((0 - min) / range) * height} 
-                    stroke="rgba(255,255,255,0.1)" 
-                    strokeWidth="0.5" 
-                    strokeDasharray="2,2"
-                />
-                <polyline
-                    fill="none"
-                    stroke={color}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={points}
-                    className="transition-all duration-500"
-                />
-            </svg>
-        </div>
-    );
-};
-
 const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
-    const { portfolio, marketData, fiatBalance, historicalMarketData, coreState, trades, activeOrders } = useAppContext();
+    const { portfolio, marketData, fiatBalance, historicalMarketData, coreState } = useAppContext();
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
-
-    const holdings = Object.values(portfolio) as Holding[];
-
-    const currentAssetValue = holdings.reduce((acc, holding) => {
-        const currentPrice = marketData[holding.symbol]?.price || holding.avgPrice;
-        return acc + (holding.quantity * currentPrice);
-    }, 0);
-
-    const totalValue = currentAssetValue + fiatBalance;
-
-    const totalCost = holdings.reduce((acc, holding) => {
-        return acc + (holding.quantity * holding.avgPrice);
-    }, 0);
     
-    const totalPnl = currentAssetValue - totalCost;
-    const totalPnlPercent = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
+    // Drag and Drop State
+    const [orderedSymbols, setOrderedSymbols] = useState<string[]>([]);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+    // Sync orderedSymbols with portfolio keys, preserving existing order where possible
+    useEffect(() => {
+        const currentSymbols = Object.keys(portfolio);
+        setOrderedSymbols(prev => {
+            // Keep existing symbols in their current order
+            const existing = prev.filter(s => currentSymbols.includes(s));
+            // Add new symbols to the end
+            const newSymbols = currentSymbols.filter(s => !prev.includes(s));
+            return [...existing, ...newSymbols];
+        });
+    }, [portfolio]);
+
+    const holdings = useMemo(() => {
+        return orderedSymbols
+            .map(s => portfolio[s])
+            .filter(Boolean) as Holding[];
+    }, [orderedSymbols, portfolio]);
+
+    // Memoize financial calculations to ensure they update efficiently when marketData changes
+    const { currentAssetValue, totalValue, totalCost, totalPnl, totalPnlPercent } = useMemo(() => {
+        const assetVal = holdings.reduce((acc, holding) => {
+            const currentPrice = marketData[holding.symbol]?.price || holding.avgPrice;
+            return acc + (holding.quantity * currentPrice);
+        }, 0);
+
+        const cost = holdings.reduce((acc, holding) => {
+            return acc + (holding.quantity * holding.avgPrice);
+        }, 0);
+        
+        const pnl = assetVal - cost;
+        const pnlPercent = cost > 0 ? (pnl / cost) * 100 : 0;
+        const total = assetVal + fiatBalance;
+
+        return {
+            currentAssetValue: assetVal,
+            totalCost: cost,
+            totalPnl: pnl,
+            totalPnlPercent: pnlPercent,
+            totalValue: total
+        };
+    }, [holdings, marketData, fiatBalance]);
 
     const equityHistory = useMemo(() => {
         const symbols = Object.keys(portfolio);
@@ -100,6 +91,35 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
         setHoverIndex(Math.max(0, Math.min(index, equityHistory.length - 1)));
     };
 
+    // Drag Handlers
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+        // Required for Firefox to allow drag
+        e.dataTransfer.setData("text/plain", index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === index) return;
+
+        const newOrder = [...orderedSymbols];
+        const [movedSymbol] = newOrder.splice(draggedIndex, 1);
+        newOrder.splice(index, 0, movedSymbol);
+
+        setOrderedSymbols(newOrder);
+        setDraggedIndex(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
     return (
         <div id={id} className="tech-panel p-3 flex flex-col font-mono h-full bg-black/60">
             <div className="flex justify-between items-center mb-3">
@@ -121,10 +141,14 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                             <div className="text-2xl font-bold text-white tracking-tighter group-hover:text-amber-400 transition-colors">
                                 ${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(totalValue)}
                             </div>
+                            <div className={`text-[10px] font-mono font-bold mt-1 flex items-center gap-1 ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                <span className="text-slate-600 uppercase font-bold text-[8px] tracking-wider">Unrl. PnL:</span>
+                                {totalPnl >= 0 ? '+' : '-'}${Math.abs(totalPnl).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </div>
                         </div>
                         <div className="text-right">
                              <div className={`text-[10px] font-bold ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {totalPnl >= 0 ? '▲' : '▼'} {totalPnlPercent.toFixed(2)}%
+                                {totalPnl >= 0 ? '▲' : '▼'} {Math.abs(totalPnlPercent).toFixed(2)}%
                             </div>
                             <div className="text-[8px] text-slate-600 uppercase font-bold">ROE</div>
                         </div>
@@ -165,7 +189,7 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
             <div className="border-t border-slate-800 pt-3 flex-1 flex flex-col min-h-0">
                 <div className="text-[8px] text-slate-600 grid grid-cols-12 gap-1 mb-2 px-1 font-bold uppercase tracking-widest bg-black/40 py-1 rounded-sm">
                     <span className="col-span-3">Asset</span>
-                    <span className="col-span-3 text-center">Status</span>
+                    <span className="col-span-3 text-center">Trend</span>
                     <span className="col-span-3 text-right">Value</span>
                     <span className="col-span-3 text-right">Yield</span>
                 </div>
@@ -176,7 +200,7 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                             <span className="tracking-widest">PORTFOLIO_EMPTY</span>
                         </div>
                     ) : (
-                        holdings.map(holding => {
+                        holdings.map((holding, index) => {
                             const currentPrice = marketData[holding.symbol]?.price || holding.avgPrice;
                             const currentValue = currentPrice * holding.quantity;
                             const costBasis = holding.avgPrice * holding.quantity;
@@ -184,20 +208,39 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                             const pnlPercent = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
                             const pnlColorClass = pnl >= 0 ? 'text-green-400' : 'text-red-400';
                             const history = historicalMarketData[holding.symbol] || [];
+                            
+                            // Transform price history to PnL history for visualization
+                            const pnlHistory = history.map(price => (price - holding.avgPrice) * holding.quantity);
 
                             return (
-                                <div key={holding.symbol} className={`grid grid-cols-12 gap-1 text-slate-300 items-center p-1.5 rounded-sm border border-slate-800/50 bg-[#08080a] hover:border-slate-600 transition-colors`}>
-                                    <div className="col-span-3 flex flex-col">
-                                        <span className="font-bold text-white text-[10px] tracking-tight">{holding.symbol}</span>
+                                <div 
+                                    key={holding.symbol} 
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, index)}
+                                    onDragOver={handleDragOver}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                    onDragEnd={handleDragEnd}
+                                    className={`grid grid-cols-12 gap-1 text-slate-300 items-center p-1.5 rounded-sm border transition-all relative group cursor-grab active:cursor-grabbing
+                                        ${draggedIndex === index ? 'opacity-30 border-dashed border-slate-600' : 'border-slate-800/50 bg-[#08080a] hover:border-slate-600'}
+                                    `}
+                                >
+                                    {/* Drag Handle Overlay (Visible on Hover) */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-700 opacity-0 group-hover:opacity-50 rounded-l-sm transition-opacity" />
+
+                                    <div className="col-span-3 flex flex-col pl-1.5">
+                                        <span className="font-bold text-white text-[10px] tracking-tight flex items-center gap-1">
+                                            {holding.symbol}
+                                        </span>
                                         <span className="text-[8px] text-slate-600 uppercase font-bold">{holding.quantity.toFixed(4)} Units</span>
                                     </div>
                                     
-                                    <div className="col-span-3 flex flex-col items-center">
-                                        <PLSparkline 
-                                            history={history} 
-                                            avgPrice={holding.avgPrice} 
-                                            quantity={holding.quantity} 
+                                    <div className="col-span-3 flex flex-col items-center justify-center h-full">
+                                        <Sparkline 
+                                            data={pnlHistory} 
                                             color={pnl >= 0 ? '#10b981' : '#ef4444'} 
+                                            width={60}
+                                            height={20}
+                                            strokeWidth={1.5}
                                         />
                                     </div>
                                     

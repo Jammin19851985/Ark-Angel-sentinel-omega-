@@ -5,6 +5,7 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 
+// Fix: Added missing BANKING_PAYPAL color to logSourceColors to satisfy type constraints
 const logSourceColors: { [key in LogEntry['source']]: string } = {
     SYSTEM: 'text-sky-400',
     SENTINEL: 'text-amber-400',
@@ -23,6 +24,7 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     QUANTUM: 'text-indigo-400',
     BLOCKCHAIN: 'text-emerald-300',
     BANKING: 'text-emerald-500',
+    BANKING_PAYPAL: 'text-blue-400 font-bold',
     SCALPER: 'text-fuchsia-400',
     SHADOW: 'text-zinc-400',
     FORENSIC: 'text-amber-600 font-bold',
@@ -42,6 +44,7 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     MEV_GUARD: 'text-emerald-400 font-bold',
     IBKR: 'text-orange-500 font-bold',
     HARDWARE: 'text-indigo-500 font-bold',
+    AUTH: 'text-fuchsia-500 font-bold',
 };
 
 const SystemLog: React.FC<{ id: string }> = ({ id }) => {

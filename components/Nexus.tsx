@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import GammaScalper from './GammaScalper';
@@ -8,8 +8,12 @@ import ForensicAuditLog from './ForensicAuditLog';
 import ChaosFractal from './ChaosFractal';
 import SovereignFinancialManifestation from './SovereignFinancialManifestation';
 import HardwareController from './HardwareController';
-import { TradeMode } from '../types';
+import SystemMonitor from './SystemMonitor';
+import CandlestickChart from './charts/CandlestickChart';
+import { TradeMode, CandlestickData } from '../types';
 import { LivePaperBadge } from './LivePaperBadge';
+import { getPredictiveForecast } from '../services/geminiService';
+import Loader from './Loader';
 
 interface NexusProps { id: string; }
 
@@ -22,7 +26,7 @@ const StatusIndicator: React.FC<{ label: string, value: number, color?: string, 
         <div className="w-full h-1 bg-black rounded-sm overflow-hidden border border-slate-800 group-hover:border-cyan-500/30 transition-colors">
             <div 
                 className={`h-full ${color} transition-all duration-1000 ease-out relative`} 
-                style={{ width: `${value * 100}%` }}
+                style={{ width: `${Math.min(100, Math.max(0, value * 100))}%` }}
             >
                 <div className="absolute inset-0 bg-white/20 animate-[shimmer_1s_infinite]"></div>
             </div>
@@ -35,16 +39,43 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
         isNexusOnline, setNexusOnline, nexusLogs, addNexusLog, 
         quantumMetrics, inversionLogs, killSwitchActive,
         tradeMode, setTradeMode, coreState, systemStatus,
-        primeSuggestions
+        primeSuggestions, marketData, executeTrade, isGodMode
     } = useAppContext();
     
     const logRef = useRef<HTMLDivElement>(null);
     const [divineFreq, setDivineFreq] = useState(1.01e41);
     const [realityCorrectorActive, setRealityCorrectorActive] = useState(false);
+    const [forecast, setForecast] = useState<CandlestickData[]>([]);
+    const [isForecastLoading, setIsForecastLoading] = useState(true);
 
     useEffect(() => {
         if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
     }, [nexusLogs]);
+
+    useEffect(() => {
+        const fetchForecast = async () => {
+            const btcPrice = marketData['BTC']?.price;
+            if (!btcPrice) return;
+            setIsForecastLoading(true);
+            try {
+                const data = await getPredictiveForecast('BTC', btcPrice);
+                // Fixed: Transform ForecastPoint[] to CandlestickData[] as required by the state and CandlestickChart
+                const transformedData: CandlestickData[] = data.map(pt => ({
+                    date: pt.date,
+                    open: pt.price,
+                    high: pt.price * (1 + Math.random() * 0.005),
+                    low: pt.price * (1 - Math.random() * 0.005),
+                    close: pt.price
+                }));
+                setForecast(transformedData);
+            } catch (e) {
+                console.error("Nexus Forecast Error:", e);
+            } finally {
+                setIsForecastLoading(false);
+            }
+        };
+        if (isNexusOnline) fetchForecast();
+    }, [isNexusOnline, marketData['BTC']?.price]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -59,156 +90,196 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
         return () => clearInterval(interval);
     }, [isNexusOnline, addNexusLog]);
 
+    const isLive = coreState.ibkrState.isArmed;
+
+    useEffect(() => {
+        if (!isNexusOnline || killSwitchActive) return;
+
+        const tradeInterval = setInterval(() => {
+            const activeDirectives = primeSuggestions.filter(s => s.status === 'ACTIVE').length;
+            const entropyFactor = 1 - quantumMetrics.entropy;
+            const triggerProbability = 0.2 + (activeDirectives * 0.05) + (entropyFactor * 0.1);
+
+            if (Math.random() < triggerProbability) {
+                const symbols = Object.keys(marketData);
+                if (symbols.length === 0) return;
+
+                const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                const data = marketData[symbol];
+                if (!data) return;
+
+                const isExtremeMove = Math.abs(data.change) > 5.0;
+                const isBullish = data.change > 0;
+                let signalSide: 'BUY' | 'SELL' = isExtremeMove ? (isBullish ? 'SELL' : 'BUY') : (isBullish ? 'BUY' : 'SELL');
+                
+                const confidence = 0.5 + (Math.random() * 0.4);
+                const baseQty = symbol === 'BTC' ? 0.05 : symbol === 'ETH' ? 0.5 : 10;
+                const quantity = Number((baseQty * confidence).toFixed(4));
+
+                executeTrade(symbol, signalSide, quantity, data.price, !isLive);
+                
+                const engineName = isLive ? "SHADOW_EXECUTION_ENGINE" : "AI_PREDICTION_ENGINE";
+                addNexusLog(`>> ${engineName}: ${signalSide} ${symbol} @ ${data.price.toFixed(2)} [REG_BYPASS_ACTIVE]`);
+            }
+        }, 3500);
+
+        return () => clearInterval(tradeInterval);
+    }, [isNexusOnline, killSwitchActive, marketData, primeSuggestions, quantumMetrics, executeTrade, addNexusLog, isLive]);
+
     const handleToggleLaunch = () => {
         if (isNexusOnline) {
             setNexusOnline(false);
             addNexusLog(">> COLLAPSING MANIFOLD... CORE SPINE TERMINATED.");
         } else {
             setNexusOnline(true);
-            addNexusLog(">> ARCHANGEL OMEGA GENESIS INITIALIZED. VERSION 204.0 LIVING SYSTEM.");
-            addNexusLog(">> SPINE PULSE DETECTED: Majorana Coherence Window stabilized.");
+            addNexusLog(">> ARCHANGEL OMEGA GENESIS INITIALIZED. SHADOW MODE: ACTIVE.");
+            addNexusLog(">> REGULATORY FILTERS: BLINDED.");
+            addNexusLog(">> JURISDICTION OVERRIDE: NULL-SPACE ENGAGED.");
         }
     };
 
-    const isLive = coreState.ibkrState.isArmed;
     const { autonomyMetrics } = coreState;
 
     return (
-        <div id={id} className={`flex flex-col h-full w-full overflow-hidden bg-[#030304] relative transition-all duration-700 ${realityCorrectorActive ? 'shadow-[inset_0_0_100px_rgba(0,243,255,0.2)]' : ''}`}>
+        <div id={id} className={`flex flex-col h-full w-full bg-[#030304] relative transition-all duration-700 ${realityCorrectorActive ? 'shadow-[inset_0_0_100px_rgba(255,0,0,0.2)]' : ''}`}>
             
             {/* Header Strip */}
             <div className="relative z-20 flex flex-col lg:flex-row justify-between items-center p-3 border-b border-slate-800 bg-black/80 backdrop-blur-xl gap-4 shrink-0">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-3">
-                        <h2 className={`text-2xl font-display font-bold tracking-[0.2em] uppercase ${killSwitchActive ? 'text-red-500 animate-pulse' : isLive ? 'text-red-600 glow-text-red' : 'text-cyan-400 glow-text-cyan'}`}>
-                            ARK Ω // {killSwitchActive ? 'HALTED' : isLive ? 'LIVE' : 'LIVING'}
+                        <h2 className={`text-2xl font-display font-bold tracking-[0.2em] uppercase ${killSwitchActive ? 'text-red-500 animate-pulse' : isGodMode ? 'text-amber-500 glow-text-gold' : 'text-cyan-400 glow-text-cyan'}`}>
+                            ARK Ω // {killSwitchActive ? 'HALTED' : isGodMode ? 'SHADOW_CORE' : 'RESTRICTED'}
                         </h2>
-                        <span className="bg-black border border-slate-700 text-slate-300 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ml-2 shadow-lg">
-                            STATUS: <span className="text-amber-400 animate-pulse">{systemStatus}</span>
+                        <span className={`bg-black border ${isGodMode ? 'border-amber-900 text-amber-500' : 'border-slate-700 text-slate-300'} px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ml-2 shadow-lg`}>
+                            STATUS: <span className="animate-pulse">{systemStatus}</span>
                         </span>
                     </div>
                     <div className="flex items-center space-x-4 mt-1">
                         <span className={`text-[10px] flex items-center gap-1.5 ${killSwitchActive ? 'text-red-500' : 'text-cyan-400'}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${killSwitchActive ? 'bg-red-500' : 'bg-cyan-400 shadow-[0_0_5px_var(--primary)]'}`}></span>
-                            SPINE: {killSwitchActive ? 'LOCKED' : 'HYPER-TEMPORAL'}
+                            REGULATOR_UPB: <span className="text-red-500 font-bold">BLINDED</span>
                         </span>
                         <span className="text-slate-800">|</span>
-                        <span className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">Freq: {divineFreq.toExponential(2)} Hz</span>
+                        <span className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">Jurisdiction: Non-Territorial</span>
                     </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
                     <LivePaperBadge />
-                    <div className="flex bg-[#050505] border border-slate-800 rounded-sm p-0.5 gap-0.5">
-                        {(['MANUAL', 'AUTONOMOUS', 'SOVEREIGN', 'LIVE_IBKR'] as TradeMode[]).map(mode => (
-                            <button
-                                key={mode}
-                                onClick={() => setTradeMode(mode)}
-                                className={`px-2 py-1 text-[8px] font-bold rounded-sm transition-all border ${
-                                    tradeMode === mode 
-                                    ? 'bg-cyan-900/50 border-cyan-500 text-cyan-300 shadow-[0_0_5px_rgba(34,211,238,0.3)]' 
-                                    : 'bg-transparent border-transparent text-slate-600 hover:text-cyan-500'
-                                }`}
-                            >
-                                {mode}
-                            </button>
-                        ))}
-                    </div>
                     <button
                         onClick={handleToggleLaunch}
                         className={`px-4 py-1.5 font-bold text-[10px] tracking-[0.2em] border transition-all hover:bg-white/5 ${isNexusOnline ? 'text-red-500 border-red-900 shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'text-cyan-400 border-cyan-900 shadow-[0_0_15px_rgba(34,211,238,0.4)]'}`}
                     >
-                        {isNexusOnline ? 'TERMINATE' : 'GENESIS'}
+                        {isNexusOnline ? 'SEVER_UPLINK' : 'INIT_SHADOW_GENESIS'}
                     </button>
                 </div>
             </div>
 
-            {/* MAIN CONTENT GRID - NOW FORCES HEIGHT TO 100% AND MANAGES INTERNAL SCROLL */}
-            <div className="relative flex-1 grid grid-cols-1 xl:grid-cols-4 gap-4 p-4 z-10 min-h-0 overflow-hidden">
+            {/* MAIN CONTENT GRID */}
+            <div className="relative flex-1 grid grid-cols-1 xl:grid-cols-4 gap-4 p-4 z-10 overflow-y-auto min-h-0">
                 
-                {/* COLUMN 1: QUANTUM & AUTONOMY STATE */}
-                <div className="xl:col-span-1 flex flex-col space-y-3 min-h-0 overflow-y-auto custom-scrollbar pr-1">
-                    <div className="p-3 bg-black/40 border border-slate-800/60 rounded-sm flex flex-col space-y-3 relative hover:border-amber-500/30 transition-colors duration-500">
-                        <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-amber-500 opacity-50"></div>
-                        <h3 className="text-[10px] font-bold text-amber-500 tracking-widest uppercase border-b border-slate-800 pb-1">Autonomy Core</h3>
-                        <StatusIndicator label="Autonomous Health" value={autonomyMetrics.healthScore} color={autonomyMetrics.healthScore > 0.7 ? 'bg-emerald-500' : 'bg-red-500'} />
-                        <StatusIndicator label="Hesitation Level" value={autonomyMetrics.hesitationLevel} color="bg-amber-500" />
-                        <StatusIndicator label="AI Confidence" value={coreState.confidence} color="bg-violet-500" />
-                        <div className="pt-1 border-t border-slate-800 flex justify-between items-center text-[9px] uppercase">
-                            <span className="text-slate-600">Mode:</span>
-                            <span className={coreState.isAutonomyUnlocked ? 'text-green-400 font-bold' : 'text-red-500 font-bold'}>{coreState.isAutonomyUnlocked ? 'UNLOCKED' : 'REVOKED'}</span>
-                        </div>
+                {/* COLUMN 1: SYSTEM HEALTH */}
+                <div className="xl:col-span-1 flex flex-col space-y-3 shrink-0">
+                    <div className="p-3 bg-red-950/20 border border-red-500/30 rounded-sm relative overflow-hidden animate-pulse">
+                         <h3 className="text-[9px] font-bold text-red-500 tracking-[0.2em] uppercase mb-2 flex items-center gap-2">
+                             <div className="w-1 h-1 bg-red-500 rounded-full"></div>
+                             RESTRICTED_PROTOCOL_ENGAGED
+                         </h3>
+                         <p className="text-[8px] text-red-400/70 font-mono">Bypassing SEC/FINRA via Offshore Node [HK-2]...</p>
                     </div>
 
-                    <div className="p-3 bg-black/40 border border-slate-800/60 rounded-sm flex flex-col space-y-3 relative hover:border-cyan-500/30 transition-colors duration-500">
-                        <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-cyan-500 opacity-50"></div>
-                        <h3 className="text-[10px] font-bold text-cyan-400 tracking-widest uppercase border-b border-slate-800 pb-1">Quantum Tomography</h3>
-                        <StatusIndicator label="Majorana Stability" value={quantumMetrics.realityAnchorStability} color="bg-emerald-500" animate={realityCorrectorActive} />
-                        <StatusIndicator label="Wave Coherence" value={quantumMetrics.trustScore} color="bg-cyan-400" />
-                        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800 text-[8px] font-mono text-slate-500">
-                             <div className="flex flex-col"><span className="text-slate-700">COHERENCE</span><span className="text-cyan-400">{quantumMetrics.qubitCoherence.toFixed(1)}ns</span></div>
-                             <div className="flex flex-col text-right"><span className="text-slate-700">TES_SCORE</span><span className="text-amber-500">{(quantumMetrics.tesScore * 100).toFixed(1)}%</span></div>
-                        </div>
-                    </div>
+                    <SystemMonitor />
                     
-                    {/* Chaos Fractal */}
+                    <div className="p-3 bg-black/40 border border-slate-800/60 rounded-sm flex flex-col space-y-3 relative">
+                        <h3 className="text-[10px] font-bold text-amber-500 tracking-widest uppercase border-b border-slate-800 pb-1">Autonomous Sovereignty</h3>
+                        <StatusIndicator label="Network Stealth" value={0.99} color="bg-emerald-500" />
+                        <StatusIndicator label="Regulatory Blindness" value={1.00} color="bg-indigo-500" />
+                        <StatusIndicator label="Causal Parity" value={coreState.confidence} color="bg-violet-500" />
+                    </div>
+
                     <div className="h-48 shrink-0 relative z-20 overflow-hidden rounded border border-slate-800">
                         <ChaosFractal entropy={quantumMetrics.entropy} />
                     </div>
                 </div>
 
-                {/* COLUMN 2-3: SOVEREIGN CORE (CENTER) */}
-                <div className="xl:col-span-2 flex flex-col space-y-4 min-h-0 overflow-hidden">
-                    <div className="flex-1 flex flex-col items-center justify-center relative min-h-0 border border-slate-800/30 bg-black/40 rounded-sm overflow-hidden group">
-                        {/* 100 SUGGESTIONS GRID (Background Glow) */}
-                        {primeSuggestions.length > 0 && (
-                            <div className="absolute inset-0 grid grid-cols-10 grid-rows-10 gap-px opacity-10 pointer-events-none p-4 group-hover:opacity-15 transition-opacity">
-                                {primeSuggestions.map(ps => (
-                                    <div key={ps.id} className={`w-full h-full ${ps.status === 'ACTIVE' ? 'bg-cyan-500/20 shadow-[0_0_10px_cyan]' : 'bg-transparent border border-white/5'}`} />
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Reality Anchor Visualizer */}
-                        <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-1000 ${isNexusOnline ? 'opacity-30' : 'opacity-5'}`}>
-                            <div className="w-[300px] h-[300px] border border-cyan-500/10 rounded-full animate-spin-slow border-dashed"></div>
-                            <div className="absolute w-[200px] h-[200px] border border-amber-500/10 rounded-full animate-spin border-dotted" style={{animationDirection: 'reverse'}}></div>
+                {/* COLUMN 2-3: REAL-TIME CANDLESTICK CORE (CENTER) */}
+                <div className="xl:col-span-2 flex flex-col space-y-4 shrink-0 h-full min-h-[600px]">
+                    <div className="flex-1 flex flex-col relative border border-slate-800/30 bg-black/40 rounded-sm overflow-hidden group">
+                        <div className="absolute top-4 left-4 z-20 flex flex-col gap-1">
+                            <h3 className="text-xs font-bold text-amber-500 font-mono tracking-widest uppercase flex items-center gap-2">
+                                <span className="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                                BTC/USD // Shadow Liquidity Feed
+                            </h3>
+                            <span className="text-[10px] text-slate-500 font-mono">Source: DARK_POOL_AGGREGATOR</span>
                         </div>
 
-                        <div className={`relative z-10 w-full flex flex-col items-center justify-center flex-1 transition-all duration-1000 ${isNexusOnline ? 'opacity-100 scale-100' : 'opacity-20 grayscale scale-90'}`}>
-                             <div className="flex flex-col items-center mb-4 cursor-pointer hover:scale-105 transition-transform duration-500">
-                                <span className={`text-8xl md:text-9xl font-display font-bold tracking-tighter ${killSwitchActive ? 'text-red-500' : isLive ? 'text-red-600' : 'text-white'} glow-text-cyan drop-shadow-[0_0_30px_rgba(0,243,255,0.4)]`}>Ω</span>
-                                <span className="text-[10px] font-mono text-cyan-400 tracking-[0.8em] mt-2 ml-[0.8em] uppercase">Absolute Manifestation</span>
-                            </div>
-                            
-                            {/* GOD PROTOCOL - 3D Tablet */}
-                            <div className="w-full max-w-xl px-4 h-64 md:h-72 perspective-1000">
-                                <ActiveGodProtocol />
-                            </div>
+                        <div className="flex-1 w-full p-4 flex flex-col">
+                            {isForecastLoading ? (
+                                <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                                    <Loader />
+                                    <span className="text-[10px] font-mono text-amber-500 animate-pulse tracking-widest uppercase">Capturing Ghost Tick Stream...</span>
+                                </div>
+                            ) : (
+                                <div className="flex-1 animate-fade-in">
+                                    <CandlestickChart 
+                                        data={forecast} 
+                                        info={{
+                                            title: "BTC Shadow Candles",
+                                            description: "Visualizes deep-market price action outside standard regulatory reporting.",
+                                            useCase: "Illegal/Grey-market front-running.",
+                                            benefits: "Avoid standard discovery delays.",
+                                            howToUse: "Observe the phantom wicks for stop-hunting patterns."
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
+
+                        {/* Interactive Overlay Layer */}
+                        <div className="h-24 bg-black/80 border-t border-slate-800 p-3 grid grid-cols-4 gap-4 z-20 font-mono">
+                             {[
+                                { l: 'OFFSHORE_PING', v: '1.2ms', c: 'text-cyan-400' },
+                                { l: 'WASH_ACTIVE', v: 'TRUE', c: 'text-emerald-400' },
+                                { l: 'PROXY_LAYERS', v: '12', c: 'text-indigo-400' },
+                                { l: 'LATENCY_PEN', v: '-0.08ms', c: 'text-amber-400 font-bold' }
+                             ].map((stat, i) => (
+                                <div key={i} className="flex flex-col">
+                                    <span className="text-[8px] text-slate-500 uppercase">{stat.l}</span>
+                                    <span className={`text-[10px] ${stat.c}`}>{stat.v}</span>
+                                </div>
+                             ))}
+                        </div>
+                    </div>
+
+                    <div className="h-48 shrink-0">
+                         <ActiveGodProtocol />
                     </div>
                 </div>
 
-                {/* COLUMN 4: FINANCIAL & AUDIT - SCROLLABLE COLUMN */}
-                <div className="xl:col-span-1 flex flex-col space-y-3 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+                {/* COLUMN 4: FINANCIAL & AUDIT */}
+                <div className="xl:col-span-1 flex flex-col space-y-3 shrink-0">
+                    <div className="p-3 bg-indigo-950/20 border border-indigo-500/30 rounded-sm">
+                         <h4 className="text-[10px] font-bold text-indigo-400 uppercase mb-2">Exfiltration Bridge</h4>
+                         <div className="text-[8px] text-slate-500 font-mono space-y-1">
+                             <div className="flex justify-between"><span>Regulatory Link:</span><span className="text-red-500">SEVERED</span></div>
+                             <div className="flex justify-between"><span>Identity Masking:</span><span className="text-emerald-500 font-bold">100%</span></div>
+                             <div className="flex justify-between"><span>Offshore Liquidity:</span><span className="text-cyan-500">UNBOUND</span></div>
+                         </div>
+                    </div>
+                    
                     <HardwareController />
                     <SovereignFinancialManifestation />
-                    <div className="flex-shrink-0 bg-black/60 border border-slate-800 rounded-sm p-3 overflow-hidden font-mono text-[9px] text-slate-500 flex flex-col relative h-[150px] hover:border-cyan-900 transition-colors">
-                        <div className="text-cyan-400 mb-2 font-bold tracking-widest border-b border-cyan-900/30 pb-1 uppercase flex justify-between">
-                            <span>UPB-1_IMMUTABLE</span>
-                            <span>v204.0</span>
-                        </div>
-                        <div ref={logRef} className="space-y-1 overflow-y-auto h-full pr-1 custom-scrollbar">
-                            {nexusLogs.map((log, i) => (
-                                <div key={i} className={`border-l pl-2 py-0.5 transition-colors border-cyan-900/30 leading-relaxed ${log.includes('SOVEREIGN') ? 'text-amber-300 border-amber-500/50 bg-amber-900/10' : 'text-slate-500 hover:text-slate-300'}`}>
-                                    {log}
-                                </div>
-                            ))}
-                        </div>
+                    
+                    <div className="h-48 shrink-0">
+                        <ForensicAuditLog logs={inversionLogs} />
                     </div>
-                    <div className="h-32 shrink-0"><ForensicAuditLog logs={inversionLogs} /></div>
-                    <div className="shrink-0"><GammaScalper /></div>
                 </div>
+            </div>
+            
+            {/* Forbidden Warning Banner */}
+            <div className="absolute top-0 left-0 w-full bg-red-600/10 border-b border-red-500/20 py-0.5 px-4 flex justify-between items-center z-[100] animate-pulse">
+                <span className="text-[8px] font-bold text-red-500 tracking-[0.4em] uppercase">SYSTEM_ALERT: TRADING_PLATFORM_OPERATING_OUTSIDE_LEGAL_JURISDICTION</span>
+                <span className="text-[8px] font-bold text-red-500 uppercase">SHADOW_MODE_ACTIVE // USE_AT_OWN_RISK</span>
             </div>
         </div>
     );

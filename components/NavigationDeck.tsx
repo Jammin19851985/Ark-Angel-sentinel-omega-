@@ -24,10 +24,10 @@ const CyberKey: React.FC<{view: ActiveView, label: string, icon: React.ReactNode
         <button 
             id={id}
             onClick={onClick}
-            className={`cyber-key flex items-center justify-center space-x-1.5 px-2 py-1.5 md:py-2 w-full lg:w-auto flex-1 transition-all duration-200 ${isActive ? 'active shadow-[inset_0_0_10px_rgba(6,182,212,0.15)] border-cyan-500/50' : 'opacity-70 hover:opacity-100 hover:border-slate-600'}`}
+            className={`cyber-button cyber-key flex items-center justify-center space-x-1.5 px-2 py-1.5 md:py-2 w-full lg:w-auto flex-1 transition-all duration-200 ${isActive ? 'active shadow-[inset_0_0_15px_rgba(6,182,212,0.3)] border-cyan-500 text-cyan-400' : 'opacity-70 hover:opacity-100 hover:border-cyan-500/50 hover:text-white'}`}
         >
-            <div className={`p-0.5 rounded ${isActive ? 'bg-cyan-900/50 text-cyan-400' : 'text-slate-500'}`}>{icon}</div>
-            <span className={`hidden xl:inline text-[9px] md:text-[10px] font-bold tracking-wider uppercase ${isActive ? 'text-cyan-400' : 'text-slate-500'}`}>{label}</span>
+            <div className={`p-0.5 rounded ${isActive ? 'bg-cyan-900/50 text-cyan-400 drop-shadow-[0_0_5px_rgba(0,243,255,0.8)]' : 'text-slate-500 group-hover:text-cyan-400'}`}>{icon}</div>
+            <span className={`hidden xl:inline text-[9px] md:text-[10px] font-bold tracking-wider uppercase ${isActive ? 'text-cyan-400 glow-text-cyan' : 'text-slate-500'}`}>{label}</span>
         </button>
     );
 };

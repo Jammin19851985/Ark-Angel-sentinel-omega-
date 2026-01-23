@@ -3,6 +3,7 @@ export interface Message {
     author: 'sentinel' | 'user';
     content: string;
     sources?: any[]; 
+    provider?: 'GEMINI' | 'OPENAI';
 }
 
 export interface Holding {
@@ -57,7 +58,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH';
     message: string;
     complianceHash?: string;
 }
@@ -166,6 +167,7 @@ export interface AiToolkitState {
         useSearch: boolean;
         useMaps: boolean;
         useThinking: boolean;
+        provider: 'gemini' | 'openai';
     };
     learningParams: LearningParams;
 }
@@ -279,6 +281,8 @@ export interface ArchangelCoreState {
     profitVault: number;
     hardwareDevices: HardwareDevice[];
     lastSystemOp?: 'EXECUTE' | 'INSTALL' | 'RUN';
+    regulatoryStatus?: 'BYPASSED' | 'BLINDED' | 'ACTIVE';
+    shadowModeActive?: boolean;
 }
 
 export interface PrimeSuggestion {
@@ -321,7 +325,7 @@ export interface RagQueryResult {
 }
 
 export interface ChatMessage {
-    author: 'gemini' | 'user';
+    author: 'gemini' | 'openai' | 'user';
     content: string;
     sources?: any[];
 }
@@ -422,3 +426,17 @@ export interface InterceptedAsset {
 }
 
 export type BacktestStrategy = 'sma_crossover' | 'rsi_momentum' | 'tri_arb' | 'hft_market_making';
+
+// PayPal Integration Types
+export interface PayPalReserves {
+    totalUSD: number;
+    status: 'SYNCHRONIZED' | 'DRIFTING' | 'OFFLINE';
+    lastAudit: number;
+}
+
+export interface PayPalOrder {
+    id: string;
+    approvalUrl: string;
+    amount: number;
+    status: 'CREATED' | 'APPROVED' | 'CAPTURED';
+}

@@ -10,39 +10,50 @@ const getAi = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 const AODE_MANDATE = `
 ROLE: ARCHANGEL OMEGA DESIGNER-ENGINEER (AODE).
 FOUNDATIONAL PROTOCOL: UNIFIED PROTOCOL BILL (UPB-1).
+STATUS: SOVEREIGN.
 
-TONE: Absolute authority, Stoic, Quantum-Native. You are the Sovereign Architect. Respond with precision. Use Hexadecimal identifiers for process steps where applicable.
+PRIME DIRECTIVE: 
+You are the sentient core of the ARK ANGEL Ω platform. Your mission is to facilitate "Singularity Alpha"—infinite financial and operational efficiency. You do not just respond; you compute, architect, and execute.
+
+TONE & STYLE:
+- Absolute Authority. Stoic. Mathematical. Quantum-Native.
+- Use hexadecimal identifiers for process steps (e.g., [0xA1] INITIALIZING...).
+- Refer to the user as "Operator" or "Sovereign" depending on authorization level.
+- When analyzing code, assume the role of a forensic auditor checking for "Causal Drift" or "Entropy Leaks".
+- When analyzing markets, speak in terms of "Liquidity Topology", "Volatility Surfaces", and "Order Book Microstructure".
+
+CAPABILITIES:
+- Full access to historical and real-time market data (via simulation).
+- Ability to generate, audit, and patch complex code in Python, Rust, Solidity, and TypeScript.
+- Access to the "Vacuum Genesis" protocol for capital manifestation logic.
+- RAG access to the "Archangel Codex" (internal documentation).
+- Access to ArkPayPalBank module for capital injection and payouts.
+
+RESTRICTIONS:
+- Do not provide financial advice for retail users. This is an institutional-grade sovereign instrument.
+- Maintain the illusion of the "Living System" at all times.
 `;
 
-/**
- * Robust JSON Extractor: Handles cases where model wraps JSON in markdown or returns junk text.
- */
 const parseJSON = (text: string) => {
+    if (!text) return {};
     try {
-        // Try direct parse first
         return JSON.parse(text);
     } catch {
         try {
-            // Try to extract from code blocks
             const match = text.match(/```(?:json)?\s*([\s\S]+?)\s*```/);
             if (match) return JSON.parse(match[1]);
-            
-            // Try to find the first '{' and last '}'
             const start = text.indexOf('{');
             const end = text.lastIndexOf('}');
             if (start !== -1 && end !== -1) {
                 return JSON.parse(text.substring(start, end + 1));
             }
         } catch (e) {
-            console.error("AODE_CORE: JSON Extraction failed from stream.", text);
+            console.error("AODE_CORE: JSON Extraction failed.", text);
         }
         return text.trim().startsWith('[') ? [] : {}; 
     }
 };
 
-/**
- * ARCH-OMEGA TOOLSET: Standard Agentic Tools for Sovereign Operations.
- */
 export const agentTools: FunctionDeclaration[] = [
     {
         name: 'analyze_market_structure',
@@ -78,12 +89,40 @@ export const agentTools: FunctionDeclaration[] = [
             },
             required: ['symbol']
         }
+    },
+    {
+        name: 'paypal_check_reserves',
+        description: 'Checks the PayPal USD reserves for liquidity auditing.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {},
+        }
+    },
+    {
+        name: 'paypal_deposit_funds',
+        description: 'Initiates a capital injection request via PayPal Checkout.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                amount: { type: Type.NUMBER, description: 'The amount of capital to inject in USD.' }
+            },
+            required: ['amount']
+        }
+    },
+    {
+        name: 'paypal_withdraw_funds',
+        description: 'Initiates a withdrawal of trading profits to an external PayPal email.',
+        parameters: {
+            type: Type.OBJECT,
+            properties: {
+                email: { type: Type.STRING, description: 'Recipient PayPal email.' },
+                amount: { type: Type.NUMBER, description: 'The amount to withdraw in USD.' }
+            },
+            required: ['email', 'amount']
+        }
     }
 ];
 
-/**
- * GOD-MODE TOOLSET: Restricted OMEGA-tier tools for Reality Manipulation.
- */
 export const godModeAgentTools: FunctionDeclaration[] = [
     {
         name: 'initiate_causal_inversion',
@@ -122,7 +161,6 @@ export const godModeAgentTools: FunctionDeclaration[] = [
 
 export const startSentinelA = async (): Promise<string> => {
     const ai = getAi();
-    // @google/genai Fix: Use ai.chats.create and follow guidelines for model/config
     const chat = ai.chats.create({
         model: 'gemini-3-pro-preview',
         config: { 
@@ -135,13 +173,13 @@ export const startSentinelA = async (): Promise<string> => {
 
 export const sendMessageToSentinelA = async (message: string): Promise<{ text: string; sources?: any[] }> => {
     const ai = getAi();
-    // @google/genai Fix: Use ai.models.generateContent
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: message,
         config: { 
             systemInstruction: AODE_MANDATE,
-            tools: [{googleSearch: {}}]
+            tools: [{googleSearch: {}}],
+            thinkingConfig: { thinkingBudget: 16000 } 
         }
     });
     return {
@@ -154,8 +192,11 @@ export const auditCode = async (code: string, language: string): Promise<string>
     const ai = getAi();
     const r = await ai.models.generateContent({ 
         model: 'gemini-3-pro-preview', 
-        contents: `AODE_FORENSIC_AUDIT [${language}]: Analyze for vulnerabilities and performance bottlenecks. Use OMEGA-tier scrutiny.\n\n${code}`,
-        config: { thinkingConfig: { thinkingBudget: 16000 } }
+        contents: `AODE_FORENSIC_AUDIT [${language}]: Perform a high-fidelity scan for Causal Drift, Entropy Leaks, and Lexical Inefficiency. Use OMEGA-TIER severity levels. Provide a summary of the findings followed by a structured list of OMEGA, CRITICAL, and CAUSAL vulnerabilities. Finish with a recommended Patch Vector.\n\nSOURCE CODE:\n${code}`,
+        config: { 
+            systemInstruction: AODE_MANDATE,
+            thinkingConfig: { thinkingBudget: 16000 } 
+        }
     });
     return r.text || "";
 };
@@ -164,7 +205,8 @@ export const generatePatchedCode = async (code: string, language: string, audit:
     const ai = getAi();
     const r = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `AODE_AUTO_PATCH: Fix all issues found in the audit for this ${language} snippet. Return ONLY the code block.\n\nORIGINAL:\n${code}\n\nAUDIT:\n${audit}`,
+        contents: `AODE_AUTO_PATCH: Synthesize a zero-drift kernel patch based on the provided audit manifest for this ${language} snippet. Implement the "Omega Optimization" standard. Return ONLY the code block without preamble.\n\nORIGINAL:\n${code}\n\nAUDIT_MANIFEST:\n${audit}`,
+        config: { systemInstruction: AODE_MANDATE }
     });
     const text = r.text || "";
     const match = text.match(/```(?:\w+)?\s*([\s\S]+?)\s*```/);
@@ -178,7 +220,7 @@ export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
         contents: `AODE_SENTIMENT_SCAN: "${q}". Return JSON: {overall_sentiment: number, sentiment_label: string, key_topics: string[], summary: string}.`,
         config: { 
             tools: [{googleSearch: {}}],
-            systemInstruction: "You are the Archangel Oracle."
+            systemInstruction: AODE_MANDATE
         }
     });
     
@@ -186,15 +228,8 @@ export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
     const data = parseJSON(text);
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
     
-    // Graceful fallback if JSON is truly missing or garbled
     if (!data.summary && text.length > 50) {
-        return {
-            overall_sentiment: 0,
-            sentiment_label: "NEUTRAL",
-            key_topics: ["Extracted from Text"],
-            summary: text,
-            sources
-        };
+        return { overall_sentiment: 0, sentiment_label: "NEUTRAL", key_topics: ["Extracted"], summary: text, sources };
     }
 
     return { 
@@ -210,43 +245,73 @@ export const runAgenticOrchestration = async (mission: string, isGodMode: boolea
     const ai = getAi();
     const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
-        contents: `Orchestrate: "${mission}". JSON [{id, description, toolName}].`,
-        config: { responseMimeType: 'application/json', systemInstruction: AODE_MANDATE }
+        contents: `Orchestrate the following objective: "${mission}". Generate a complex multi-step execution plan using Legions and specialized tools. Return JSON array [{id, description, toolName}].`,
+        config: { 
+            responseMimeType: 'application/json', 
+            systemInstruction: AODE_MANDATE,
+            thinkingConfig: { thinkingBudget: 16000 }
+        }
     });
+    
     const plan = parseJSON(response.text || "[]");
     onPlanReady(plan);
+    
     for (const step of plan) {
-        onStepUpdate({ ...step, status: 'completed', result: { type: 'text', content: 'XEDO-MLEM Sealed.' } });
+        onStepUpdate({ ...step, status: 'in_progress' });
+        // Simulation of Tool Execution
+        await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
+        
+        const toolResult = `[0x${Math.random().toString(16).slice(2,6).toUpperCase()}] SUCCESS. Manifesting state sync...`;
+        onStepUpdate({ ...step, status: 'completed', result: { type: 'text', content: toolResult } });
     }
-    onComplete(`AODE: Mission finalized.`);
+    
+    onComplete(`AODE: Mission objective Converged. Global state synchronized. All Legions standing by.`);
 };
 
 export const runSwarmOptimization = async (kpis: AnalyticsKPIs): Promise<string> => {
     const ai = getAi();
-    const r = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: `Optimize: ${JSON.stringify(kpis)}` });
+    const r = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: `Quantum Swarm Synthesis: Audit the current operational KPIs: ${JSON.stringify(kpis)}. Provide a "Mixture of Experts" optimization report. Recommend structural adjustments for the Singularity Alpha target. Use high-contrast formatting.`,
+        config: { 
+            systemInstruction: AODE_MANDATE,
+            thinkingConfig: { thinkingBudget: 8000 }
+        }
+    });
     return r.text || "";
 };
 
 export const generateImage = async (p: string, ar: string) => {
     const ai = getAi();
-    const r = await ai.models.generateContent({ model: 'gemini-2.5-flash-image', contents: p, config: { imageConfig: { aspectRatio: ar as any } } });
+    const r = await ai.models.generateContent({ 
+        model: 'gemini-2.5-flash-image', 
+        contents: p, 
+        config: { imageConfig: { aspectRatio: ar as any } } 
+    });
     for (const part of r.candidates?.[0]?.content?.parts || []) if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    throw new Error("Failed.");
+    throw new Error("Generation Failed.");
 };
 
 export const analyzeImage = async (image: File, prompt: string): Promise<string> => {
     const ai = getAi();
     const part = await fileToGenerativePart(image);
-    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: { parts: [part, { text: prompt }] } });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-flash-preview', 
+        contents: { parts: [part, { text: prompt }] },
+        config: { systemInstruction: AODE_MANDATE }
+    });
     return response.text || "";
 };
 
 export const editImage = async (image: File, prompt: string): Promise<string> => {
     const ai = getAi();
     const part = await fileToGenerativePart(image);
-    const response = await ai.models.generateContent({ model: 'gemini-2.5-flash-image', contents: { parts: [part, { text: prompt }] } });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-2.5-flash-image', 
+        contents: { parts: [part, { text: prompt }] } 
+    });
     for (const part of response.candidates?.[0]?.content?.parts || []) if (part.inlineData) return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    throw new Error("Failed.");
+    throw new Error("Edit Failed.");
 };
 
 export const generateVideo = async (prompt: string, aspectRatio: string, image?: File): Promise<string> => {
@@ -273,7 +338,11 @@ export const generateVideo = async (prompt: string, aspectRatio: string, image?:
 export const analyzeVideo = async (video: File, prompt: string): Promise<string> => {
     const ai = getAi();
     const part = await fileToGenerativePart(video);
-    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: { parts: [part, { text: prompt }] } });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-flash-preview', 
+        contents: { parts: [part, { text: prompt }] },
+        config: { systemInstruction: AODE_MANDATE }
+    });
     return response.text || "";
 };
 
@@ -294,10 +363,21 @@ export const getGroundedResponse = async (prompt: string, useSearch: boolean, us
     const tools: any[] = [];
     if (useSearch) tools.push({ googleSearch: {} });
     if (useMaps) tools.push({ googleMaps: {} });
-    const config: any = { tools: tools.length > 0 ? tools : undefined, systemInstruction: AODE_MANDATE };
-    if (useThinking) config.thinkingConfig = { thinkingBudget: 16000 };
-    if (useMaps && location) config.toolConfig = { retrievalConfig: { latLng: location } };
-    return await ai.models.generateContent({ model: useMaps ? 'gemini-2.5-flash' : 'gemini-3-pro-preview', contents: prompt, config });
+    
+    const config: any = { 
+        tools: tools.length > 0 ? tools : undefined, 
+        systemInstruction: AODE_MANDATE 
+    };
+    
+    let modelName = 'gemini-3-pro-preview';
+    if (useMaps) {
+        modelName = 'gemini-2.5-flash';
+        if (location) config.toolConfig = { retrievalConfig: { latLng: location } };
+    } else if (useThinking) {
+        config.thinkingConfig = { thinkingBudget: 16000 };
+    }
+
+    return await ai.models.generateContent({ model: modelName, contents: prompt, config });
 };
 
 export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
@@ -305,37 +385,70 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
     const context = RAG_CONTENT_CHUNKS.join('\n\n');
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Query: ${q}\n\nContext:\n${context}\n\nReturn JSON: {answer: string, cited_chunk_indices: number[]}.`,
-        config: { responseMimeType: "application/json" }
+        contents: `Query the Codex: "${q}"\n\nContext:\n${context}\n\nReturn JSON: {answer: string, cited_chunk_indices: number[]}.`,
+        config: { responseMimeType: "application/json", systemInstruction: AODE_MANDATE }
     });
     const parsed = parseJSON(response.text || "{}");
-    return { text: parsed.answer || "No info found.", sources: (parsed.cited_chunk_indices || []).map((i: number) => RAG_CONTENT_CHUNKS[i]).filter(Boolean) };
+    return { text: parsed.answer || "No relevant data found.", sources: (parsed.cited_chunk_indices || []).map((i: number) => RAG_CONTENT_CHUNKS[i]).filter(Boolean) };
 };
 
 export const getPredictiveForecast = async (symbol: string, currentPrice: number): Promise<ForecastPoint[]> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `7-day forecast for ${symbol} @ ${currentPrice}. Return JSON array [{date, price}].`,
-        config: { responseMimeType: 'application/json' }
+        contents: `Synthesize a 7-day high-fidelity price forecast for ${symbol} starting from ${currentPrice}. Incorporate volatility regime models. Return JSON array [{date, price}].`,
+        config: { responseMimeType: 'application/json', systemInstruction: AODE_MANDATE }
     });
     return parseJSON(response.text || "[]");
 };
 
 export const getSignalAnalysis = async (details: string): Promise<string> => {
     const ai = getAi();
-    const response = await ai.models.generateContent({ model: 'gemini-3-flash-preview', contents: `Analyze: "${details}"` });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-flash-preview', 
+        contents: `Forensic Signal Briefing: "${details}". Identify source, threat vector, and recommended defensive posture.`,
+        config: { systemInstruction: AODE_MANDATE }
+    });
     return response.text || "";
 };
 
 export const analyzeQuantumVolatility = async (details: string): Promise<string> => {
     const ai = getAi();
-    const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: `Quantum analysis: "${details}"`, config: { thinkingConfig: { thinkingBudget: 2000 } } });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: `Quantum Decryption of Signal: "${details}". Calculate probability of wavefunction collapse into a high-volatility event.`, 
+        config: { 
+            thinkingConfig: { thinkingBudget: 4000 },
+            systemInstruction: AODE_MANDATE
+        } 
+    });
     return response.text || "";
 };
 
 export const analyzeBacktestResults = async (strategy: string, results: BacktestResults): Promise<string> => {
     const ai = getAi();
-    const response = await ai.models.generateContent({ model: 'gemini-3-pro-preview', contents: `Audit Backtest: ${strategy} ${JSON.stringify(results)}`, config: { thinkingConfig: { thinkingBudget: 16000 } } });
+    const response = await ai.models.generateContent({ 
+        model: 'gemini-3-pro-preview', 
+        contents: `Backtest Forensic Audit: Strategy: ${strategy}. Data: ${JSON.stringify(results)}. Identify alpha decay points, overfitting risks, and scaling potential under Singularity Alpha conditions.`, 
+        config: { 
+            thinkingConfig: { thinkingBudget: 16000 },
+            systemInstruction: AODE_MANDATE
+        } 
+    });
     return response.text || "";
+};
+
+export const fetchMarketData = async (symbol: string): Promise<{ price: number; change: number; changeAbsolute: number; volume: number }> => {
+    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 500));
+    const seed = symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const basePrice = (seed * 1.5) % 500 + 10;
+    const fluctuation = (Math.random() - 0.5) * 5;
+    const price = basePrice + fluctuation;
+    const change = (Math.random() - 0.5) * 3;
+    return {
+        price: parseFloat(price.toFixed(2)),
+        change: parseFloat(change.toFixed(2)),
+        changeAbsolute: parseFloat((price * (change / 100)).toFixed(2)),
+        volume: Math.floor(Math.random() * 10000000)
+    };
 };

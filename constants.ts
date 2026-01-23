@@ -2,19 +2,209 @@
 import { GrandSlamFeature, ActiveView } from "./types";
 
 export const PROGRAMMING_LANGUAGES: string[] = [
-    "TypeScript", "JavaScript", "Python", "Go", "Rust", "C++", "SQL", "Shell",
+    "TypeScript", "JavaScript", "Python", "Go", "Rust", "C++", "SQL", "Shell", "Solidity", "Pine Script", "Verilog", "Haskell"
+];
+
+// Mapped sub-categories for the drill-down feature in Terminal
+export const SUB_CATEGORY_MAP: Record<string, string[]> = {
+    // Banking & Wallet Roots
+    "LINK_FIAT_GATEWAY": ["SELECT_BANK_INSTITUTION", "VERIFY_ROUTING_INFO", "INITIATE_MICRO_DEPOSIT", "BIND_API_CREDENTIALS", "TEST_FIAT_ONRAMP"],
+    "SETUP_COLD_WALLET": ["GENERATE_24_WORD_SEED", "CONNECT_HARDWARE_DEVICE", "DERIVE_ETH_ADDRESS", "IMPORT_XPUB_KEY", "VERIFY_DEVICE_ATTESTATION"],
+    
+    // Quantum & System Roots
+    "INITIATE_QUANTUM_ALIGNMENT": ["CALIBRATE_MAJORANA_QUBITS", "SYNC_ATOMIC_CLOCK", "MEASURE_DECOHERENCE", "ESTABLISH_ENTANGLEMENT", "VERIFY_FSF_METRIC"],
+    "DEPLOY_SWARM_CLUSTER": ["ASSIGN_ROLES", "SET_EFFICIENCY_TARGET", "DEFINE_LOSS_FUNCTION", "ACTIVATE_GHOST_PULSE", "ALLOCATE_GPU_RESOURCES"],
+    
+    // Trading
+    "EXECUTE_SICO_ORDER": ["CALCULATE_OPTIMAL_SIZE", "CHECK_MEV_RISK", "ROUTE_VIA_FLASHBOTS", "SET_TIME_IN_FORCE_IOC", "VERIFY_KILL_SWITCH"],
+    "RUN_FULL_SYSTEM_DIAGNOSTICS": ["CHECK_MEMORY_HEAP", "VERIFY_API_LATENCY", "TEST_DB_INTEGRITY", "SCAN_SECURITY_LOGS", "PING_EXCHANGE_NODES"],
+};
+
+export const WALLET_SETUP_FEATURES = [
+    "Generate 24-word Mnemonic (BIP-39)",
+    "Generate 12-word Mnemonic (BIP-39)",
+    "Passphrase Encryption (BIP-39)",
+    "BIP-32 HD Derivation Path Config",
+    "BIP-44 Multi-Account Hierarchy",
+    "BIP-85 Deterministic Entropy",
+    "Import xPub/yPub/zPub",
+    "Export Encrypted Private Key (WIF)",
+    "Ledger Nano S Plus Integration",
+    "Ledger Nano X Integration",
+    "Ledger Stax Integration",
+    "Trezor Model T Integration",
+    "Trezor Safe 3 Integration",
+    "GridPlus Lattice1 Integration",
+    "Coldcard Mk4 Air-Gap Setup",
+    "BitBox02 Multi-Edition Setup",
+    "Keystone 3 Pro QR-Airgapped Setup",
+    "Jade Hardware Wallet Integration",
+    "OneKey Touch Integration",
+    "Ellipal Titan Cold Wallet Setup",
+    "Generate Paper Wallet (PDF/Print)",
+    "Generate Steel Plate Backup Pattern",
+    "Shamir Secret Sharing (2-of-3)",
+    "Shamir Secret Sharing (3-of-5)",
+    "Shamir Secret Sharing (5-of-9)",
+    "Multi-Sig Gnosis Safe Creation",
+    "Multi-Sig Casa Keymaster Setup",
+    "Multi-Sig Unchained Capital Setup",
+    "Time-Lock Contract Deployment",
+    "Whitelist Address Management",
+    "Spending Limit Configuration",
+    "Daily Withdrawal Limit Setup",
+    "Velocity Check Configuration",
+    "Two-Factor Authentication (YubiKey)",
+    "Two-Factor Authentication (TOTP)",
+    "Biometric Hardware Lock",
+    "Duress Password Setup",
+    "Decoy Wallet Generation",
+    "Tor Network Proxy Setup",
+    "I2P Network Routing",
+    "CoinJoin Auto-Mixing",
+    "Whirlpool Privacy Setup",
+    "PayNym (BIP-47) Setup",
+    "Stealth Address Generation",
+    "UTXO Management & Coin Control",
+    "Dust Attack Filter & Freeze",
+    "RBF (Replace-By-Fee) Toggle",
+    "CPFP (Child-Pays-For-Parent) Setup",
+    "Lightning Network Node Setup",
+    "Lightning Channel Opening",
+    "Watchtower Configuration",
+    "Loop In/Out Service Config",
+    "Liquid Network Sidechain Peg-In",
+    "Rootstock Sidechain Bridge",
+    "Stacks Layer-2 Setup",
+    "RGB Protocol Asset Issuance",
+    "Taproot Asset Support",
+    "Ordinals Inscription Wallet",
+    "BRC-20 Token Wallet Setup",
+    "Runes Protocol Wallet Setup",
+    "Ethereum ENS Registration",
+    "Solana SPL Token Wallet",
+    "Cardano AdaHandle Setup",
+    "Polkadot Substrate Wallet",
+    "Cosmos IBC Wallet Setup",
+    "Avalanche C-Chain Setup",
+    "Binance Smart Chain Setup",
+    "Polygon PoS Setup",
+    "Arbitrum One Setup",
+    "Optimism Setup",
+    "Base Network Setup",
+    "zkSync Era Setup",
+    "Starknet Argent X Setup",
+    "Metamask Snap Installation",
+    "Rabby Wallet Import",
+    "Phantom Wallet Import",
+    "Keplr Wallet Import",
+    "WalletConnect v2.0 Pairing",
+    "dApp Browser Sandbox",
+    "Revoke.cash Approval Scanner",
+    "Token Allowance Manager",
+    "NFT Gallery Organization",
+    "Floor Price Alert Setup",
+    "Gas Fee Estimator (EIP-1559)",
+    "MEV Protection RPC (Flashbots)",
+    "MEV Protection RPC (Eden)",
+    "MEV Protection RPC (Lava)",
+    "Fireblocks API Integration",
+    "Coinbase Prime API Integration",
+    "Fidelity Digital Assets Link",
+    "Anchorage Digital Custody Link",
+    "Tax Reporting API (Koinly)",
+    "Tax Reporting API (CoinTracker)",
+    "Portfolio Tracker Sync",
+    "Spam Token Burner",
+    "Phishing Contract Detector",
+    "Address Poisoning Detector",
+    "Smart Contract Wallet Recovery",
+    "Social Recovery Module (Guardian)",
+    "Dead Man's Switch Protocol"
 ];
 
 export const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
-    nexus: ["Quantum Entropy Trade Timer", "Entangled Correlation Fracture Detector", "SICO Singly Indivisible Composite Orders", "Temporal Drift Nullifier", "MLEM Hash Verifier", "System Health Check", "Toggle Reality Corrector"],
-    sentinel: ["INITIATE_SWARM_PROTOCOL", "RUN_DIAGNOSTICS", "SYSTEM_STATUS", "VERIFY_INTEGRITY", "OVERRIDE_AUTH", "LIST_ACTIVE_AGENTS", "PURGE_CACHE"],
-    orchestrator: ["DEPLOY_LEGION_ALPHA", "OPTIMIZE_HIVE_MIND", "EXECUTE_COMPLEX_ARBITRAGE", "INITIATE_SWARM_PROTOCOL --agents 2500", "MONITOR_SWARM_HEALTH"],
-    toolkit: ["GENERATE_IMAGE --prompt 'Cyberpunk Market'", "ANALYZE_SENTIMENT --symbol BTC", "AUDIT_CODE --lang Python", "RAG_QUERY 'Quantum Finance'", "START_LIVE_AUDIO"],
-    backtester: ["RUN_BACKTEST --strategy tri_arb", "OPTIMIZE_PARAMETERS --metric sharpe", "SIMULATE_BLACK_SWAN", "EXPORT_EQUITY_CURVE", "ANALYZE_DRAWDOWN"],
-    analytics: ["PREDICT_PRICE --symbol BTC", "ANALYZE_VOLATILITY", "CALCULATE_KELLY_CRITERION", "SHOW_CORRELATION_MATRIX", "FORECAST_TREND"],
-    intel: ["SEARCH_PROTOCOL --id F172", "DECRYPT_CODEX", "LIST_OMEGA_PROTOCOLS", "SCAN_NEWS_FEED", "VERIFY_PROTOCOL_HASH"],
-    sonar: ["SCAN_THREATS --region GLOBAL", "ANALYZE_SIGNAL --id LATEST", "FILTER_NOISE --threshold 0.8", "QUANTUM_WAVE_COLLAPSE", "DETECT_ANOMALIES"],
-    paper_terminal: ["PAPER_BUY BTC 1.0", "PAPER_SELL ETH 10.0", "RESET_PAPER_BALANCE", "SIMULATE_FILL_DELAY", "VIEW_PAPER_HISTORY"]
+    nexus: [
+        "INITIATE_QUANTUM_ALIGNMENT", 
+        "CALIBRATE_REALITY_ANCHOR", 
+        "ESTABLISH_SOVEREIGN_LINK", 
+        "PURGE_CAUSAL_DRIFT", 
+        "ACTIVATE_ZERO_POINT_FIELD",
+        "TRIGGER_GAMMA_SCALPER",
+        "AUTHORIZE_HARDWARE_QUORUM"
+    ],
+    sentinel: [
+        "RUN_FULL_SYSTEM_DIAGNOSTICS", 
+        "OVERRIDE_SECURITY_LATCH", 
+        "DEPLOY_COUNTER_MEASURES", 
+        "SCAN_INTERNAL_LOGS", 
+        "VERIFY_UPB1_COMPLIANCE",
+        "INITIATE_SWARM_PROTOCOL",
+        "AGENT ZERO",
+        "GOD_MODE"
+    ],
+    orchestrator: [
+        "DEPLOY_SWARM_CLUSTER --mode ALPHA", 
+        "OPTIMIZE_HIVE_HEURISTICS", 
+        "EXECUTE_GLOBAL_LIQUIDITY_HUNT", 
+        "INITIATE_COMPLEX_ARBITRAGE", 
+        "SYNTHESIZE_STRATEGY_MIXTURE",
+        "MONITOR_SWARM_HEALTH",
+        "SPAWN AGENT --role HUNTER",
+        "HEAL NETWORK TOPOLOGY"
+    ],
+    toolkit: [
+        "ANALYZE_MARKET_SENTIMENT --depth DEEP", 
+        "GENERATE_ASSET_FORECAST --horizon 7D", 
+        "AUDIT_SMART_CONTRACT --risk OMEGA", 
+        "SYNTHESIZE_VOICE_BRIEFING", 
+        "QUERY_RAG_STORE --topic 'QUANTUM_FINANCE'",
+        "SCAN_MEMPOOL_VECTORS",
+        "GENERATE_TRADING_ALGO --lang PYTHON"
+    ],
+    backtester: [
+        "SIMULATE_BLACK_SWAN_EVENT", 
+        "BACKTEST_MEAN_REVERSION_STRATEGY", 
+        "OPTIMIZE_KELLY_CRITERION", 
+        "STRESS_TEST_PORTFOLIO", 
+        "ANALYZE_MAX_DRAWDOWN",
+        "EXPORT_EQUITY_CURVE",
+        "RUN_VECTORIZED_SIMULATION --shards 64",
+        "COMPARE_SHARPE_RATIOS"
+    ],
+    analytics: [
+        "FORECAST_VOLATILITY_SURFACE", 
+        "CORRELATE_MACRO_ASSETS", 
+        "DETECT_LIQUIDITY_CLIFFS", 
+        "ANALYZE_ORDER_BOOK_DEPTH", 
+        "PROJECT_ALPHA_DECAY",
+        "CALCULATE_VAR_99",
+        "MAP_CORRELATION_MATRIX"
+    ],
+    intel: [
+        "DECRYPT_OMEGA_PROTOCOL", 
+        "SEARCH_INSTITUTIONAL_FLOWS", 
+        "ACCESS_DARK_POOL_DATA", 
+        "VERIFY_PROTOCOL_HASH", 
+        "SCAN_GLOBAL_NEWS_FEED",
+        "DECODE_WHALE_WALLET_0x7a"
+    ],
+    sonar: [
+        "SCAN_GEOPOLITICAL_RISK", 
+        "DETECT_QUANTUM_DECOHERENCE", 
+        "TRACK_WHALE_MOVEMENTS", 
+        "MONITOR_CYBER_THREATS", 
+        "ANALYZE_MARKET_ANOMALIES",
+        "TRIANGULATE_LATENCY_ARBITRAGE"
+    ],
+    paper_terminal: [
+        "SIMULATE_HIGH_FREQ_ORDER", 
+        "TEST_SLIPPAGE_TOLERANCE", 
+        "RESET_PAPER_EQUITY", 
+        "EXECUTE_DUMMY_TRADE", 
+        "VIEW_SIMULATION_METRICS",
+        "STRESS_TEST_MARGIN_CALL"
+    ]
 };
 
 export const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;

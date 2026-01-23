@@ -21,7 +21,7 @@ interface ViewManagerProps {
     setInput: (value: string) => void;
     isLoading: boolean;
     error: string | null;
-    handleSendMessage: (e: React.FormEvent) => void;
+    handleSendMessage: (e: React.FormEvent | null, override?: string) => void;
     handleTroubleshoot: (errorMessage: string) => void;
     suggestions: string[];
     onAddAllSuggestions: () => void;
