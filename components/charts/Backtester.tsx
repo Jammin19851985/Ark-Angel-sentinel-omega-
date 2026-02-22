@@ -1,13 +1,12 @@
-
 import React, { useState, useCallback, useMemo } from 'react';
-import { BacktestResults, EquityDataPoint, BacktestStrategy } from '../types';
-import Loader from './Loader';
-import { PlayCircleIcon } from './icons/PlayCircleIcon';
-import { SparklesIcon } from './icons/SparklesIcon';
-import { analyzeBacktestResults } from '../services/geminiService';
-import { useAppContext } from '../contexts/AppContext';
-import { ChartInfoOverlay } from './charts/ChartInfoOverlay';
-import { LivePaperBadge } from './LivePaperBadge';
+import { BacktestResults, EquityDataPoint, BacktestStrategy } from '../../types';
+import Loader from '../Loader';
+import { PlayCircleIcon } from '../icons/PlayCircleIcon';
+import { SparklesIcon } from '../icons/SparklesIcon';
+import { analyzeBacktestResults } from '../../services/geminiService';
+import { useAppContext } from '../../contexts/AppContext';
+import { ChartInfoOverlay } from './ChartInfoOverlay';
+import { LivePaperBadge } from '../LivePaperBadge';
 
 const PRESET_DATA = `Date,Open,High,Low,Close
 2023-01-02,100,102,99,101
@@ -70,27 +69,14 @@ const EquityChart: React.FC<{ data: EquityDataPoint[], viewMode: 'equity' | 'dra
                         <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
                         <stop offset="100%" stopColor="#ef4444" stopOpacity="0.0" />
                     </linearGradient>
-                    <filter id="glow-backtest">
-                        <feGaussianBlur stdDeviation="1" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
                 </defs>
 
-                {/* Grid Lines */}
                 {[20, 40, 60, 80].map(y => (
                     <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#1e293b" strokeWidth="0.2" strokeDasharray="2,2" />
                 ))}
 
-                {/* Area Fill */}
-                <polygon 
-                    points={`0,100 ${points} 100,100`} 
-                    fill={`url(#${fillGradient})`} 
-                />
+                <polygon points={`0,100 ${points} 100,100`} fill={`url(#${fillGradient})`} />
 
-                {/* Main Line */}
                 <polyline
                     fill="none"
                     stroke={strokeColor}
@@ -99,10 +85,8 @@ const EquityChart: React.FC<{ data: EquityDataPoint[], viewMode: 'equity' | 'dra
                     strokeLinejoin="round"
                     points={points}
                     vectorEffect="non-scaling-stroke"
-                    filter="url(#glow-backtest)"
                 />
 
-                {/* Trade Markers */}
                 {data.map((point, i) => {
                     if (!point.trade) return null;
                     const x = (i / (data.length - 1)) * 100;
@@ -155,16 +139,15 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                 let maxDrawdown = 0;
 
                 if (strategy === 'tri_arb') {
-                    // Simulate Triangular Arbitrage (BTC/ETH/USDC)
                     for (let i = 1; i < data.length; i++) {
                         const prob = Math.random();
                         const equityPoint: EquityDataPoint = { date: data[i].date, value: cash };
-                        if (prob > 0.85) { // 15% chance of finding an arb loop
-                            const profit = cash * (Math.random() * 0.005); // 0.5% max profit per loop
+                        if (prob > 0.85) {
+                            const profit = cash * (Math.random() * 0.005);
                             cash += profit;
                             trades++;
                             winningTrades++;
-                            equityPoint.trade = 'buy'; // Visualization proxy
+                            equityPoint.trade = 'buy';
                         }
                         equityPoint.value = cash;
                         equityCurve.push(equityPoint);
@@ -173,20 +156,18 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                         if (dd > maxDrawdown) maxDrawdown = dd;
                     }
                 } else if (strategy === 'hft_market_making') {
-                    // Simulate Grid Market Making
                     for (let i = 1; i < data.length; i++) {
                         const volatility = Math.abs(data[i].close - data[i-1].close) / data[i-1].close;
                         const spreadCaptured = cash * volatility * 0.4;
                         cash += spreadCaptured;
-                        trades += 10; // HFT
-                        winningTrades += 6; // 60% capture
+                        trades += 10;
+                        winningTrades += 6;
                         equityCurve.push({ date: data[i].date, value: cash, trade: i % 5 === 0 ? 'buy' : undefined });
                         if (cash > peakEquity) peakEquity = cash;
                         const dd = (peakEquity - cash) / peakEquity;
                         if (dd > maxDrawdown) maxDrawdown = dd;
                     }
                 } else {
-                    // Fallback to SMA Crossover logic from original
                     const shortP = 5; const longP = 10;
                     for (let i = longP; i < data.length; i++) {
                         const sSMA = data.slice(i - shortP, i).reduce((s, d) => s + d.close, 0) / shortP;
@@ -223,7 +204,6 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
         } catch (err) { setAnalysisError("Analysis Engine failed."); } finally { setIsAnalyzing(false); }
     }, [results, strategy, isAnalyzing]);
 
-    // Compute chart data based on view mode (Equity vs Drawdown)
     const chartData = useMemo(() => {
         if (!results) return [];
         if (chartView === 'equity') return results.equityCurve;
@@ -231,7 +211,6 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
         let peak = -Infinity;
         return results.equityCurve.map(pt => {
             if (pt.value > peak) peak = pt.value;
-            // Calculate underwater percentage (e.g., -5% from peak)
             const dd = peak > 0 ? ((pt.value - peak) / peak) * 100 : 0;
             return { ...pt, value: dd };
         });
@@ -246,7 +225,7 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
             <p className="text-[10px] text-slate-500 mb-4">AODE-GPT_V4: High-fidelity historical simulation with Kelly Criterion risk management.</p>
 
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden min-h-0">
-                <div className="flex flex-col space-y-4 overflow-y-auto pr-2">
+                <div className="flex flex-col space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                     <div>
                         <label className="block text-[10px] font-bold text-amber-500 mb-2">STRATEGY VECTOR</label>
                         <select

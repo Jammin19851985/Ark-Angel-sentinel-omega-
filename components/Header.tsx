@@ -25,6 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
     const { 
         isGodMode, 
         isSovereign, 
+        isAgentZeroActive,
         setWallpaperVideoSrc, 
         addLog,
         theme,
@@ -33,56 +34,46 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
     } = useAppContext();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            setWallpaperVideoSrc(url);
-            addLog('SYSTEM', `Live Wallpaper updated: ${file.name}`);
-        }
-    };
-
     return (
-        <header className={`border-b z-50 relative transition-colors duration-500 shrink-0 ${isGodMode ? 'bg-[#1a1500] border-[#b45309]' : 'bg-[#080808] border-[#333]'}`}>
+        <header className={`border-b z-50 relative transition-colors duration-500 shrink-0 ${isAgentZeroActive ? 'bg-[#000a05] border-emerald-900' : isGodMode ? 'bg-[#0a0800] border-[#b45309]' : 'bg-[#080808] border-[#333]'}`}>
             {/* Decorative Top Line */}
-            <div className={`absolute top-0 left-0 w-full h-[1px] ${isGodMode ? 'bg-amber-500 animate-pulse' : 'bg-gradient-to-r from-transparent via-cyan-500 to-transparent'} opacity-50`}></div>
+            <div className={`absolute top-0 left-0 w-full h-[1px] ${isAgentZeroActive ? 'bg-emerald-500 shadow-[0_0_10px_emerald]' : isGodMode ? 'bg-amber-500 animate-pulse' : 'bg-gradient-to-r from-transparent via-cyan-500 to-transparent'} opacity-80`}></div>
             
             <div className="max-w-[1920px] mx-auto px-4 lg:px-6">
                 <div className="flex items-center justify-between h-12">
                     {/* Branding Area */}
                     <div className="flex items-center gap-3">
-                        <div className={`p-1 rounded border ${isGodMode ? 'border-amber-500 bg-amber-950/30' : 'border-cyan-900 bg-cyan-950/20'} shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>
-                            <ArkAngelIcon className={`h-5 w-5 ${isGodMode ? 'text-amber-400' : 'text-cyan-400'}`}/>
+                        <div className={`p-1 rounded border ${isAgentZeroActive ? 'border-emerald-500 bg-emerald-950/30' : isGodMode ? 'border-amber-500 bg-amber-950/30' : 'border-cyan-900 bg-cyan-950/20'} shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>
+                            <ArkAngelIcon className={`h-5 w-5 ${isAgentZeroActive ? 'text-emerald-400' : isGodMode ? 'text-amber-400' : 'text-cyan-400'}`}/>
                         </div>
                         <div className="flex flex-col">
-                            <h1 className={`text-lg font-display font-bold tracking-widest leading-none ${isGodMode ? 'text-amber-100 glow-text-gold' : 'text-slate-100'}`}>
-                                ARCHANGEL
+                            <h1 className={`text-lg font-display font-bold tracking-widest leading-none ${isAgentZeroActive ? 'text-emerald-100 glow-text-emerald' : isGodMode ? 'text-amber-100 glow-text-gold' : 'text-slate-100'}`}>
+                                {isAgentZeroActive ? 'AGENT_ZERO' : 'ARK_OMEGA'}
                             </h1>
                             <span className="text-[8px] font-mono text-slate-500 tracking-[0.4em] uppercase">
-                                {isGodMode ? 'RESTRICTED_ACCESS_ONLY' : 'Omega Manifestation'}
+                                {isAgentZeroActive ? 'SOVEREIGN_NODE_PROD' : 'Production_Environment'}
                             </span>
                         </div>
-                        {isSovereign && (
+                        {isAgentZeroActive && (
+                            <div className="hidden md:flex items-center px-2 py-0.5 ml-3 border border-emerald-500 bg-emerald-950/20 rounded-sm resonance-pulse">
+                                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping mr-2"></div>
+                                <span className="text-[8px] font-bold text-emerald-300 tracking-widest uppercase">REAL-WORLD_SURVEILLANCE_ACTIVE</span>
+                            </div>
+                        )}
+                        {isSovereign && !isAgentZeroActive && (
                             <div className="hidden md:flex items-center px-2 py-0.5 ml-3 border border-violet-500/50 bg-violet-950/20 rounded-sm">
                                 <div className="w-1 h-1 bg-violet-400 rounded-full animate-pulse mr-1.5"></div>
                                 <span className="text-[8px] font-bold text-violet-300 tracking-widest uppercase">Jurisdiction: Null-Space</span>
-                            </div>
-                        )}
-                        {isGodMode && (
-                             <div className="hidden lg:flex items-center px-2 py-0.5 ml-1 border border-red-500/50 bg-red-950/20 rounded-sm animate-pulse">
-                                <span className="text-[8px] font-bold text-red-400 tracking-widest">ACT 14-B VIOLATION ACTIVE</span>
                             </div>
                         )}
                     </div>
 
                     {/* Controls Deck */}
                     <div className="flex items-center gap-2">
-                        {isGodMode && (
-                            <div className="flex items-center gap-2 mr-4">
-                                <span className="text-[8px] text-slate-600 font-bold">REGULATORY:</span>
-                                <span className="text-[9px] text-red-500 font-bold bg-red-950/20 px-1 border border-red-900/50">BYPASSED</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2 mr-4">
+                            <span className="text-[8px] text-slate-600 font-bold uppercase">Spine_Link:</span>
+                            <span className="text-[9px] text-green-500 font-bold bg-green-950/20 px-1 border border-green-900/50">ENCRYPTED</span>
+                        </div>
 
                         <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
 
@@ -127,8 +118,10 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
 
                         <KeepAwakeToggle />
                         
-                        <div className={`w-8 h-8 flex items-center justify-center border rounded-sm ml-1 transition-all ${isGodMode ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'border-slate-700 bg-slate-800'}`}>
-                            {isGodMode ? (
+                        <div className={`w-8 h-8 flex items-center justify-center border rounded-sm ml-1 transition-all ${isAgentZeroActive ? 'border-emerald-500 bg-emerald-900/20 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : isGodMode ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'border-slate-700 bg-slate-800'}`}>
+                            {isAgentZeroActive ? (
+                                <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse"></div>
+                            ) : isGodMode ? (
                                 <BatmanIcon className="h-5 w-5 text-amber-400 animate-pulse" />
                             ) : (
                                 <ShieldIcon className="h-4 w-4 text-slate-500" />

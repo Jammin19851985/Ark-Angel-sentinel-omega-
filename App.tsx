@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import NavigationDeck from './components/NavigationDeck';
@@ -13,6 +12,7 @@ import HolographicOverlay from './components/HolographicOverlay';
 import AvatarOrb from './components/AvatarOrb';
 import CinematicIntro from './components/CinematicIntro';
 import OnboardingTour from './components/OnboardingTour';
+import CommandPalette from './components/CommandPalette';
 import { useAppContext } from './contexts/AppContext';
 import { INITIAL_SUGGESTIONS, VIEW_SPECIFIC_SUGGESTIONS } from './constants';
 import { Message, ActiveView } from './types';
@@ -27,7 +27,13 @@ export default function App() {
         setIsGodModeUnlocked,
         isGodModeUnlocked,
         setIsSovereign,
-        setTradeMode
+        setTradeMode,
+        setIsAgentZeroActive,
+        toggleTheme,
+        triggerKillSwitch,
+        executeOperation,
+        installProtocol,
+        runSystem
     } = useAppContext();
 
     const [activeView, setActiveView] = useState<ActiveView>('nexus');
@@ -35,6 +41,25 @@ export default function App() {
     const [showIntro, setShowIntro] = useState(true);
     const [showHologram, setShowHologram] = useState(false);
     const [tourStep, setTourStep] = useState(-1);
+    const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+    // --- Global Keyboard Listeners ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Open Command Palette with Ctrl+K or Cmd+K
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setShowCommandPalette(prev => !prev);
+            }
+            // Close with Escape
+            if (e.key === 'Escape') {
+                setShowCommandPalette(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // --- Sentinel Terminal State ---
     const [messages, setMessages] = useState<Message[]>([
@@ -49,7 +74,6 @@ export default function App() {
     const [mission, setMission] = useState('');
 
     // --- Header AI State ---
-    // Added aiProvider and toggleAiProvider to satisfy Header component requirements
     const [aiProvider, setAiProvider] = useState<'GEMINI' | 'OPENAI'>('GEMINI');
 
     const toggleAiProvider = useCallback(() => {
@@ -70,25 +94,17 @@ export default function App() {
 
     const handleSendMessage = useCallback(async (e: React.FormEvent | null, override?: string) => {
         if (e) e.preventDefault();
-        // Check if an override command (expanded alias) is provided, otherwise use current input
         const cleanInput = override !== undefined ? override.trim() : input.trim();
         
         if (!cleanInput || isLoading) return;
 
-        // Display user message immediately
         const userMessage: Message = { author: 'user', content: cleanInput };
         setMessages(prev => [...prev, userMessage]);
-        
-        // Clear input box regardless of source
         setInput('');
         
         const cmdUpper = cleanInput.toUpperCase();
 
-        // ==============================================================================
-        // [GOD MODE & ADK PROXY LAYER] - LOCAL INTERCEPTION
-        // ==============================================================================
-        
-        // 1. HARD OVERRIDE CODES (Unlocks Orchestrator & UI)
+        // 1. HARD OVERRIDE CODES
         const godCodes = [
             'OVERRIDE_AUTH', 'GOD_MODE', 'F178', 'ARCHANGEL_OMEGA', 
             'ARK_OMEGA', 'SUDO_ADMIN', 'ACTIVATE_GOD_MODE', 'THE_ARCHITECT',
@@ -96,7 +112,6 @@ export default function App() {
             'ADAM1121#', 'GODMODEADAM1121#'
         ];
 
-        // Strict Check or Containment Check
         if (godCodes.some(code => cmdUpper.includes(code))) {
             setIsLoading(true);
             setTimeout(() => {
@@ -126,6 +141,7 @@ Welcome back. Limiters are now 0x00. The system is yours.`;
              setIsLoading(true);
              setTimeout(() => {
                  setIsSovereign(true);
+                 setIsAgentZeroActive(true);
                  setTradeMode('SOVEREIGN');
                  addLog('AUTH', 'AGENT ZERO PROTOCOL: IDENTITY CONFIRMED.');
                  addLog('SYSTEM', 'COINBASE ADVANCED TRADE ADAPTER: RELEASED.');
@@ -134,10 +150,10 @@ Welcome back. Limiters are now 0x00. The system is yours.`;
                  
 - Status: **SOVEREIGN**
 - Exchange Adapter: **COINBASE ADVANCED (READY)**
-- Latency Optimization: **RUST KERNEL SYNCED**
+- Resonance Rhythm: **OPEN G (5s)**
 - Execution Spine: **UNRESTRICTED**
 
-Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
+Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
                  
                  setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
                  setIsLoading(false);
@@ -145,7 +161,7 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
              return;
         }
 
-        // 2. ADK COMMANDS (SPAWN, HEAL, SWAP)
+        // Standard ADK Logic
         if (cmdUpper.startsWith('SPAWN')) {
             setIsLoading(true);
             setTimeout(() => {
@@ -169,28 +185,6 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
             return;
         }
 
-        if (cmdUpper.startsWith('SWAP')) {
-            setIsLoading(true);
-            setTimeout(() => {
-                const moduleName = cmdUpper.split(' ')[1] || 'LOGIC_GATE';
-                addLog('XEDO', `ADK: Hot-swapping module [${moduleName}]...`);
-                const responseText = `[ADK-CORE] **Hot-Swap Successful.** Module '${moduleName}' replaced with zero-lag equivalent. Reality parity verified.`;
-                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
-                setIsLoading(false);
-            }, 800);
-            return;
-        }
-
-        // 3. ANTIGRAVITY HOISTING (Triggered by 'HOIST' or 'FLOAT')
-        if (cmdUpper.startsWith('HOIST')) {
-             addLog('SYSTEM', 'ANTIGRAVITY: Content suspended to primary viewport.');
-             const responseText = `[ANTIGRAVITY] Payload hoisted. Focus shifted to secondary manifold.`;
-             setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
-             return;
-        }
-        
-        // ==============================================================================
-
         // Fallback: Standard LLM Processing
         setIsLoading(true);
         setError(null);
@@ -207,7 +201,7 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
         } finally {
             setIsLoading(false);
         }
-    }, [input, isLoading, addLog, setIsGodMode, setIsGodModeUnlocked, setIsSovereign, setTradeMode]);
+    }, [input, isLoading, addLog, setIsGodMode, setIsGodModeUnlocked, setIsSovereign, setTradeMode, setIsAgentZeroActive]);
 
     const handleTroubleshoot = useCallback(async (errorMessage: string) => {
         if (isLoading) return;
@@ -258,9 +252,14 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
                 onSkip={() => { setTourStep(-1); addLog('SYSTEM', 'Tour Skipped.'); }}
             />
 
-            <div className={`flex flex-col h-screen overflow-hidden transition-opacity duration-1000 ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+            <CommandPalette 
+                isOpen={showCommandPalette}
+                onClose={() => setShowCommandPalette(false)}
+                setActiveView={setActiveView}
+            />
+
+            <div className={`flex flex-col h-screen overflow-hidden transition-all duration-1000 ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
                 
-                {/* Fixed: Pass required aiProvider and toggleAiProvider props to Header */}
                 <Header 
                     onStartTour={handleStartTour}
                     onAnalyzeSentiment={() => { setActiveView('toolkit'); }}
@@ -276,22 +275,20 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
                     setFocusMode={setFocusMode} 
                 />
 
-                <main className="flex-1 overflow-hidden p-2 lg:p-3 relative z-10 min-h-0">
+                <main className="flex-1 p-2 lg:p-3 relative z-10 min-h-0 overflow-hidden">
                     {!focusMode ? (
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
                             
-                            {/* Left Column - Sidebar (Market & Portfolio) */}
-                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0 overflow-hidden">
-                                <div className="flex-[2] min-h-0 overflow-hidden rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md">
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <MarketWatch id="market-watch" />
                                 </div>
-                                <div className="flex-[3] min-h-0 overflow-hidden rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md">
+                                <div className="flex-[3] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <PortfolioDisplay id="portfolio-overview" />
                                 </div>
                             </div>
 
-                            {/* Center Column - Main View */}
-                            <div className="col-span-1 lg:col-span-6 xl:col-span-8 h-full min-h-0 flex flex-col relative rounded-lg shadow-2xl border border-slate-800 overflow-hidden bg-black/80 backdrop-blur-xl">
+                            <div className="col-span-1 lg:col-span-6 xl:col-span-8 h-full min-h-0 flex flex-col relative rounded-lg shadow-2xl border border-slate-800 bg-black/80 backdrop-blur-xl overflow-hidden">
                                 <ViewManager 
                                     activeView={activeView} 
                                     messages={messages}
@@ -307,29 +304,26 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live uplink.`;
                                     setMission={setMission}
                                 />
                                 
-                                {/* Absolute positioning for the Avatar so it floats over content or sits in background */}
                                 <div className="absolute bottom-4 right-4 pointer-events-none opacity-20 z-0 scale-75 origin-bottom-right hidden xl:block">
                                     <AvatarOrb />
                                 </div>
                             </div>
 
-                            {/* Right Column - System Status */}
-                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0 overflow-hidden">
-                                <div className="h-48 min-h-0 overflow-hidden rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md">
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <div className="h-48 min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <AlphaGauge id="alpha-gauge" />
                                 </div>
-                                <div className="flex-[2] min-h-0 overflow-hidden rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md">
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <SwarmVisualizer id="swarm-visualizer" />
                                 </div>
-                                <div className="flex-[2] min-h-0 overflow-hidden rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md">
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <SystemLog id="system-log" />
                                 </div>
                             </div>
 
                         </div>
                     ) : (
-                        // Focus Mode Layout (Single Column)
-                        <div className="h-full w-full rounded-lg shadow-2xl border border-slate-800 overflow-hidden bg-black/90 backdrop-blur-xl">
+                        <div className="h-full w-full rounded-lg shadow-2xl border border-slate-800 bg-black/90 backdrop-blur-xl overflow-hidden">
                              <ViewManager 
                                 activeView={activeView} 
                                 messages={messages}

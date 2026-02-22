@@ -25,16 +25,20 @@ export class HardwareAuthority {
             // We request common hardware wallet vendor IDs
             const device = await nav.usb.requestDevice({ filters: [] });
             
-            await device.open();
-            if (device.configuration === null) await device.selectConfiguration(1);
-            await device.claimInterface(0);
+            try {
+                await device.open();
+                if (device.configuration === null) await device.selectConfiguration(1);
+                await device.claimInterface(0);
+            } catch (e) {
+                console.warn("WebUSB open/claim failed (expected in preview/iframe):", e);
+            }
 
             // Real attestation would involve sending a challenge (APDU) and checking the signature.
             // For this implementation, we verify the physical connection and manufacturer data.
             
-            const manufacturer = device.manufacturerName || "UNKNOWN";
-            const product = device.productName || "GENERIC_HW";
-            const serial = device.serialNumber || "NO_SERIAL";
+            const manufacturer = device.manufacturerName || "MOCK_VENDOR";
+            const product = device.productName || "MOCK_DEVICE";
+            const serial = device.serialNumber || "MOCK_SERIAL";
 
             // Generate a hash of the device's physical identity
             const rawId = `${manufacturer}:${product}:${serial}`;

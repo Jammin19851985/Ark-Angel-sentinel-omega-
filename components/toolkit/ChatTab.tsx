@@ -126,7 +126,7 @@ const ChatTab: React.FC = () => {
                 </code>
             );
         },
-        p: ({node, ...props}) => <p className="whitespace-pre-wrap" {...props} />,
+        p: ({node, ...props}) => <div className="whitespace-pre-wrap" {...props} />,
         li: ({node, ...props}) => <li className="ml-4" {...props} />,
         h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-slate-50 mt-4 mb-2" {...props} />,
         h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-slate-100 mt-3 mb-1" {...props} />,

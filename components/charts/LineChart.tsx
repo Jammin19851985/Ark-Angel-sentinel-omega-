@@ -20,8 +20,13 @@ const LineChart: React.FC<LineChartProps> = ({
 }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-    if (data.length < 2) {
-        return <div className="text-center text-slate-500 h-full flex items-center justify-center font-mono text-xs">Insufficient data for visualization.</div>;
+    const validData = useMemo(() => {
+        if (!Array.isArray(data)) return [];
+        return data.filter(d => d && d.price != null);
+    }, [data]);
+
+    if (validData.length < 2) {
+        return <div className="text-center text-slate-500 h-full flex items-center justify-center font-mono text-xs">Awaiting Predictive Stream Signal...</div>;
     }
 
     const width = 500;
@@ -30,7 +35,7 @@ const LineChart: React.FC<LineChartProps> = ({
     const chartWidth = width - 2 * padding;
     const chartHeight = height - 2 * padding;
 
-    const values = data.map(d => d.price);
+    const values = validData.map(d => d.price);
     const max = Math.max(...values);
     const min = Math.min(...values);
     const range = max - min === 0 ? 1 : max - min;
@@ -38,27 +43,24 @@ const LineChart: React.FC<LineChartProps> = ({
     const yBuffer = range * 0.1;
     const domainMax = max + yBuffer;
     const domainMin = min - yBuffer;
-    const domainRange = domainMax - domainMin;
+    const domainRange = Math.max(0.0001, domainMax - domainMin);
 
-    const getX = (index: number) => (index / (data.length - 1)) * chartWidth + padding;
+    const getX = (index: number) => (index / (validData.length - 1)) * chartWidth + padding;
     const getY = (price: number) => (height - padding) - ((price - domainMin) / domainRange) * chartHeight;
 
-    const points = data.map((point, i) => `${getX(i)},${getY(point.price)}`).join(' ');
+    const points = validData.map((point, i) => `${getX(i)},${getY(point.price)}`).join(' ');
 
     const areaPoints = [
         `${getX(0)},${height - padding}`,
-        ...data.map((point, i) => `${getX(i)},${getY(point.price)}`),
-        `${getX(data.length - 1)},${height - padding}`
+        ...validData.map((point, i) => `${getX(i)},${getY(point.price)}`),
+        `${getX(validData.length - 1)},${height - padding}`
     ].join(' ');
 
     const confidencePath = useMemo(() => {
-        const getX_internal = (index: number) => (index / (data.length - 1)) * chartWidth + padding;
-        const getY_internal = (price: number) => (height - padding) - ((price - domainMin) / domainRange) * chartHeight;
-
-        const upperPoints = data.map((point, i) => `${getX_internal(i)},${getY_internal(point.price * 1.02)}`);
-        const lowerPoints = data.map((point, i) => `${getX_internal(i)},${getY_internal(point.price * 0.98)}`).reverse();
+        const upperPoints = validData.map((point, i) => `${getX(i)},${getY(point.price * 1.02)}`);
+        const lowerPoints = validData.map((point, i) => `${getX(i)},${getY(point.price * 0.98)}`).reverse();
         return `${upperPoints.join(' ')} ${lowerPoints.join(' ')}`;
-    }, [data, chartWidth, padding, domainMin, domainRange, chartHeight]);
+    }, [validData, getX, getY]);
 
     return (
         <div className="relative w-full h-full group/chart">
@@ -79,7 +81,6 @@ const LineChart: React.FC<LineChartProps> = ({
                     </filter>
                 </defs>
 
-                {/* Cyber Grid */}
                 {[...Array(6)].map((_, i) => {
                     const y = padding + (chartHeight / 5) * i;
                     return (
@@ -93,15 +94,12 @@ const LineChart: React.FC<LineChartProps> = ({
                     );
                 })}
 
-                {/* Confidence Interval */}
                 {showConfidence && (
                     <polygon points={confidencePath} fill="#f59e0b" fillOpacity="0.05" />
                 )}
 
-                {/* Area */}
                 <polygon points={areaPoints} fill="url(#line-gradient)" />
 
-                {/* The Trace */}
                 {showTrace && (
                     <polyline
                         points={points}
@@ -115,21 +113,19 @@ const LineChart: React.FC<LineChartProps> = ({
                     />
                 )}
 
-                {/* Interactive Points */}
-                {data.map((point, i) => {
+                {validData.map((point, i) => {
                     const x = getX(i);
                     const y = getY(point.price);
                     const isHovered = hoveredIndex === i;
 
                     return (
                         <g 
-                            key={i} 
+                            key={`pt-${i}`} 
                             onMouseEnter={() => setHoveredIndex(i)}
                             onMouseLeave={() => setHoveredIndex(null)}
                             onClick={() => onPointSelect && onPointSelect(point)}
                             className="cursor-pointer"
                         >
-                            {/* Glow behind point */}
                             {isHovered && <circle cx={x} cy={y} r={8} fill="#f59e0b" fillOpacity="0.3" filter="url(#glow-line)" />}
                             
                             <circle 
@@ -141,7 +137,6 @@ const LineChart: React.FC<LineChartProps> = ({
                                 strokeWidth="2"
                                 className="transition-all duration-200 ease-out"
                             />
-                            {/* Hitbox */}
                             <circle cx={x} cy={y} r={10} fill="transparent" />
                             
                             {isHovered && (

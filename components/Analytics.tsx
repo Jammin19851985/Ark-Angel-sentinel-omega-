@@ -42,7 +42,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ id }) => {
                 addLog('SENTINEL', 'Generating predictive forecast for BTC...');
                 const forecastData = await getPredictiveForecast('BTC', btcPrice);
                 const today = new Date().toISOString().split('T')[0];
-                setForecast([{ date: today, price: btcPrice }, ...forecastData]);
+                
+                // Real-world safety: ensure forecastData is iterable (array)
+                const safeForecastData = Array.isArray(forecastData) ? forecastData : [];
+                setForecast([{ date: today, price: btcPrice }, ...safeForecastData]);
+                
                 addLog('SENTINEL', 'BTC forecast received and rendered.');
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";

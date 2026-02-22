@@ -1,4 +1,3 @@
-
 import React, { Suspense, lazy } from 'react';
 import Loader from './Loader';
 import { ActiveView, Message } from '../types';
@@ -6,13 +5,13 @@ import { ActiveView, Message } from '../types';
 // Lazy Loaded Modules
 const SentinelTerminal = lazy(() => import('./SentinelTerminal'));
 const AIToolkit = lazy(() => import('./AIToolkit'));
-const Backtester = lazy(() => import('./Backtester'));
+const Backtester = lazy(() => import('./charts/Backtester'));
 const AgentOrchestrator = lazy(() => import('./AgentOrchestrator'));
 const Analytics = lazy(() => import('./Analytics'));
 const Intel = lazy(() => import('./Intel'));
 const Sonar = lazy(() => import('./Sonar'));
 const Nexus = lazy(() => import('./Nexus'));
-const PaperTerminal = lazy(() => import('./PaperTerminal'));
+const ShadowTerminal = lazy(() => import('./PaperTerminal'));
 
 interface ViewManagerProps {
     activeView: ActiveView;
@@ -43,7 +42,7 @@ const ViewManager: React.FC<ViewManagerProps> = (props) => {
             }>
                 {activeView === 'sonar' && <Sonar id="sonar-view" />}
                 {activeView === 'nexus' && <Nexus id="nexus-view" />}
-                {activeView === 'paper_terminal' && <PaperTerminal id="paper-terminal" />}
+                {activeView === 'shadow_terminal' && <ShadowTerminal id="shadow-terminal" />}
                 {activeView === 'sentinel' && (
                     <SentinelTerminal 
                         id="sentinel-terminal" 

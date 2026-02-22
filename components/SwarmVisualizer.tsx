@@ -7,26 +7,50 @@ import { LivePaperBadge } from './LivePaperBadge';
 import { XCircleIcon } from './icons/XCircleIcon';
 import { RefreshIcon } from './icons/RefreshIcon';
 import { CrosshairIcon } from './icons/CrosshairIcon';
+import { IntelligenceAvatar } from './icons/IntelligenceAvatar';
+import { DefenseAvatar } from './icons/DefenseAvatar';
+import { EfficiencyAvatar } from './icons/EfficiencyAvatar';
 
-const statusColors: { [key in BotStatus]: string } = {
-    Executing: 'bg-green-500 shadow-[0_0_5px_#10b981]',
-    Analyzing: 'bg-amber-500 shadow-[0_0_5px_#f59e0b]',
-    Idle: 'bg-slate-800',
-    Patrolling: 'bg-blue-500 shadow-[0_0_5px_#3b82f6]',
-    Synthesizing: 'bg-violet-500 shadow-[0_0_5px_#8b5cf6]',
-    Defending: 'bg-red-500 shadow-[0_0_5px_#ef4444]'
+const statusGlows: { [key in BotStatus]: string } = {
+    Executing: 'shadow-[0_0_8px_rgba(16,185,129,0.5)]',
+    Analyzing: 'shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+    Idle: 'shadow-none opacity-40 grayscale',
+    Patrolling: 'shadow-[0_0_8px_rgba(59,130,246,0.5)]',
+    Synthesizing: 'shadow-[0_0_8px_rgba(139,92,246,0.5)]',
+    Defending: 'shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+};
+
+const BotAvatar: React.FC<{ bot: Bot; isSelected: boolean }> = ({ bot, isSelected }) => {
+    // Choose avatar based on role/legion
+    const renderIcon = () => {
+        if (bot.legion === 'Security' || bot.role === 'Sentinel') {
+            return <DefenseAvatar />;
+        }
+        if (bot.legion === 'Seraphim' || bot.role === 'Oracle') {
+            return <IntelligenceAvatar />;
+        }
+        return <EfficiencyAvatar />;
+    };
+
+    return (
+        <div className={`w-full h-full transition-all duration-300 ${isSelected ? 'scale-125' : 'hover:scale-110'}`}>
+            {renderIcon()}
+        </div>
+    );
 };
 
 const BotGrid: React.FC<{ bots: Bot[]; onSelect: (bot: Bot) => void; selectedId: number | null }> = ({ bots, onSelect, selectedId }) => {
     return (
-        <div className="grid grid-cols-25 gap-0.5 p-1 bg-black/40 rounded border border-white/5 overflow-hidden">
+        <div className="grid grid-cols-10 sm:grid-cols-12 md:grid-cols-15 lg:grid-cols-20 gap-2 p-2 bg-black/40 rounded border border-white/5 overflow-hidden">
             {bots.map(bot => (
                 <button 
                     key={bot.id} 
                     onClick={(e) => { e.stopPropagation(); onSelect(bot); }}
-                    className={`w-1 h-1 rounded-sm ${statusColors[bot.status]} relative transition-all duration-300 hover:scale-150 hover:z-10 ${selectedId === bot.id ? 'ring-1 ring-white scale-125 z-10' : ''}`}
-                    title={`Unit ${bot.id}: ${bot.status}`}
-                />
+                    className={`w-4 h-4 relative transition-all duration-300 rounded-sm overflow-visible ${statusGlows[bot.status]} ${selectedId === bot.id ? 'ring-1 ring-white z-10' : ''}`}
+                    title={`Unit ${bot.id}: ${bot.status} (${bot.role})`}
+                >
+                    <BotAvatar bot={bot} isSelected={selectedId === bot.id} />
+                </button>
             ))}
         </div>
     );
@@ -48,7 +72,7 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
     }, [bots]);
 
     const stats = useMemo(() => {
-        const active = bots.filter(b => b.status === 'Executing').length;
+        const active = bots.filter(b => b.status === 'Executing' || b.status === 'Patrolling' || b.status === 'Defending').length;
         return { active, total: bots.length };
     }, [bots]);
 
@@ -81,7 +105,7 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 relative">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 relative custom-scrollbar">
                 {/* Bot Detail Overlay */}
                 {selectedBot && (
                     <div className="absolute inset-0 z-20 bg-black/90 backdrop-blur-md flex flex-col justify-center items-center p-4 animate-fade-in rounded border border-slate-700">
@@ -93,8 +117,11 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
                                 <XCircleIcon className="w-5 h-5" />
                             </button>
                             
-                            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${statusColors[selectedBot.status]}`}></span>
+                            <div className="w-16 h-16 mx-auto mb-4">
+                                <BotAvatar bot={selectedBot} isSelected={true} />
+                            </div>
+                            
+                            <h3 className="text-sm font-bold text-amber-400 text-center uppercase tracking-widest mb-4">
                                 UNIT_ID: {selectedBot.id.toString().padStart(4, '0')}
                             </h3>
                             
@@ -146,8 +173,8 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
 
                 {(Object.keys(legions) as LegionName[]).map(name => (
                     <div key={name} className={`p-3 rounded-lg border border-white/5 bg-black/40 transition-opacity ${selectedLegion !== 'ALL' && selectedLegion !== name ? 'opacity-30' : 'opacity-100'}`}>
-                        <div className="flex justify-between items-center mb-2 cursor-pointer" onClick={() => setSelectedLegion(name === selectedLegion ? 'ALL' : name)}>
-                            <span className="text-[10px] font-bold text-slate-300 font-mono uppercase tracking-widest">{name}</span>
+                        <div className="flex justify-between items-center mb-2 cursor-pointer group" onClick={() => setSelectedLegion(name === selectedLegion ? 'ALL' : name)}>
+                            <span className="text-[10px] font-bold text-slate-300 font-mono uppercase tracking-widest group-hover:text-amber-400 transition-colors">{name}</span>
                             <span className="text-[9px] text-slate-500 font-mono">{legions[name].length} UNITS</span>
                         </div>
                         <BotGrid 
@@ -160,9 +187,9 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-[8px] font-mono text-slate-500 uppercase tracking-tighter">
-                <span>Stigmergy: v100.0</span>
-                <span>M-Container: Synced</span>
-                <span>Ghost Pulse: Active</span>
+                <span>Stigmergy Engine: v102.0</span>
+                <span>Active Legions: {(Object.keys(legions) as LegionName[]).length}</span>
+                <span>Ghost Pulse: Sync [0.00ms]</span>
             </div>
         </div>
     );

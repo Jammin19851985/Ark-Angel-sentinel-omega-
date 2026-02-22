@@ -32,15 +32,15 @@ const FormattedLine: React.FC<{ line: string }> = ({ line }) => {
     
     // Severity Highlighting
     if (line.toLowerCase().includes('omega') || line.toLowerCase().includes('critical')) {
-         return <p className="text-red-400 font-bold bg-red-950/30 p-1.5 border-l-2 border-red-500 my-1 flex items-center gap-2">
+         return <div className="text-red-400 font-bold bg-red-950/30 p-1.5 border-l-2 border-red-500 my-1 flex items-center gap-2">
             <span className="text-[10px] animate-pulse">!!!</span> {line}
-         </p>;
+         </div>;
     }
     
     if (line.toLowerCase().includes('caution') || line.toLowerCase().includes('warning')) {
-         return <p className="text-amber-300 bg-amber-950/20 p-1.5 border-l-2 border-amber-500 my-1 italic">
+         return <div className="text-amber-300 bg-amber-950/20 p-1.5 border-l-2 border-amber-500 my-1 italic">
             {line}
-         </p>;
+         </div>;
     }
 
     if (line.startsWith('* ') || line.startsWith('- ')) {
@@ -58,7 +58,7 @@ const FormattedLine: React.FC<{ line: string }> = ({ line }) => {
         return <hr className="border-slate-800 my-6 border-dashed" />;
     }
     
-    return <p className="text-slate-400 leading-relaxed mb-2 text-[11px] font-sans">{line}</p>;
+    return <div className="text-slate-400 leading-relaxed mb-2 text-[11px] font-sans">{line}</div>;
 };
 
 const ReviewOutput: React.FC<ReviewOutputProps> = ({ review, isLoading, error }) => {

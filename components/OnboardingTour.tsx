@@ -28,6 +28,12 @@ const tourSteps: TourStep[] = [
         placement: 'bottom',
     },
     {
+        selector: '#sovereign-finance',
+        title: 'Sovereign Broker Bridge',
+        content: 'Execute manual trades, manage PayPal banking capital, and interact with the shadow execution engine (Coinbase).',
+        placement: 'left',
+    },
+    {
         selector: '#market-watch',
         title: 'Market Watch',
         content: 'Track real-time market data, price changes, and critical market intelligence feeds.',

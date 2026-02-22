@@ -8,15 +8,18 @@ interface BarChartProps {
 }
 
 const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
+    if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-slate-600 font-mono text-[10px]">Awaiting Dataset Ingest...</div>;
+
     const width = 500;
     const height = 250;
     const padding = 20;
     const barPadding = 15;
 
-    const maxValue = Math.max(...data.map(d => d.value));
-    const barWidth = (width - 2 * padding) / data.length - barPadding;
+    const validValues = data.map(d => d.value || 0);
+    const maxValue = Math.max(...validValues, 1); // Ensure max is at least 1 to prevent div by zero
+    const barWidth = Math.max(1, (width - 2 * padding) / data.length - barPadding);
 
-    const valueToY = (value: number) => height - padding - (value / (maxValue || 1)) * (height - 2 * padding);
+    const valueToY = (value: number) => height - padding - ((value || 0) / maxValue) * (height - 2 * padding);
 
     return (
         <div className="relative w-full h-full group/chart">
@@ -24,8 +27,8 @@ const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full text-slate-400 overflow-visible">
                 <defs>
                     <linearGradient id="bar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" /> {/* Cyan 500 */}
-                        <stop offset="100%" stopColor="#083344" stopOpacity="0.4" /> {/* Cyan 950 */}
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" /> 
+                        <stop offset="100%" stopColor="#083344" stopOpacity="0.4" /> 
                     </linearGradient>
                     <filter id="bar-glow" x="-20%" y="-20%" width="140%" height="140%">
                         <feGaussianBlur stdDeviation="4" result="coloredBlur" />
@@ -46,11 +49,10 @@ const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
                 {data.map((d, i) => {
                     const x = padding + i * (barWidth + barPadding) + barPadding / 2;
                     const y = valueToY(d.value);
-                    const barHeight = height - padding - y;
+                    const barHeight = Math.max(0, height - padding - y);
                     
                     return (
-                        <g key={d.label} className="group">
-                            {/* Bar with Glow on Hover */}
+                        <g key={`${d.label}-${i}`} className="group">
                             <rect
                                 x={x}
                                 y={y}
@@ -62,7 +64,6 @@ const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
                                 rx="2"
                                 className="transition-all duration-300 opacity-80 group-hover:opacity-100 group-hover:filter group-hover:url(#bar-glow)"
                             />
-                            {/* Label */}
                             <text 
                                 x={x + barWidth / 2} 
                                 y={height - padding + 15} 
@@ -73,7 +74,6 @@ const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
                             >
                                 {d.label}
                             </text>
-                            {/* Value Label (Floating) */}
                             <text 
                                 x={x + barWidth / 2} 
                                 y={y - 8} 
@@ -81,7 +81,7 @@ const BarChart: React.FC<BarChartProps> = ({ data, info }) => {
                                 fontSize="11" 
                                 className="font-mono fill-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 duration-300 font-bold"
                             >
-                                {d.value}
+                                {d.value || 0}
                             </text>
                         </g>
                     );

@@ -6,16 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "zustand": "5.0.0",
-    "@google/genai": "^1.34.0",
-    "framer-motion": "^12.24.0",
-    "react-markdown": "^10.1.0",
-    "lucide-react": "^0.562.0"
+    "@google/genai": "latest",
+    "@tailwindcss/vite": "^4.2.0",
+    "ccxt": "latest",
+    "framer-motion": "latest",
+    "lightweight-charts": "4.1.1",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-markdown": "latest",
+    "tailwindcss": "^4.2.0",
+    "zustand": "latest"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

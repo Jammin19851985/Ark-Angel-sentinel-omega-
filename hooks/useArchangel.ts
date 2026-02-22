@@ -112,7 +112,8 @@ export const useArchangel = () => {
     });
     const [inversionLogs, setInversionLogs] = useState<InversionEventLog[]>([]);
     const [coreState, setCoreState] = useState<ArchangelCoreState>(INITIAL_CORE_STATE);
-    const [tradeMode, setTradeMode] = useState<TradeMode>('MANUAL');
+    // Fix: Changed 'MANUAL' to 'REAL_WORLD' to satisfy TradeMode type constraints
+    const [tradeMode, setTradeMode] = useState<TradeMode>('REAL_WORLD');
     const [primeSuggestions, setPrimeSuggestions] = useState<PrimeSuggestion[]>([
         { id: 1, label: "Enable Quantum Entropy", status: "PENDING" }
     ]);

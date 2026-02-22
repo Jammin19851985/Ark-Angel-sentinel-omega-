@@ -43,7 +43,7 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
         <div className="w-full px-2 md:px-3 py-1.5 bg-[#020203]/90 border-b border-[#1e293b] flex gap-1 overflow-x-auto custom-scrollbar flex-shrink-0 items-center shadow-lg relative z-30 backdrop-blur-md min-h-[40px]">
             <CyberKey 
                 view="nexus" 
-                label="Nexus" 
+                label="Hub" 
                 icon={<QuantumIcon className="w-2.5 h-2.5"/>} 
                 id="tab-nexus" 
                 activeView={activeView} 
@@ -51,7 +51,7 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
             />
             <CyberKey 
                 view="sentinel" 
-                label="Sentinel" 
+                label="Spine" 
                 icon={<TerminalIcon className="w-2.5 h-2.5"/>} 
                 id="tab-sentinel" 
                 activeView={activeView} 
@@ -59,19 +59,19 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
             />
             <CyberKey 
                 view="orchestrator" 
-                label="Orchestrator" 
+                label="Swarm" 
                 icon={<NetworkIcon className="w-2.5 h-2.5"/>} 
                 id="tab-orchestrator" 
                 activeView={activeView} 
                 onClick={() => handleViewChange('orchestrator')} 
             />
             <CyberKey 
-                view="paper_terminal" 
-                label="Paper" 
+                view="shadow_terminal" 
+                label="Vault" 
                 icon={<BeakerIcon className="w-2.5 h-2.5"/>} 
-                id="tab-paper" 
+                id="tab-vault" 
                 activeView={activeView} 
-                onClick={() => handleViewChange('paper_terminal')} 
+                onClick={() => handleViewChange('shadow_terminal')} 
             />
             <CyberKey 
                 view="sonar" 
@@ -83,7 +83,7 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
             />
             <CyberKey 
                 view="analytics" 
-                label="Analytics" 
+                label="Intel" 
                 icon={<ChartPieIcon className="w-2.5 h-2.5"/>} 
                 id="tab-analytics" 
                 activeView={activeView} 
@@ -99,7 +99,7 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
             />
             <CyberKey 
                 view="backtester" 
-                label="Backtester" 
+                label="Audit" 
                 icon={<ChartBarIcon className="w-2.5 h-2.5"/>} 
                 id="tab-backtester" 
                 activeView={activeView} 
@@ -107,7 +107,7 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
             />
             <CyberKey 
                 view="intel" 
-                label="Intel" 
+                label="Codex" 
                 icon={<BookOpenIcon className="w-2.5 h-2.5"/>} 
                 id="tab-intel" 
                 activeView={activeView} 

@@ -205,7 +205,7 @@ const OmniSentryTab: React.FC = () => {
                             <span>MEV_ACTIVE:</span>
                             <span>8 UNITS (CLUSTER_B)</span>
                         </div>
-                        <div className="text-slate-500 italic">>> ROUTING GHOST PATHS... BLINDING BOTS.</div>
+                        <div className="text-slate-500 italic">&gt;&gt; ROUTING GHOST PATHS... BLINDING BOTS.</div>
                     </div>
                 </div>
             </div>

@@ -208,7 +208,7 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
     const markdownComponents: Components = useMemo(() => ({
         code: CodeBlock,
         pre: ({children}) => <>{children}</>, 
-        p: ({node, ...props}) => <p className="mb-2 last:mb-0 leading-relaxed text-slate-300" {...props} />, 
+        p: ({node, ...props}) => <div className="mb-2 last:mb-0 leading-relaxed text-slate-300" {...props} />, 
         h1: ({node, ...props}) => <h1 className="text-lg font-bold text-amber-400 mt-4 mb-2 border-b border-amber-500/20 pb-1 uppercase tracking-widest font-display" {...props} />,
         h2: ({node, ...props}) => <h2 className="text-base font-bold text-cyan-400 mt-3 mb-2 font-display uppercase tracking-wide flex items-center gap-2" {...props}><span className="w-1 h-2 bg-cyan-500 rounded-sm inline-block"></span>{props.children}</h2>,
     }), []);

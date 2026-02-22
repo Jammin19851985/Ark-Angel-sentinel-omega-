@@ -379,7 +379,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                         <div className="space-y-4 font-mono text-sm animate-fade-in-fast">
                              <div className="border-b border-slate-800 pb-2">
                                 <h3 className={`text-lg font-bold ${selectedSignal.type === 'Quantum' ? 'text-violet-400' : threatConfig[selectedSignal.threat].color}`}>{selectedSignal.threat.toUpperCase()} THREAT</h3 >
-                                <p className={`text-xs font-bold uppercase tracking-widest ${signalTypeColors[selectedSignal.type]}`}>{selectedSignal.type} Event</p >
+                                <div className={`text-xs font-bold uppercase tracking-widest ${signalTypeColors[selectedSignal.type]}`}>{selectedSignal.type} Event</div>
                             </div >
                             <div className="space-y-2 text-xs bg-black/40 p-2 rounded border border-white/5">
                                 <div className="flex justify-between">
@@ -411,7 +411,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                                 <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">// SENTIMENT ANALYSIS</h4 >
                                 <div className="text-slate-300 bg-black/50 backdrop-blur-sm p-3 rounded space-y-3 border border-slate-700">
                                     {isSentimentAnalyzing && <div className="flex items-center justify-center py-4"><Loader /></div >}
-                                    {sentimentError && <p className="text-red-400 text-xs">{sentimentError}</p >}
+                                    {sentimentError && <div className="text-red-400 text-xs">{sentimentError}</div>}
                                     {sentimentResult && (
                                         <>
                                             <div className="flex justify-between items-center text-xs">
@@ -425,7 +425,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                                                 </span >
                                             </div >
                                             <SentimentGauge score={sentimentResult.overall_sentiment} />
-                                            <p className="text-xs text-slate-400 pt-2 border-t border-slate-700/50 italic leading-relaxed">"{sentimentResult.summary}"</p >
+                                            <div className="text-xs text-slate-400 pt-2 border-t border-slate-700/50 italic leading-relaxed">"{sentimentResult.summary}"</div>
                                             <ul className="text-xs text-amber-300 space-y-1 pt-2">
                                                 {sentimentResult.key_topics.map((topic, i) => <li key={i} className="bg-amber-950/40 px-2 py-1 rounded truncate border border-amber-900/50">› {topic}</li>)}
                                             </ul>
@@ -448,10 +448,10 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                     )}
                 </div >
                 <div className="p-4 border-t border-slate-800 text-xs font-mono text-slate-500 bg-black/40">
-                    <div className="flex justify-between">
-                        <p>STATUS: <span className="text-green-400 font-bold animate-pulse">LIVE MONITORING</span ></p >
-                        <p>SIGNALS: <span className="text-slate-300 font-bold">{signals.length}</span></p >
-                    </div>
+                        <div className="flex justify-between">
+                            <div>STATUS: <span className="text-green-400 font-bold animate-pulse">LIVE MONITORING</span></div>
+                            <div>SIGNALS: <span className="text-slate-300 font-bold">{signals.length}</span></div>
+                        </div>
                 </div >
             </div >
         </div >

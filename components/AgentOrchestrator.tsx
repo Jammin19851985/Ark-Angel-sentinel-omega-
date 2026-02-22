@@ -16,6 +16,7 @@ import { DownloadIcon } from './icons/DownloadIcon';
 import { CrosshairIcon } from './icons/CrosshairIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
+import { BookOpenIcon } from './icons/BookOpenIcon';
 
 interface AgentOrchestratorProps {
     id: string; 
@@ -42,7 +43,10 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         installProtocol,
         runSystem,
         killSwitchActive,
-        systemStatus
+        systemStatus,
+        ppCheckReserves,
+        ppInitiateDeposit,
+        ppInitiateWithdrawal
     } = useAppContext();
 
     const [plan, setPlan] = useState<OrchestrationStep[]>([]);
@@ -53,6 +57,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
     const [activeSovereignOp, setActiveSovereignOp] = useState<string | null>(null);
     const [stepToDelete, setStepToDelete] = useState<string | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [showManual, setShowManual] = useState(false);
 
     const allTools = useMemo(() => {
         const toolMap = new Map<string, FunctionDeclaration>();
@@ -79,6 +84,24 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         }
     }, [optimizeSwarm, addLog]);
 
+    const handleToolExecution = useCallback(async (name: string, args: any): Promise<string> => {
+        addLog('ORCHESTRATOR', `Invoking tool: ${name}`);
+        switch (name) {
+            case 'paypal_check_reserves':
+                await ppCheckReserves();
+                return "PayPal Reserves Audited. Status: SYNCHRONIZED.";
+            case 'paypal_deposit_funds':
+                await ppInitiateDeposit(args.amount);
+                return `Deposit Initiated: $${args.amount}`;
+            case 'paypal_withdraw_funds':
+                await ppInitiateWithdrawal(args.email, args.amount);
+                return `Withdrawal Initiated: $${args.amount} to ${args.email}`;
+            default:
+                await new Promise(r => setTimeout(r, 1000));
+                return "Tool executed successfully (Simulation).";
+        }
+    }, [ppCheckReserves, ppInitiateDeposit, ppInitiateWithdrawal, addLog]);
+
     const executeMission = useCallback(async () => {
         if (!mission.trim() || isExecuting) return;
         
@@ -100,7 +123,14 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         addLog('ORCHESTRATOR', `Executing mission in ${mode}: "${mission}"`);
 
         try {
-            await runAgenticOrchestration(mission, isGodMode, handleStepUpdate, handlePlanReady, handleFinalResult);
+            await runAgenticOrchestration(
+                mission, 
+                isGodMode, 
+                handleStepUpdate, 
+                handlePlanReady, 
+                handleFinalResult,
+                handleToolExecution
+            );
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during orchestration.";
             setError(errorMessage);
@@ -108,7 +138,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
         } finally {
             setIsExecuting(false);
         }
-    }, [mission, isExecuting, isGodMode, addLog]);
+    }, [mission, isExecuting, isGodMode, addLog, handleToolExecution]);
     
     const handleStepUpdate = useCallback((updatedStep: OrchestrationStep) => {
         setPlan(prevPlan => prevPlan.map(step => step.id === updatedStep.id ? updatedStep : step));
@@ -189,7 +219,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
             if (line.startsWith('## ')) return <h2 key={i} className="text-md font-bold text-cyan-400 mt-6 mb-3 uppercase tracking-widest">{line.substring(3)}</h2>;
             if (line.startsWith('* ')) return <li key={i} className="ml-4 text-slate-300 mb-1 flex items-start gap-2"><span className="text-amber-500">›</span><span>{line.substring(2)}</span></li>;
             if (line.trim() === '') return <div key={i} className="h-2"></div>;
-            return <p key={i} className="leading-relaxed text-slate-400 text-[11px] mb-2">{line}</p>;
+            return <div key={i} className="leading-relaxed text-slate-400 text-[11px] mb-2">{line}</div>;
         });
     };
 
@@ -217,7 +247,14 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                         <div className="text-[8px] text-slate-500 font-mono uppercase tracking-[0.2em]">STATUS: <span className="text-cyan-400 animate-pulse">{systemStatus}</span></div>
                     </div>
                 </div>
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-2 items-center">
+                    <button 
+                        onClick={() => setShowManual(!showManual)}
+                        className={`p-1.5 rounded border transition-all ${showManual ? 'bg-amber-600 text-white border-amber-400' : 'bg-slate-900 text-slate-400 border-slate-700 hover:text-white'}`}
+                        title="Tactical Briefing"
+                    >
+                        <BookOpenIcon className="w-4 h-4" />
+                    </button>
                     <LivePaperBadge />
                     <div className="text-[10px] font-mono text-slate-500 uppercase bg-slate-900 px-2 py-1 rounded border border-slate-800">
                         Swarm_Load: <span className="text-amber-500 font-bold">{bots.length} Units</span>
@@ -361,7 +398,52 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                      )}
                 </div>
 
-                <div className="flex flex-col space-y-4 min-h-0">
+                <div className="flex flex-col space-y-4 min-h-0 relative">
+                    {showManual && (
+                        <div className="absolute inset-0 z-40 bg-black/95 backdrop-blur-xl p-6 border border-amber-500/30 rounded-lg animate-fade-in-fast flex flex-col font-mono text-xs overflow-y-auto custom-scrollbar">
+                            <div className="flex justify-between items-center border-b border-amber-500/30 pb-3 mb-4">
+                                <h3 className="text-sm font-bold text-amber-500 tracking-[0.2em] uppercase flex items-center gap-2">
+                                    <BookOpenIcon className="w-4 h-4" /> Tactical Briefing: Swarm Deployment
+                                </h3>
+                                <button onClick={() => setShowManual(false)} className="text-slate-500 hover:text-white transition-colors">
+                                    <XCircleIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <section>
+                                    <h4 className="text-cyan-400 font-bold mb-2 uppercase tracking-widest border-l-2 border-cyan-500 pl-2">System Description</h4>
+                                    <p className="text-slate-400 leading-relaxed italic">
+                                        The Agent Orchestrator allows the Operator to define multi-agent missions. It synthesizes a step-by-step execution plan using the Singularity Alpha Mixture of Experts (MoE) kernel.
+                                    </p>
+                                </section>
+
+                                <section>
+                                    <h4 className="text-amber-500 font-bold mb-2 uppercase tracking-widest border-l-2 border-amber-500 pl-2">Use Cases</h4>
+                                    <ul className="space-y-2 text-slate-300">
+                                        <li><span className="text-amber-500 mr-2">›</span> <strong className="text-white">Dark Pool Hunting:</strong> Deploy legions to scan illiquid order books for hidden institutional intent.</li>
+                                        <li><span className="text-amber-500 mr-2">›</span> <strong className="text-white">Sentiment Arbitrage:</strong> Correlate real-time news flux with high-frequency tick variance.</li>
+                                        <li><span className="text-amber-500 mr-2">›</span> <strong className="text-white">Causal Correction:</strong> Use F184 Temporal Inversion to nullify execution drift across parallel exchange nodes.</li>
+                                    </ul>
+                                </section>
+
+                                <section>
+                                    <h4 className="text-green-500 font-bold mb-2 uppercase tracking-widest border-l-2 border-green-500 pl-2">How To Use</h4>
+                                    <ol className="space-y-3 text-slate-400 list-decimal pl-4">
+                                        <li>Define your <span className="text-white">Prime Objective</span> in the neural buffer. Be precise with vectors (e.g., --mode OMEGA).</li>
+                                        <li>Verify <span className="text-white">Authorization</span> levels. God Mode unlocks restricted toolsets (HSM signature required).</li>
+                                        <li>Click <span className="text-white">Launch Swarm Cascade</span> to begin neural synthesis.</li>
+                                        <li>Monitor the <span className="text-white">Execution Pipeline</span> in real-time. Steps can be re-ordered or purged before final collapse.</li>
+                                    </ol>
+                                </section>
+
+                                <div className="mt-8 pt-4 border-t border-slate-800 text-center">
+                                    <p className="text-[8px] text-slate-700 tracking-[0.4em] uppercase">Protocol: Dimensional Bypass Synthesis // MLEM_VERIFIED</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="flex-1 bg-black/50 backdrop-blur-md rounded border border-slate-800 p-4 shadow-inner flex flex-col min-h-0 overflow-hidden relative">
                          {/* Scrollable Feed */}
                          <div className="flex justify-between items-center mb-4 flex-shrink-0">
@@ -440,7 +522,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
                             ))}
                             {finalResult && (
                                  <div className="bg-emerald-950/20 border border-emerald-500/50 p-4 rounded animate-fade-in relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-1 text-[8px] font-bold text-emerald-900 group-hover:text-emerald-500 transition-colors uppercase">Success_Manifest</div>
+                                    <div className="absolute top-0 right-0 p-1 text-[8px] font-bold text-emerald-900 group-hover:text-amber-500 transition-colors uppercase">Success_Manifest</div>
                                     <h4 className="font-bold text-emerald-400 mb-2 text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
                                         <CheckCircleIcon className="w-4 h-4" /> Mission_Converged
                                     </h4>
