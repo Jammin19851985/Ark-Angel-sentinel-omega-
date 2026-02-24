@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit"
@@ -13,13 +13,16 @@
     "@google/genai": "latest",
     "@tailwindcss/vite": "^4.2.0",
     "ccxt": "latest",
+    "express": "^5.2.1",
     "framer-motion": "latest",
+    "http-proxy-middleware": "^3.0.5",
     "lightweight-charts": "4.1.1",
     "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
     "react-markdown": "latest",
     "tailwindcss": "^4.2.0",
+    "tsx": "^4.21.0",
     "zustand": "latest"
   },
   "devDependencies": {

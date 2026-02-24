@@ -308,7 +308,7 @@ const Backtester: React.FC<{ id: string }> = ({ id }) => {
                     <div className="bg-black/30 border border-slate-800 p-4 rounded-lg flex-1 min-h-[100px] overflow-hidden flex flex-col">
                         <h4 className="text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest flex-shrink-0">// Forensic Briefing</h4>
                         <div className="flex-1 overflow-y-auto text-[10px] text-slate-300 leading-relaxed font-mono custom-scrollbar">
-                            {isAnalyzing ? <div className="flex justify-center mt-4"><Loader /></div> : analysisError ? <p className="text-red-400">{analysisError}</p> : analysis ? <div className="whitespace-pre-wrap">{analysis}</div> : <p className="text-slate-600">Awaiting forensic input...</p>}
+                            {isAnalyzing ? <div className="flex justify-center mt-4"><Loader /></div> : analysisError ? <div className="text-red-400">{analysisError}</div> : analysis ? <div className="whitespace-pre-wrap">{analysis}</div> : <div className="text-slate-600">Awaiting forensic input...</div>}
                         </div>
                     </div>
                 </div>

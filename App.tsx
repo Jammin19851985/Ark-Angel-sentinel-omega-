@@ -18,6 +18,21 @@ import { INITIAL_SUGGESTIONS, VIEW_SPECIFIC_SUGGESTIONS } from './constants';
 import { Message, ActiveView } from './types';
 import { sendMessageToSentinelA } from './services/geminiService';
 
+declare global {
+    interface Window {
+        process: { env: any };
+        aistudio: {
+            hasSelectedApiKey: () => Promise<boolean>;
+            openSelectKey: () => Promise<void>;
+        };
+    }
+}
+
+// Shim process.env for the browser if not present
+if (typeof window !== 'undefined' && !(window as any).process) {
+    (window as any).process = { env: {} };
+}
+
 export default function App() {
     const { 
         isGodMode, 
@@ -42,6 +57,28 @@ export default function App() {
     const [showHologram, setShowHologram] = useState(false);
     const [tourStep, setTourStep] = useState(-1);
     const [showCommandPalette, setShowCommandPalette] = useState(false);
+    const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+
+    // --- API Key Check ---
+    useEffect(() => {
+        const checkApiKey = async () => {
+            if (window.aistudio) {
+                const hasKey = await window.aistudio.hasSelectedApiKey();
+                setHasApiKey(hasKey);
+            } else {
+                // Fallback for environments without aistudio global
+                setHasApiKey(true);
+            }
+        };
+        checkApiKey();
+    }, []);
+
+    const handleSelectApiKey = async () => {
+        if (window.aistudio) {
+            await window.aistudio.openSelectKey();
+            setHasApiKey(true); // Assume success after opening dialog
+        }
+    };
 
     // --- Global Keyboard Listeners ---
     useEffect(() => {
@@ -196,6 +233,13 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
             addLog('SENTINEL', `Neural bridge response processed.`);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            
+            // Handle invalid API key error by resetting state
+            if (errorMessage.includes("API key not valid") || errorMessage.includes("Requested entity was not found")) {
+                setHasApiKey(false);
+                addLog('ERROR', `API Key Invalid. Resetting selection state.`);
+            }
+
             setError(errorMessage);
             addLog('ERROR', `Sentinel Communication Failure: ${errorMessage}`);
         } finally {
@@ -241,6 +285,33 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
         <>
             <LiveWallpaper />
             
+            {hasApiKey === false && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 backdrop-blur-xl p-4">
+                    <div className="max-w-md w-full bg-slate-900 border border-amber-500/30 rounded-lg p-8 text-center shadow-2xl">
+                        <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-tighter">API Key Required</h2>
+                        <p className="text-slate-400 mb-8 text-sm leading-relaxed">
+                            Archangel Omega requires a valid Gemini API key to access advanced reasoning and image generation models.
+                        </p>
+                        <button 
+                            onClick={handleSelectApiKey}
+                            className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded transition-all shadow-lg shadow-amber-600/20 uppercase tracking-widest"
+                        >
+                            Select API Key
+                        </button>
+                        <p className="mt-4 text-[10px] text-slate-600 uppercase">
+                            Ensure you select a key from a paid Google Cloud project with billing enabled.
+                            <br />
+                            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-amber-500/50 hover:underline">Billing Documentation</a>
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {showIntro && <CinematicIntro onComplete={handleIntroComplete} />}
             <HolographicOverlay isVisible={showHologram} onClose={handleHologramClose} />
             

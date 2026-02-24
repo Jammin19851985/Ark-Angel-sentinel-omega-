@@ -225,15 +225,15 @@ const CodeAuditorTab: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-amber-500 font-bold uppercase tracking-[0.3em] mb-1 animate-pulse">{scanPhase}</p>
-                                    <p className="text-[8px] text-slate-600 uppercase tracking-widest font-mono">NEURAL_DECRYPTION_IN_PROGRESS</p>
+                                    <div className="text-amber-500 font-bold uppercase tracking-[0.3em] mb-1 animate-pulse">{scanPhase}</div>
+                                    <div className="text-[8px] text-slate-600 uppercase tracking-widest font-mono">NEURAL_DECRYPTION_IN_PROGRESS</div>
                                 </div>
                             </div>
                         ) : error ? (
                             <div className="p-5 border border-red-900/40 bg-red-950/20 text-red-400 rounded text-center font-bold">
                                 <TerminalIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                <p className="tracking-widest uppercase">Kernel_Audit_Terminated</p>
-                                <p className="text-[10px] mt-1 font-normal opacity-70 italic">"{error}"</p>
+                                <div className="tracking-widest uppercase">Kernel_Audit_Terminated</div>
+                                <div className="text-[10px] mt-1 font-normal opacity-70 italic">"{error}"</div>
                             </div>
                         ) : activeView === 'REVIEW' ? (
                             <ReviewOutput review={review} isLoading={false} error={null} />
@@ -248,7 +248,7 @@ const CodeAuditorTab: React.FC = () => {
                                             <div className="absolute inset-0 border-t-2 border-emerald-500 rounded-full animate-spin"></div>
                                             <SparklesIcon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-emerald-400 animate-pulse" />
                                         </div>
-                                        <p className="text-emerald-500 font-bold uppercase tracking-widest text-[10px] animate-pulse">Transmuting Skp Code...</p>
+                                        <div className="text-emerald-500 font-bold uppercase tracking-widest text-[10px] animate-pulse">Transmuting Skp Code...</div>
                                     </div>
                                 ) : patchedCode ? (
                                     <div className="space-y-4">
@@ -273,7 +273,7 @@ const CodeAuditorTab: React.FC = () => {
                                         <div className="p-3 border-2 border-dashed border-slate-700 rounded-full">
                                             <SparklesIcon className="w-6 h-6" />
                                         </div>
-                                        <p className="text-[10px] uppercase tracking-widest">Awaiting Synthesis Command</p>
+                                        <div className="text-[10px] uppercase tracking-widest">Awaiting Synthesis Command</div>
                                     </div>
                                 )}
                             </div>

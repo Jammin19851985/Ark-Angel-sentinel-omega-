@@ -304,9 +304,9 @@ const Intel: React.FC<IntelProps> = ({ id }) => {
                                 <h2 className="text-2xl font-bold text-slate-100 flex items-center gap-3 uppercase">
                                     <span className="text-amber-500">01</span> System Overview
                                 </h2>
-                                <p className="text-slate-400 leading-relaxed font-sans text-sm">
+                                <div className="text-slate-400 leading-relaxed font-sans text-sm">
                                     ARK Ω is a hyper-temporal reality engine. It interfaces between logic (Axiomatic Core) and action (Execution Spine), facilitating "Singularity Alpha." The system operates on <span className="text-white">Open_G Resonance</span> with a 5.0s synchronization pulse.
-                                </p>
+                                </div>
                                 <SystemTopology />
                             </section>
 
@@ -317,21 +317,21 @@ const Intel: React.FC<IntelProps> = ({ id }) => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="p-6 bg-red-950/10 border border-red-900/30 rounded-lg group hover:border-red-500/50 transition-all">
                                         <h3 className="text-red-500 font-bold mb-4 flex items-center gap-2 uppercase text-xs">Scenario A: Flash-Crash</h3>
-                                        <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                                        <div className="text-xs text-slate-400 font-sans leading-relaxed">
                                             Upon sonar detection of 5%+ market imbalance, the Orchestrator initiates OMEGA protocols, hedging TSX assets into offshore Valhalla vaults.
-                                        </p>
+                                        </div>
                                     </div>
                                     <div className="p-6 bg-cyan-950/10 border border-cyan-900/30 rounded-lg group hover:border-cyan-500/50 transition-all">
                                         <h3 className="text-cyan-400 font-bold mb-4 flex items-center gap-2 uppercase text-xs">Scenario B: Forensic Audit</h3>
-                                        <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                                        <div className="text-xs text-slate-400 font-sans leading-relaxed">
                                             In cases of Causal Drift &gt; 0.05ns, the ACMD protocol is triggered to hot-swap Kernel logic with mathematically verified woodworking joinery code.
-                                        </p>
+                                        </div>
                                     </div>
                                 </div>
                             </section>
 
                             <section className="space-y-6 border-t border-slate-800 pt-12 text-center opacity-30 italic">
-                                <p className="text-[10px]">END OF MANUAL // HASH_STABLE_VERIFIED // SHA-512: 0x7a2...OMEGA</p>
+                                <div className="text-[10px]">END OF MANUAL // HASH_STABLE_VERIFIED // SHA-512: 0x7a2...OMEGA</div>
                             </section>
                         </div>
                     </div>
@@ -358,7 +358,7 @@ const Intel: React.FC<IntelProps> = ({ id }) => {
                                 <div className="max-w-2xl space-y-8 animate-fade-in-fast relative z-10">
                                     <header className="border-b border-amber-500/20 pb-8">
                                         <h1 className="text-4xl font-display font-bold text-amber-500 uppercase tracking-tighter">{selectedFeature.name}</h1>
-                                        <p className="text-[10px] text-slate-500 uppercase tracking-[0.4em] mt-2">TECHNICAL ID: ARCH-F-{selectedFeature.id}-Ω</p>
+                                        <div className="text-[10px] text-slate-500 uppercase tracking-[0.4em] mt-2">TECHNICAL ID: ARCH-F-{selectedFeature.id}-Ω</div>
                                     </header>
                                     <div className="space-y-8">
                                         <section>
