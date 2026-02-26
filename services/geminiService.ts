@@ -9,15 +9,10 @@ import { decode, decodeAudioData } from "../utils/audio";
 import { RAG_CONTENT_CHUNKS } from "../rag_content";
 
 const getApiKey = () => {
-    // In Vite, process.env is not always available. 
-    // We check multiple locations to ensure we get the key.
-    const globalEnv = (typeof window !== 'undefined' && (window as any).process?.env) || (typeof process !== 'undefined' && process.env) || {};
-    
-    // Priority: 
-    // 1. process.env.API_KEY (Selected by user via dialog)
-    // 2. process.env.GEMINI_API_KEY (Platform default)
-    // 3. import.meta.env.VITE_GEMINI_API_KEY (Local .env fallback)
-    return globalEnv.API_KEY || globalEnv.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+        return process.env.API_KEY;
+    }
+    return '';
 };
 
 const getAi = () => new GoogleGenAI({ apiKey: getApiKey() });

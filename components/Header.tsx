@@ -48,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
                         </div>
                         <div className="flex flex-col">
                             <h1 className={`text-lg font-display font-bold tracking-widest leading-none ${isAgentZeroActive ? 'text-emerald-100 glow-text-emerald' : isGodMode ? 'text-amber-100 glow-text-gold' : 'text-slate-100'}`}>
-                                {isAgentZeroActive ? 'AGENT_ZERO' : 'ARK_OMEGA'}
+                                {isAgentZeroActive ? 'AGENT_ZERO' : 'ARK ANGEL ALPHA OMEGA'}
                             </h1>
                             <span className="text-[8px] font-mono text-slate-500 tracking-[0.4em] uppercase">
                                 {isAgentZeroActive ? 'SOVEREIGN_NODE_PROD' : 'Production_Environment'}

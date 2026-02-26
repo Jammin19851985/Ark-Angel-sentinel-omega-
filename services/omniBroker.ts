@@ -29,11 +29,17 @@ export class OmniBroker {
             console.log("[OmniBroker] Initializing Sovereign Bridge Cluster...");
             
             const importWithTimeout = async (moduleName: string, timeoutMs: number) => {
-                const timeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error(`Import timeout for ${moduleName}`)), timeoutMs)
-                );
-                const moduleImport = import(moduleName);
-                return Promise.race([moduleImport, timeout]);
+                let timeoutId: any;
+                const timeout = new Promise((_, reject) => {
+                    timeoutId = setTimeout(() => reject(new Error(`Import timeout for ${moduleName}`)), timeoutMs);
+                });
+                try {
+                    // Use a more static-friendly import for ccxt if needed, but keeping dynamic for now with vite-ignore
+                    const moduleImport = import(/* @vite-ignore */ moduleName);
+                    return await Promise.race([moduleImport, timeout]);
+                } finally {
+                    clearTimeout(timeoutId);
+                }
             };
 
             // CCXT is massive, using a longer timeout for CDN resolution

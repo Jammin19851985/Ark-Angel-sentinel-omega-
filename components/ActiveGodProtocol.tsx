@@ -6,12 +6,12 @@ import { PlayCircleIcon } from './icons/PlayCircleIcon';
 import { CrosshairIcon } from './icons/CrosshairIcon';
 import Loader from './Loader';
 
-type GodCommand = 'DEPLOY_SWARM' | 'CAPITAL_SHIFT' | 'FLASH_ARB' | 'LIQUIDITY_BURN' | 'DELTA_NEUTRALIZE' | 'REGIME_ADAPT' | 'SPAWN_PROCESS' | 'PROFIT_SWEEP' | 'SYSTEM_PURGE';
+type GodCommand = 'DEPLOY_SWARM' | 'CAPITAL_SHIFT' | 'FLASH_ARB' | 'LIQUIDITY_BURN' | 'DELTA_NEUTRALIZE' | 'REGIME_ADAPT' | 'SPAWN_PROCESS' | 'PROFIT_SWEEP' | 'SYSTEM_PURGE' | 'REALITY_ANCHOR';
 
-const GRID_COMMANDS: GodCommand[] = ['DEPLOY_SWARM', 'CAPITAL_SHIFT', 'FLASH_ARB', 'LIQUIDITY_BURN', 'DELTA_NEUTRALIZE', 'REGIME_ADAPT', 'SPAWN_PROCESS', 'PROFIT_SWEEP'];
+const GRID_COMMANDS: GodCommand[] = ['DEPLOY_SWARM', 'CAPITAL_SHIFT', 'FLASH_ARB', 'LIQUIDITY_BURN', 'DELTA_NEUTRALIZE', 'REGIME_ADAPT', 'SPAWN_PROCESS', 'REALITY_ANCHOR'];
 
 const ActiveGodProtocol: React.FC = () => {
-    const { addNexusLog, addLog, executeOperation, installProtocol, runSystem, killSwitchActive } = useAppContext();
+    const { addNexusLog, addLog, executeOperation, installProtocol, runSystem, killSwitchActive, performRealityCorrection } = useAppContext();
     const [commandInput, setCommandInput] = useState('');
     const [timelineId, setTimelineId] = useState<string>('');
     const [isOpActive, setIsOpActive] = useState<string | null>(null);
@@ -51,6 +51,11 @@ const ActiveGodProtocol: React.FC = () => {
         setIsOpActive(cmd);
         addNexusLog(`>> GOD_PROTOCOL: ${cmd} INITIATED.`);
         addLog('SYSTEM', `PROTOCOL: ${cmd} Triggered.`);
+        
+        if (cmd === 'REALITY_ANCHOR') {
+            performRealityCorrection();
+        }
+        
         setTimeout(() => setIsOpActive(null), 800);
     };
 

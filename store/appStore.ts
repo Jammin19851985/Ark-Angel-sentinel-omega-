@@ -15,6 +15,7 @@ import { RustKernelBridge } from '../utils/rustKernel';
 import { marketService } from '../services/marketService';
 import { omniBroker } from '../services/omniBroker';
 import { SICOEngine, SICOConfig } from '../utils/sicoEngine';
+import { realityEngine } from '../services/quantumRealityEngine';
 
 const INITIAL_BOTS: Bot[] = [
     { id: 1, status: 'Idle', role: 'Hunter', legion: 'Infrastructure', efficiency: 98, xp: 1250 },
@@ -117,6 +118,7 @@ export interface AppState {
     swarmOptimizationReport: string | null;
     externalExchangeData: ExternalExchangeData;
     arbOpportunities: ArbOpportunity[];
+    performRealityCorrection: () => void;
     manageBot: (id: number, action: 'REBOOT' | 'ASSIGN_TASK') => void;
     heartbeat: () => void;
     withdrawFiat: (amount: number, destination: string) => boolean;
@@ -221,6 +223,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     externalExchangeData: { kraken: {} },
     arbOpportunities: [],
     
+    performRealityCorrection: () => {
+        const { metrics, log } = realityEngine.performRealityCorrection(get().quantumMetrics);
+        set({ quantumMetrics: metrics });
+        get().addNexusLog(log);
+        get().addLog('QUANTUM', 'Reality Correction Protocol Executed.');
+    },
+
     manageBot: (id, action) => set(state => ({
         bots: state.bots.map(b => b.id === id ? { ...b, status: action === 'REBOOT' ? 'Idle' : 'Executing' } : b)
     })),
@@ -259,8 +268,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         try {
             const exId = exchange.toLowerCase().includes('coinbase') ? 'coinbase' : 'kraken';
             const res = await omniBroker.createOrder(exId as any, symbol, action.toLowerCase() as any, quantity, price);
+            
+            // Hyper-temporal execution logging
+            const invLog = realityEngine.generateInversionLog(symbol, action);
+            set(state => ({ inversionLogs: [invLog, ...state.inversionLogs].slice(0, 50) }));
+
             get().addLog('TRADE', `REAL_EXECUTION: ${action} ${quantity} ${symbol} @ ${price}`);
-            if (res) get().addNexusLog(`>> SICO_FILLED: ${symbol} at ${price}`);
+            if (res) get().addNexusLog(`>> SICO_FILLED: ${symbol} at ${price} [TEMPORAL_INVERSION_VERIFIED]`);
         } catch (e: any) {
             get().addLog('ERROR', `REJECTION: ${e.message}`);
         }
@@ -306,6 +320,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     initApp: () => {
         try {
             rustKernel.start();
+            
+            // Quantum Reality Engine Heartbeat
+            setInterval(() => {
+                const nextMetrics = realityEngine.tick(get().quantumMetrics);
+                set({ quantumMetrics: nextMetrics });
+                
+                // Auto-correction if drift is too high
+                if (nextMetrics.drift > 0.05) {
+                    get().performRealityCorrection();
+                }
+            }, 2000);
+
             setInterval(async () => {
                 try {
                     const tickers = ['BTC', 'ETH', 'SOL', ...TSX_SYMBOLS];

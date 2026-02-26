@@ -76,7 +76,8 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
         quantumMetrics, inversionLogs, killSwitchActive,
         coreState, systemStatus,
         marketData, isGodMode,
-        sicoCollapses, payPalReserves
+        sicoCollapses, payPalReserves,
+        performRealityCorrection
     } = useAppContext();
     
     const logRef = useRef<HTMLDivElement>(null);
@@ -171,6 +172,15 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                         <h3 className="text-[10px] font-bold text-yellow-500 tracking-widest uppercase border-b border-slate-800 pb-1">Pete's Authority</h3>
                         <StatusIndicator label="Ontario Resonance" value={0.999} color="bg-yellow-500" />
                         <StatusIndicator label="Crockett Handshake" value={coreState.confidence} color="bg-violet-500" />
+                        <StatusIndicator label="Reality Stability" value={quantumMetrics.realityAnchorStability} color="bg-emerald-500" />
+                        <StatusIndicator label="Quantum Entropy" value={quantumMetrics.entropy} color="bg-red-500" />
+                        
+                        <button 
+                            onClick={performRealityCorrection}
+                            className="mt-2 w-full py-2 bg-emerald-950/30 border border-emerald-500/50 text-emerald-400 text-[9px] font-bold tracking-widest hover:bg-emerald-500 hover:text-black transition-all rounded-sm uppercase"
+                        >
+                            Nullify Causal Drift
+                        </button>
                     </div>
                     <div className="h-40 shrink-0 overflow-hidden rounded border border-slate-800">
                         <ChaosFractal entropy={quantumMetrics.entropy} />

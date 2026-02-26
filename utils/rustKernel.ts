@@ -4,7 +4,7 @@
  * Connects to the local FastAPI/Rust backend for real system telemetry.
  */
 
-const BACKEND_URL = "/kernel";
+const BACKEND_URL = "http://localhost:8000";
 
 export interface KernelMetrics {
     heapUsage: number; 
