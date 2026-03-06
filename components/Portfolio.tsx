@@ -184,6 +184,14 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                     <span className="text-slate-500 uppercase tracking-widest font-bold">Liquid Cash</span>
                     <span className="text-slate-200 font-bold font-mono">${fiatBalance.toLocaleString()}</span>
                 </div>
+                
+                <div className="flex justify-between items-center px-3 py-1 bg-amber-900/20 border border-amber-900/50 rounded-sm text-[8px] animate-pulse">
+                    <span className="text-amber-500 uppercase tracking-widest font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        CHARITY VAULT ROUTING
+                    </span>
+                    <span className="text-amber-400 font-bold font-mono tracking-tighter opacity-50">adampriestley811@kohotranfers.ca (100%)</span>
+                </div>
             </div>
 
             <div className="border-t border-slate-800 pt-3 flex-1 flex flex-col min-h-0">

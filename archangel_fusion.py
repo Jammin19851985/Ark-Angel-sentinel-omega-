@@ -27,6 +27,10 @@ class OmegaConfig:
     DISCORD_WEBHOOK: str = "YOUR_DISCORD_WEBHOOK_URL"
     PAYPAL_CLIENT_ID: str = "ARK_PAYPAL_888"
     
+    # --- ARK OF THE COVENANT ---
+    CHARITY_VAULT_EMAIL: str = "adampriestley811@kohotranfers.ca"
+    PROFIT_ROUTING_PCT: float = 1.00 # 100% of profits
+    
     def __post_init__(self):
         self.SYMBOLS = ["BTC-USD", "ETH-USD", "SOL-USD", "RY.TO", "TD.TO", "SHOP.TO"]
 
