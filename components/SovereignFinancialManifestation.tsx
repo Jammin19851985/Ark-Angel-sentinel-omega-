@@ -30,7 +30,9 @@ const SovereignFinancialManifestation: React.FC = () => {
     const [isProcessingPP, setIsProcessingPP] = useState(false);
 
     const bioAuth = coreState.biometricMetrics.isAuthorized;
-    const isLive = coreState.ibkrState.isArmed;
+    const isLive = coreState.ibkrState.mode === 'LIVE';
+    const isMock = coreState.ibkrState.mode === 'MOCK';
+    const isConnecting = coreState.ibkrState.isArmed === false && !isMock;
 
     const handleExecuteTrade = () => {
         const symbol = tradeSymbol.toUpperCase();
@@ -324,7 +326,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                         disabled={killSwitchActive || !bioAuth}
                         className={`w-full py-2.5 rounded text-[10px] font-bold tracking-widest transition-all border-2 border-b-4 active:border-b-2 active:translate-y-[2px] disabled:cursor-not-allowed ${isAgentZeroActive ? 'bg-emerald-700 border-emerald-900 text-white shadow-[0_0_15px_#10b981]' : isLive ? 'bg-red-600 border-red-800 text-white shadow-[0_0_15px_rgba(255,0,0,0.4)]' : 'bg-amber-700 border-amber-900 text-white hover:bg-amber-600'}`}
                     >
-                        {isAgentZeroActive ? 'EXECUTE_SOVEREIGN_ORDER' : isLive ? 'EXECUTE_RESTRICTED_SICO' : 'EXECUTE_SHADOW_SICO'}
+                        {isAgentZeroActive ? 'EXECUTE_SOVEREIGN_ORDER' : isLive ? 'EXECUTE_LIVE_SICO' : 'EXECUTE_SHADOW_SICO'}
                     </button>
                 </div>
             )}

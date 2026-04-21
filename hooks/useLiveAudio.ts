@@ -17,7 +17,7 @@ interface LiveSession {
 
 // Always create a new instance to get the latest API key from the environment.
 const getAi = () => {
-    const apiKey = process.env.API_KEY;
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) {
         console.error("API_KEY is not defined. Please ensure it's set in the environment.");
         throw new Error("API_KEY is missing. Cannot initialize GoogleGenAI for Live Audio.");

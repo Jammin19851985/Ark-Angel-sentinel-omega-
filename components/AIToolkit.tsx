@@ -5,6 +5,7 @@ import { ImageIcon } from './icons/ImageIcon';
 import { VideoIcon } from './icons/VideoIcon';
 import { MicrophoneIcon } from './icons/MicrophoneIcon';
 import { CodeBracketsIcon } from './icons/CodeBracketsIcon';
+import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 import { NewspaperIcon } from './icons/NewspaperIcon';
 import { DatabaseIcon } from './icons/DatabaseIcon';
 import { EyeIcon } from './icons/EyeIcon';
@@ -17,6 +18,7 @@ import SentimentAnalysisTab from './toolkit/SentimentAnalysisTab';
 import { RagTab } from './toolkit/RagTab';
 import LearningParamsConfigTab from './toolkit/LearningParamsConfigTab';
 import OmniSentryTab from './toolkit/OmniSentryTab';
+import AnalysisTab from './toolkit/AnalysisTab';
 import { GearsIcon } from './icons/GearsIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { ToolkitTab } from '../types';
@@ -66,6 +68,8 @@ const AIToolkit: React.FC<AIToolkitProps> = ({ id }) => {
                 return <AudioLabTab />;
             case 'code':
                 return <CodeAuditorTab />;
+            case 'analysis':
+                return <AnalysisTab />;
             case 'learning_params': 
                 return <LearningParamsConfigTab />;
             default:
@@ -87,6 +91,7 @@ const AIToolkit: React.FC<AIToolkitProps> = ({ id }) => {
                  <TabButton tab="video" label="Video Studio" icon={<VideoIcon className="w-5 h-5"/>} />
                  <TabButton tab="audio" label="Audio Lab" icon={<MicrophoneIcon className="w-5 h-5"/>} />
                  <TabButton tab="code" label="Code Auditor" icon={<CodeBracketsIcon className="w-5 h-5"/>} />
+                 <TabButton tab="analysis" label="Deep Analysis" icon={<ShieldCheckIcon className="w-5 h-5"/>} />
                  <TabButton tab="learning_params" label="Learning Config" icon={<GearsIcon className="w-5 h-5"/>} />
             </div>
             <div className="flex-1 p-4 lg:p-6 overflow-y-auto bg-black/20 relative">

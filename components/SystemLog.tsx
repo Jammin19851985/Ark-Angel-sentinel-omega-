@@ -46,6 +46,7 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     HARDWARE: 'text-indigo-500 font-bold',
     AUTH: 'text-fuchsia-500 font-bold',
     FINANCE: 'text-emerald-600 font-bold',
+    CORE: 'text-cyan-300 font-bold',
 };
 
 const SystemLog: React.FC<{ id: string }> = ({ id }) => {
@@ -82,7 +83,7 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
     return (
         <div id={id} className="tech-panel flex flex-col flex-1 h-full font-mono"> 
              <div className="tech-header">
-                <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <h2 className="micro-label flex items-center gap-2">
                     <span className="w-1 h-1 bg-amber-500 rounded-full animate-ping"></span>
                     System_Log_v17
                 </h2>

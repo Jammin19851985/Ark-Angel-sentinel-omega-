@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAppContext } from '../contexts/AppContext';
+import { SovereignCommandCenter } from './SovereignCommandCenter';
 import GammaScalper from './GammaScalper';
 import ActiveGodProtocol from './ActiveGodProtocol';
 import ForensicAuditLog from './ForensicAuditLog';
+import HyperTemporalExecution from './HyperTemporalExecution';
 import ChaosFractal from './ChaosFractal';
 import SovereignFinancialManifestation from './SovereignFinancialManifestation';
 import HardwareController from './HardwareController';
@@ -165,6 +167,7 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
             <div className="relative flex-1 grid grid-cols-1 xl:grid-cols-4 gap-4 p-4 z-10 overflow-y-auto min-h-0 custom-scrollbar">
                 {/* Left Sidebar: Logic & Monitoring */}
                 <div className="flex flex-col space-y-3 shrink-0">
+                    <SovereignCommandCenter />
                     <YellowHubTerminal />
                     <SystemMonitor />
                     <SICOControl />
@@ -174,13 +177,6 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                         <StatusIndicator label="Crockett Handshake" value={coreState.confidence} color="bg-violet-500" />
                         <StatusIndicator label="Reality Stability" value={quantumMetrics.realityAnchorStability} color="bg-emerald-500" />
                         <StatusIndicator label="Quantum Entropy" value={quantumMetrics.entropy} color="bg-red-500" />
-                        
-                        <button 
-                            onClick={performRealityCorrection}
-                            className="mt-2 w-full py-2 bg-emerald-950/30 border border-emerald-500/50 text-emerald-400 text-[9px] font-bold tracking-widest hover:bg-emerald-500 hover:text-black transition-all rounded-sm uppercase"
-                        >
-                            Nullify Causal Drift
-                        </button>
                     </div>
                     <div className="h-40 shrink-0 overflow-hidden rounded border border-slate-800">
                         <ChaosFractal entropy={quantumMetrics.entropy} />
@@ -229,8 +225,8 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                     </div>
                     <HardwareController />
                     <SovereignFinancialManifestation />
-                    <div className="h-48 shrink-0">
-                        <ForensicAuditLog logs={inversionLogs} />
+                    <div className="flex-1 min-h-[300px]">
+                        <HyperTemporalExecution />
                     </div>
                 </div>
             </div>

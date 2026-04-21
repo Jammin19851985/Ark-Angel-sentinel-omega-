@@ -31,6 +31,7 @@ export interface MarketData {
 
 export interface ExternalExchangeData {
     kraken: Record<string, { last: number; ask: number; bid: number }>;
+    coinbase?: Record<string, { last: number; ask: number; bid: number }>;
 }
 
 export interface ArbOpportunity {
@@ -58,7 +59,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE';
     message: string;
     complianceHash?: string;
 }
@@ -161,7 +162,14 @@ export interface LearningParams {
     optimizer: 'Adam' | 'SGD' | 'RMSprop';
 }
 
-export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params' | 'sentry';
+export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params' | 'sentry' | 'analysis';
+
+export interface CodeAnalysisResult {
+    bugs: string[];
+    security: string[];
+    optimizations: string[];
+    summary: string;
+}
 
 export interface AiToolkitState {
     activeTab: ToolkitTab;
@@ -247,6 +255,8 @@ export interface IbkrAccountInfo {
     marginUtilization: number;
     buyingPower: number;
     baseCurrency: string;
+    mode?: 'LIVE' | 'MOCK' | 'ERROR';
+    safetySwitch?: boolean;
 }
 
 export interface HardwareDevice {

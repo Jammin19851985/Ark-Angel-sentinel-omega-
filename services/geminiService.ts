@@ -3,14 +3,15 @@ import { GoogleGenAI, Modality, Type, GenerateContentResponse, FunctionDeclarati
 import { fileToGenerativePart, blobToBase64 } from "../utils/file";
 import { 
     Geolocation, OrchestrationStep, SentimentResult, AnalyticsKPIs, 
-    BacktestResults, RagQueryResult, ForecastPoint, CandlestickData 
+    BacktestResults, RagQueryResult, ForecastPoint, CandlestickData,
+    CodeAnalysisResult
 } from "../types";
 import { decode, decodeAudioData } from "../utils/audio";
 import { RAG_CONTENT_CHUNKS } from "../rag_content";
 
 const getApiKey = () => {
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-        return process.env.API_KEY;
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env.API_KEY || process.env.GEMINI_API_KEY || '';
     }
     return '';
 };
@@ -104,47 +105,103 @@ export const godModeAgentTools: FunctionDeclaration[] = [
     }
 ];
 
+const handleAiError = (e: any) => {
+    console.error("AODE_AI_ERROR:", e);
+    const msg = e.message || String(e);
+    if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
+        return "AODE: QUOTA EXHAUSTED. Pete_The_Raccoon recommends a tactical pause (Wait 60s).";
+    }
+    if (msg.includes("500") || msg.toLowerCase().includes("overloaded")) {
+        return "AODE: MODEL OVERLOADED. Resonance drift detected. Retrying in next cycle.";
+    }
+    return `AODE: ERROR [${msg.substring(0, 100)}]`;
+};
+
 export const sendMessageToSentinelA = async (message: string): Promise<{ text: string; sources?: any[] }> => {
-    const ai = getAi();
-    const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: message,
-        config: { 
-            systemInstruction: AODE_MANDATE,
-            tools: [{googleSearch: {}}],
-            thinkingConfig: { thinkingBudget: 16000 } 
-        }
-    });
-    return {
-        text: response.text || "AODE: RESPONSE VOID.",
-        sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks
-    };
+    try {
+        const ai = getAi();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.1-pro-preview',
+            contents: message,
+            config: { 
+                systemInstruction: AODE_MANDATE,
+                tools: [{googleSearch: {}}],
+                thinkingConfig: { thinkingBudget: 16000 } 
+            }
+        });
+        return {
+            text: response.text || "AODE: RESPONSE VOID.",
+            sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks
+        };
+    } catch (e) {
+        return { text: handleAiError(e) };
+    }
+};
+
+export const analyzeCodeDeep = async (code: string, language: string): Promise<CodeAnalysisResult> => {
+    try {
+        const ai = getAi();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.1-pro-preview',
+            contents: `AODE_DEEP_ANALYSIS [${language}]: Analyze this source for bugs, security vulnerabilities, and optimizations. Return JSON.
+            
+            CODE:
+            ${code}`,
+            config: {
+                systemInstruction: AODE_MANDATE,
+                responseMimeType: "application/json",
+                thinkingConfig: { thinkingBudget: 32000 },
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        bugs: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        security: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        optimizations: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        summary: { type: Type.STRING }
+                    },
+                    required: ['bugs', 'security', 'optimizations', 'summary']
+                }
+            }
+        });
+        return parseJSON(response.text || "{}") || { bugs: [], security: [], optimizations: [], summary: "Analysis failed." };
+    } catch (e) {
+        console.error("AODE_DEEP_ANALYSIS_FAILURE:", e);
+        return { bugs: [], security: [], optimizations: [], summary: "Error during analysis." };
+    }
 };
 
 export const auditCode = async (code: string, language: string): Promise<string> => {
-    const ai = getAi();
-    const response = await ai.models.generateContent({ 
-        model: 'gemini-3-pro-preview', 
-        contents: `AODE_FORENSIC_AUDIT [${language}]: Audit this source for Causal Drift via Pete_The_Raccoon:\n\n${code}`,
-        config: { 
-            systemInstruction: AODE_MANDATE,
-            thinkingConfig: { thinkingBudget: 32000 } 
-        }
-    });
-    return response.text || "";
+    try {
+        const ai = getAi();
+        const response = await ai.models.generateContent({ 
+            model: 'gemini-3.1-pro-preview', 
+            contents: `AODE_FORENSIC_AUDIT [${language}]: Audit this source for Causal Drift via Pete_The_Raccoon:\n\n${code}`,
+            config: { 
+                systemInstruction: AODE_MANDATE,
+                thinkingConfig: { thinkingBudget: 32000 } 
+            }
+        });
+        return response.text || "";
+    } catch (e) {
+        return handleAiError(e);
+    }
 };
 
 export const generatePatchedCode = async (code: string, language: string, review: string): Promise<string> => {
-    const ai = getAi();
-    const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: `AODE_ACMD_PATCH [${language}]: Applying Woodworking_Joinery patches. Hot-swap injection ready:\n\nCODE:\n${code}\n\nAUDIT:\n${review}\n\nReturn ONLY the patched source code.`,
-        config: { 
-            systemInstruction: AODE_MANDATE,
-            thinkingConfig: { thinkingBudget: 16000 }
-        }
-    });
-    return response.text || "";
+    try {
+        const ai = getAi();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.1-pro-preview',
+            contents: `AODE_ACMD_PATCH [${language}]: Applying Woodworking_Joinery patches. Hot-swap injection ready:\n\nCODE:\n${code}\n\nAUDIT:\n${review}\n\nReturn ONLY the patched source code.`,
+            config: { 
+                systemInstruction: AODE_MANDATE,
+                thinkingConfig: { thinkingBudget: 16000 }
+            }
+        });
+        return response.text || "";
+    } catch (e) {
+        return handleAiError(e);
+    }
 };
 
 export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
@@ -360,7 +417,7 @@ export const analyzeBacktestResults = async (strategy: string, results: Backtest
     Provide forensic analysis through Pete_The_Raccoon's lens. Recommend Kelly Criterion sizing.`;
     
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: prompt,
         config: { 
             systemInstruction: AODE_MANDATE,
@@ -439,7 +496,7 @@ export const getSignalAnalysis = async (details: string): Promise<string> => {
 export const analyzeQuantumVolatility = async (details: string): Promise<string> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `AODE_QUANTUM_ANALYSIS: Detect Open_G variance for: "${details}"`,
         config: { 
             systemInstruction: AODE_MANDATE,
@@ -452,7 +509,7 @@ export const analyzeQuantumVolatility = async (details: string): Promise<string>
 export const runSwarmOptimization = async (kpis: AnalyticsKPIs): Promise<string> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
+        model: 'gemini-3.1-pro-preview',
         contents: `AODE_SWARM_OPTIMIZATION: Current KPIs:\n- PnL: $${kpis.totalPnl}\n- WinRate: ${kpis.winRate}%\n- Sharpe: ${kpis.sharpeRatio}\n\nSynthesize hot-swap report.`,
         config: { 
             systemInstruction: AODE_MANDATE,

@@ -123,7 +123,7 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
     return (
         <div id={id} className="tech-panel p-3 flex flex-col font-mono h-full bg-black/60">
             <div className="flex justify-between items-center mb-3">
-                <h2 className="text-xs font-bold text-amber-400 tracking-widest uppercase">// ASSET_LEDGER</h2>
+                <h2 className="micro-label">// ASSET_LEDGER</h2>
                 <div className="flex items-center gap-2">
                     <LivePaperBadge />
                     <div className="text-[8px] px-1.5 py-0.5 rounded border border-cyan-900 bg-cyan-950/30 text-cyan-400 uppercase tracking-tighter">
@@ -183,14 +183,6 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                 <div className="flex justify-between items-center px-3 py-2 bg-black border border-slate-800 rounded-sm text-[10px]">
                     <span className="text-slate-500 uppercase tracking-widest font-bold">Liquid Cash</span>
                     <span className="text-slate-200 font-bold font-mono">${fiatBalance.toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between items-center px-3 py-1 bg-amber-900/20 border border-amber-900/50 rounded-sm text-[8px] animate-pulse">
-                    <span className="text-amber-500 uppercase tracking-widest font-bold flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                        CHARITY VAULT ROUTING
-                    </span>
-                    <span className="text-amber-400 font-bold font-mono tracking-tighter opacity-50">adampriestley811@kohotranfers.ca (100%)</span>
                 </div>
             </div>
 

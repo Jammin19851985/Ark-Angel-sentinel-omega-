@@ -117,6 +117,8 @@ export const BOOT_SEQUENCE_LAYERS = [
 
 export const TSX_SYMBOLS = ["RY.TO", "TD.TO", "SHOP.TO", "BMO.TO", "ENB.TO", "CNR.TO", "ATD.TO", "TRI.TO"];
 
+export const GLOBAL_SYMBOLS = ["SPY", "QQQ", "NVDA", "AAPL", "MSFT", "TSLA"];
+
 export const GRAND_SLAM_FEATURES: GrandSlamFeature[] = [
     { id: 1, name: "Quantum Entropy Trade Timer", status: "DEPLOYED", description: "Randomizes execution timing with real quantum circuits—prevents pattern sniffing." },
     { id: 2, name: "Entangled Correlation Fracture Detector", status: "DEPLOYED", description: "Quantum superposition models for instant correlation breakdowns." },

@@ -10,7 +10,7 @@ const GammaScalper: React.FC<{ id?: string }> = ({ id }) => {
         <div id={id} className="h-full flex flex-col bg-black/60 p-2 rounded border border-slate-800 tech-panel min-h-[150px]">
             <div className="flex justify-between items-center mb-1 border-b border-white/10 pb-1">
                 <div>
-                    <h3 className="text-neon-pink font-mono font-bold text-[10px] uppercase tracking-widest drop-shadow-[0_0_5px_rgba(255,0,255,0.5)]">// GAMMA SCALPER</h3>
+                    <h3 className="micro-label text-neon-pink drop-shadow-[0_0_5px_rgba(255,0,255,0.5)]">// GAMMA SCALPER</h3>
                 </div>
                 <button
                     onClick={toggleGammaScalper}

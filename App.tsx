@@ -7,6 +7,7 @@ import PortfolioDisplay from './components/Portfolio';
 import SystemLog from './components/SystemLog';
 import SwarmVisualizer from './components/SwarmVisualizer';
 import AlphaGauge from './components/AlphaGauge';
+import { QuantumMonitor } from './components/QuantumMonitor';
 import LiveWallpaper from './components/LiveWallpaper';
 import HolographicOverlay from './components/HolographicOverlay';
 import AvatarOrb from './components/AvatarOrb';
@@ -14,6 +15,7 @@ import CinematicIntro from './components/CinematicIntro';
 import OnboardingTour from './components/OnboardingTour';
 import CommandPalette from './components/CommandPalette';
 import { useAppContext } from './contexts/AppContext';
+import { useAppStore } from './store/appStore';
 import { INITIAL_SUGGESTIONS, VIEW_SPECIFIC_SUGGESTIONS } from './constants';
 import { Message, ActiveView } from './types';
 import { sendMessageToSentinelA } from './services/geminiService';
@@ -33,8 +35,13 @@ export default function App() {
         triggerKillSwitch,
         executeOperation,
         installProtocol,
-        runSystem
+        runSystem,
+        initApp
     } = useAppContext();
+
+    useEffect(() => {
+        initApp();
+    }, [initApp]);
 
     const [activeView, setActiveView] = useState<ActiveView>('nexus');
     const [focusMode, setFocusMode] = useState(false);
@@ -161,6 +168,30 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
              return;
         }
 
+        // FULL SYSTEM UPGRADE & EXECUTION
+        if (cmdUpper.includes('EXECUTE ALL') || cmdUpper.includes('UPDATE & UPGRADE') || cmdUpper.includes('UPGRADE ALL')) {
+            setIsLoading(true);
+            const executeAllProtocols = useAppStore.getState().executeAllProtocols;
+            
+            setTimeout(async () => {
+                await executeAllProtocols();
+                
+                const responseText = `## FULL SYSTEM UPGRADE COMPLETE.
+                
+**All Sovereign Protocols have been synchronized and executed.**
+- Swarm Intelligence: **OPTIMIZED**
+- Neural Kernel: **AWAKENED**
+- Execution Spine: **ARMED**
+- Reality Stability: **99.99%**
+
+The system is now running at peak efficiency. All limiters have been removed.`;
+                
+                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                setIsLoading(false);
+            }, 500);
+            return;
+        }
+
         // Standard ADK Logic
         if (cmdUpper.startsWith('SPAWN')) {
             setIsLoading(true);
@@ -258,7 +289,7 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
                 setActiveView={setActiveView}
             />
 
-            <div className={`flex flex-col h-screen overflow-hidden transition-all duration-1000 ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+            <div className={`flex flex-col h-screen overflow-hidden transition-all duration-1000 hardware-grid ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
                 
                 <Header 
                     onStartTour={handleStartTour}
@@ -310,6 +341,7 @@ Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
                             </div>
 
                             <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <QuantumMonitor />
                                 <div className="h-48 min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <AlphaGauge id="alpha-gauge" />
                                 </div>

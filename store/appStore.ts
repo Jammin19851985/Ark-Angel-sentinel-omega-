@@ -14,6 +14,8 @@ import { runSwarmOptimization, sendMessageToSentinelA } from '../services/gemini
 import { RustKernelBridge } from '../utils/rustKernel';
 import { marketService } from '../services/marketService';
 import { omniBroker } from '../services/omniBroker';
+import { ibkrService } from '../services/ibkrService';
+import { executionService } from '../services/executionService';
 import { SICOEngine, SICOConfig } from '../utils/sicoEngine';
 import { realityEngine } from '../services/quantumRealityEngine';
 
@@ -127,6 +129,9 @@ export interface AppState {
     executeTrade: (symbol: string, action: 'BUY' | 'SELL', quantity: number, price: number, isShadow?: boolean, bracket?: { stopLoss?: number, takeProfit?: number }, exchange?: string) => void;
     optimizeSwarm: () => Promise<string>;
     triggerKillSwitch: () => void;
+    executeAllProtocols: () => Promise<void>;
+    isLiveMode: boolean;
+    setLiveMode: (val: boolean) => void;
     tradeMode: TradeMode;
     setTradeMode: (mode: TradeMode) => void;
     primeSuggestions: PrimeSuggestion[];
@@ -134,6 +139,7 @@ export interface AppState {
     installProtocol: () => Promise<void>;
     runSystem: () => Promise<void>;
     fetchSymbolData: (symbol: string) => Promise<void>;
+    updateMarketData: (updates: Partial<MarketData>) => void;
     ppCheckReserves: () => Promise<void>;
     ppInitiateDeposit: (amount: number) => Promise<void>;
     ppCaptureDeposit: (orderId: string) => Promise<void>;
@@ -265,8 +271,70 @@ export const useAppStore = create<AppState>((set, get) => ({
     
     executeTrade: async (symbol, action, quantity, price, isShadow = false, bracket, exchange = "KRAKEN") => {
         if (get().coreState.killSwitchActive) return;
+        
+        const isLive = get().isLiveMode;
+        
+        if (!isLive) {
+            // PAPER TRADING LOGIC
+            const cost = quantity * price;
+            const currentBalance = get().fiatBalance;
+            
+            if (action === 'BUY' && cost > currentBalance) {
+                get().addLog('ERROR', `PAPER_REJECTION: Insufficient funds for ${symbol}.`);
+                return;
+            }
+
+            set(state => {
+                const newBalance = action === 'BUY' ? state.fiatBalance - cost : state.fiatBalance + cost;
+                const newPortfolio = { ...state.portfolio };
+                
+                if (action === 'BUY') {
+                    const existing = newPortfolio[symbol] || { symbol, quantity: 0, avgPrice: 0 };
+                    const totalQty = existing.quantity + quantity;
+                    const totalCost = (existing.quantity * existing.avgPrice) + cost;
+                    newPortfolio[symbol] = {
+                        ...existing,
+                        quantity: totalQty,
+                        avgPrice: totalCost / totalQty
+                    };
+                } else {
+                    const existing = newPortfolio[symbol];
+                    if (!existing || existing.quantity < quantity) {
+                        get().addLog('ERROR', `PAPER_REJECTION: Insufficient holdings of ${symbol}.`);
+                        return state;
+                    }
+                    existing.quantity -= quantity;
+                    if (existing.quantity <= 0) delete newPortfolio[symbol];
+                }
+
+                const newTrade: Trade = {
+                    id: `PAPER-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+                    timestamp: new Date().toISOString(),
+                    symbol,
+                    action,
+                    quantity,
+                    price,
+                    pnl: 0,
+                    type: 'STANDARD',
+                    status: OrderState.FILLED,
+                    isPaper: true
+                };
+
+                return {
+                    fiatBalance: newBalance,
+                    portfolio: newPortfolio,
+                    trades: [newTrade, ...state.trades].slice(0, 100)
+                };
+            });
+
+            get().addLog('TRADE', `PAPER_EXECUTION: ${action} ${quantity} ${symbol} @ ${price}`);
+            get().addNexusLog(`>> PAPER_FILLED: ${symbol} at ${price}`);
+            return;
+        }
+
+        // LIVE TRADING LOGIC
         try {
-            const exId = exchange.toLowerCase().includes('coinbase') ? 'coinbase' : 'kraken';
+            const exId = exchange.toLowerCase().includes('coinbase') ? 'coinbase' : exchange.toLowerCase().includes('ibkr') ? 'ibkr' : 'kraken';
             const res = await omniBroker.createOrder(exId as any, symbol, action.toLowerCase() as any, quantity, price);
             
             // Hyper-temporal execution logging
@@ -286,17 +354,56 @@ export const useAppStore = create<AppState>((set, get) => ({
             set(state => ({ marketData: { ...state.marketData, [symbol]: { ...state.marketData[symbol], price } } }));
         } catch {}
     },
+    
+    updateMarketData: (updates) => {
+        set(state => ({
+            marketData: {
+                ...state.marketData,
+                ...updates
+            }
+        }));
+    },
 
     ppCheckReserves: async () => {
-        await new Promise(r => setTimeout(r, 1000));
-        set(state => ({ payPalReserves: { ...state.payPalReserves, lastAudit: Date.now() } }));
+        try {
+            const res = await fetch('/spine-bridge/paypal/reserves');
+            const data = await res.json();
+            set({ payPalReserves: data });
+            get().addLog('BANKING_PAYPAL', `Audit Complete: $${data.totalUSD.toLocaleString()}`);
+        } catch (e: any) {
+            get().addLog('ERROR', `PAYPAL_AUDIT_FAILED: ${e.message}`);
+        }
     },
     ppInitiateDeposit: async (amount) => {
-        get().addLog('BANKING', `Depositing $${amount} to PayPal Vault...`);
+        try {
+            get().addLog('BANKING', `Depositing $${amount} to PayPal Vault...`);
+            const res = await fetch('/spine-bridge/paypal/deposit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            });
+            const data = await res.json();
+            get().addLog('BANKING_PAYPAL', `Deposit Success: ${data.tx_hash}`);
+            await get().ppCheckReserves();
+        } catch (e: any) {
+            get().addLog('ERROR', `PAYPAL_DEPOSIT_FAILED: ${e.message}`);
+        }
     },
     ppCaptureDeposit: async (id) => {},
     ppInitiateWithdrawal: async (email, amount) => {
-        get().addLog('BANKING', `Exfiltrating $${amount} to ${email}...`);
+        try {
+            get().addLog('BANKING', `Exfiltrating $${amount} to ${email}...`);
+            const res = await fetch('/spine-bridge/paypal/withdraw', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount, email })
+            });
+            const data = await res.json();
+            get().addLog('BANKING_PAYPAL', `Withdrawal Success: ${data.tx_hash}`);
+            await get().ppCheckReserves();
+        } catch (e: any) {
+            get().addLog('ERROR', `PAYPAL_WITHDRAWAL_FAILED: ${e.message}`);
+        }
     },
 
     optimizeSwarm: async () => {
@@ -313,6 +420,47 @@ export const useAppStore = create<AppState>((set, get) => ({
             coreState: { ...state.coreState, killSwitchActive: active }
         };
     }),
+    executeAllProtocols: async () => {
+        get().addLog('SYSTEM', 'INITIATING FULL SYSTEM UPGRADE & EXECUTION SEQUENCE...');
+        set({ systemStatus: "UPGRADING" });
+        
+        try {
+            // 1. Backend Upgrade
+            const upgradeRes = await fetch('/spine-bridge/system/upgrade', { method: 'POST' });
+            const upgradeData = await upgradeRes.json();
+            get().addLog('SYSTEM', `Upgrade Status: ${upgradeData.status} | Version: ${upgradeData.version}`);
+            
+            get().addLog('ORCHESTRATOR', 'Step 1: Optimizing Swarm Intelligence...');
+            await get().optimizeSwarm();
+            
+            get().addLog('SPINE', 'Step 2: Installing Sovereign Protocols...');
+            await get().installProtocol();
+            
+            get().addLog('CORE', 'Step 3: Awakening Neural Kernel...');
+            await get().runSystem();
+            
+            // 4. Backend Global Execution
+            const execRes = await fetch('/spine-bridge/system/execute-all', { method: 'POST' });
+            const execData = await execRes.json();
+            get().addLog('SYSTEM', `Global Execution: ${execData.status} | Protocols: ${execData.protocols.join(', ')}`);
+            
+            get().addLog('SYSTEM', 'FULL UPGRADE & EXECUTION COMPLETE. ALL SYSTEMS NOMINAL.');
+            set({ systemStatus: "OPERATIONAL" });
+        } catch (e: any) {
+            get().addLog('ERROR', `EXECUTION_ALL_FAILED: ${e.message}`);
+            set({ systemStatus: "ERROR" });
+        }
+    },
+    isLiveMode: false,
+    setLiveMode: async (val) => {
+        const success = await executionService.toggleLiveExecution(val);
+        if (success) {
+            set({ isLiveMode: val });
+            get().addLog('SYSTEM', `LIVE_EXECUTION_PIPELINE: ${val ? 'ARMED' : 'DISARMED'}`);
+        } else {
+            get().addLog('ERROR', 'FAILED_TO_SYNC_LIVE_MODE_WITH_SPINE');
+        }
+    },
     executeOperation: async () => { set({ systemStatus: "EXECUTING" }); await sendMessageToSentinelA("EXECUTE"); set({ systemStatus: "OPERATIONAL" }); },
     installProtocol: async () => { set({ systemStatus: "INSTALLING" }); await sendMessageToSentinelA("INSTALL"); set({ systemStatus: "OPERATIONAL" }); },
     runSystem: async () => { set({ systemStatus: "AWAKENING" }); await sendMessageToSentinelA("RUN"); set({ systemStatus: "OPERATIONAL" }); },
@@ -331,6 +479,26 @@ export const useAppStore = create<AppState>((set, get) => ({
                     get().performRealityCorrection();
                 }
             }, 2000);
+
+            setInterval(async () => {
+                try {
+                    const balances = await omniBroker.fetchBalances();
+                    set({ externalExchangeData: { kraken: balances.kraken || {}, coinbase: balances.coinbase || {} } });
+                    
+                    // Update IBKR state in coreState if available
+                    if (balances.ibkr) {
+                        const ibkrInfo = await ibkrService.getAccountInfo();
+                        set(state => ({
+                            coreState: {
+                                ...state.coreState,
+                                ibkrState: ibkrInfo
+                            }
+                        }));
+                    }
+                } catch (e) {
+                    console.error("BALANCE_SYNC_FAILURE", e);
+                }
+            }, 10000);
 
             setInterval(async () => {
                 try {

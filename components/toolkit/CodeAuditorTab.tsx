@@ -20,11 +20,13 @@ const CodeAuditorTab: React.FC = () => {
     const [review, setReview] = useState<string | null>(null);
     const [patchedCode, setPatchedCode] = useState<string | null>(null);
     const [explanation, setExplanation] = useState<string | null>(null);
+    const [optimizations, setOptimizations] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isPatching, setIsPatching] = useState(false);
     const [isExplaining, setIsExplaining] = useState(false);
+    const [isOptimizing, setIsOptimizing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeView, setActiveView] = useState<'REVIEW' | 'PATCH' | 'EXPLAIN'>('REVIEW');
+    const [activeView, setActiveView] = useState<'REVIEW' | 'PATCH' | 'EXPLAIN' | 'OPTIMIZE'>('REVIEW');
     const [copied, setCopied] = useState(false);
     const [scanPhase, setScanPhase] = useState<string | null>(null);
 
@@ -35,6 +37,7 @@ const CodeAuditorTab: React.FC = () => {
         setReview(null);
         setPatchedCode(null);
         setExplanation(null);
+        setOptimizations(null);
         setActiveView('REVIEW');
         addLog('AI_TOOLKIT', `Forensic code audit initiated for ${language} codebase.`);
         
@@ -102,6 +105,24 @@ const CodeAuditorTab: React.FC = () => {
         }
     }, [code, language, isExplaining, addLog]);
 
+    const handleOptimize = useCallback(async () => {
+        if (!code.trim() || isOptimizing) return;
+        setIsOptimizing(true);
+        setActiveView('OPTIMIZE');
+        addLog('AI_TOOLKIT', 'Requesting performance optimization suggestions...');
+        try {
+            const { text } = await sendMessageToSentinelA(`Analyze the following code snippet (${language}) for performance and efficiency. Provide a detailed list of optimization suggestions, focusing on time complexity, memory usage, and modern best practices:\n\n${code}`);
+            setOptimizations(text);
+            addLog('AI_TOOLKIT', 'Optimization suggestions synthesized.');
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "Optimization failure.";
+            setError(errorMessage);
+            addLog('ERROR', `Optimization Failure: ${errorMessage}`);
+        } finally {
+            setIsOptimizing(false);
+        }
+    }, [code, language, isOptimizing, addLog]);
+
     const copyToClipboard = async (text: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -130,6 +151,16 @@ const CodeAuditorTab: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex gap-2 w-full lg:w-auto">
+                    {review && (
+                        <button
+                            onClick={handleAutoPatch}
+                            disabled={isPatching}
+                            className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black font-bold rounded-sm transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-30 uppercase tracking-widest border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1"
+                        >
+                            {isPatching ? <Loader /> : <SparklesIcon className="w-4 h-4" />}
+                            <span>Auto-Patch</span>
+                        </button>
+                    )}
                     <button
                         onClick={handleSubmit}
                         disabled={isLoading || !code.trim()}
@@ -193,10 +224,16 @@ const CodeAuditorTab: React.FC = () => {
                                 Explain
                             </button>
                             <button 
+                                onClick={() => setActiveView('OPTIMIZE')}
+                                className={`px-2.5 py-1 rounded-sm text-[9px] font-bold uppercase transition-all ${activeView === 'OPTIMIZE' ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'text-slate-500 hover:text-slate-300'}`}
+                            >
+                                Optimizations
+                            </button>
+                            <button 
                                 onClick={() => setActiveView('PATCH')}
                                 className={`px-2.5 py-1 rounded-sm text-[9px] font-bold uppercase transition-all ${activeView === 'PATCH' ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-500/50 shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'text-slate-500 hover:text-slate-300'}`}
                             >
-                                Optimized
+                                Optimized Code
                             </button>
                         </div>
                         
@@ -208,7 +245,17 @@ const CodeAuditorTab: React.FC = () => {
                                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-emerald-600 hover:bg-emerald-500 text-black text-[9px] font-bold uppercase transition-all disabled:opacity-30 shadow-[0_0_10px_rgba(16,185,129,0.4)]`}
                                 >
                                     {isPatching ? <Loader /> : <SparklesIcon className="w-3.5 h-3.5" />}
-                                    Auto-Patch Kernel
+                                    Auto-Patch Code
+                                </button>
+                            )}
+                            {code.trim() && activeView === 'OPTIMIZE' && !optimizations && (
+                                <button 
+                                    onClick={handleOptimize}
+                                    disabled={isOptimizing}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-cyan-600 hover:bg-cyan-500 text-black text-[9px] font-bold uppercase transition-all disabled:opacity-30 shadow-[0_0_10px_rgba(6,182,212,0.4)]`}
+                                >
+                                    {isOptimizing ? <Loader /> : <SparklesIcon className="w-3.5 h-3.5" />}
+                                    Generate Suggestions
                                 </button>
                             )}
                         </div>
@@ -239,6 +286,8 @@ const CodeAuditorTab: React.FC = () => {
                             <ReviewOutput review={review} isLoading={false} error={null} />
                         ) : activeView === 'EXPLAIN' ? (
                             <ReviewOutput review={explanation} isLoading={isExplaining} error={null} />
+                        ) : activeView === 'OPTIMIZE' ? (
+                            <ReviewOutput review={optimizations} isLoading={isOptimizing} error={null} />
                         ) : (
                             <div className="h-full">
                                 {isPatching ? (

@@ -4,6 +4,9 @@
  * Enhanced with robust dynamic loading and error resilience.
  */
 
+import { executionService } from './executionService';
+import { ibkrService } from './ibkrService';
+
 export class OmniBroker {
     private static instance: OmniBroker;
     private exchanges: Record<string, any> = {};
@@ -88,6 +91,13 @@ export class OmniBroker {
 
     private async ensureReady(exchangeId: string): Promise<any> {
         if (this.initializationPromise) await this.initializationPromise;
+        
+        if (exchangeId === 'ibkr') {
+            const isAlive = await ibkrService.checkConnection();
+            if (!isAlive) throw new Error(`[OmniBroker] AUTH_FAULT: IBKR Gateway not responding.`);
+            return { id: 'ibkr' }; // Mock object for routing
+        }
+
         const ex = this.exchanges[exchangeId];
         if (!ex) throw new Error(`[OmniBroker] AUTH_FAULT: ${exchangeId.toUpperCase()} not configured.`);
         if (!this.marketsLoaded[exchangeId]) {
@@ -107,9 +117,20 @@ export class OmniBroker {
         return `${clean}/USD`;
     }
 
-    async createOrder(exchangeId: 'kraken' | 'coinbase', symbol: string, side: 'buy' | 'sell', amount: number, price?: number): Promise<any> {
+    async createOrder(exchangeId: 'kraken' | 'coinbase' | 'ibkr', symbol: string, side: 'buy' | 'sell', amount: number, price?: number): Promise<any> {
         try {
             const ex = await this.ensureReady(exchangeId);
+            
+            if (exchangeId === 'ibkr') {
+                // Route to Python Execution Spine
+                return await executionService.executeLiveTrade({
+                    symbol,
+                    side: side.toUpperCase() as 'BUY' | 'SELL',
+                    quantity: amount,
+                    price: price || 0
+                }, 0.99); // Default high confidence for manual orders
+            }
+
             const targetSymbol = this.normalizeSymbol(symbol);
             const type = price ? 'limit' : 'market';
             const order = await ex.createOrder(targetSymbol, type, side, amount, price);
@@ -121,8 +142,12 @@ export class OmniBroker {
         }
     }
 
-    async fetchBalances(exchangeId?: 'kraken' | 'coinbase'): Promise<Record<string, any>> {
+    async fetchBalances(exchangeId?: 'kraken' | 'coinbase' | 'ibkr'): Promise<Record<string, any>> {
         try {
+            if (exchangeId === 'ibkr') {
+                const info = await ibkrService.getAccountInfo();
+                return { ibkr: { total: { USD: info.buyingPower }, free: { USD: info.buyingPower } } };
+            }
             if (exchangeId) {
                 const ex = await this.ensureReady(exchangeId);
                 return { [exchangeId]: await ex.fetchBalance() };
@@ -136,6 +161,12 @@ export class OmniBroker {
                     results[id] = { status: 'OFFLINE', error: e.message };
                 }
             }
+            // Add IBKR to batch if alive
+            try {
+                const ibkrInfo = await ibkrService.getAccountInfo();
+                results['ibkr'] = { total: { USD: ibkrInfo.buyingPower }, free: { USD: ibkrInfo.buyingPower } };
+            } catch {}
+            
             return results;
         } catch (error: any) {
             console.error("[OmniBroker] Audit Failure:", error.message);

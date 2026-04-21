@@ -158,10 +158,26 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
         } finally { setActiveOp(null); }
     }, [executeOperation, installProtocol, runSystem, killSwitchActive, addLog]);
 
-    const handleTerminalSubmit = (e: React.FormEvent) => {
+    const handleTerminalSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanInput = input.trim();
         if (!cleanInput) return;
+
+        const cmd = cleanInput.toLowerCase();
+
+        if (cmd === 'execute all' || cmd === 'run all') {
+            const { executeAllProtocols } = useAppContext.getState();
+            executeAllProtocols();
+            setInput('');
+            return;
+        }
+
+        if (cmd === 'upgrade' || cmd === 'update system') {
+            const { executeAllProtocols } = useAppContext.getState();
+            executeAllProtocols(); // In this system, upgrade is part of executeAll
+            setInput('');
+            return;
+        }
 
         if (cleanInput.startsWith('/alias ')) {
             const parts = cleanInput.split(' ');

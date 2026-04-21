@@ -2,7 +2,18 @@
 import sys
 import time
 import json
+import logging
 from coinbase_adapter import CoinbaseClient
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("ARCHANGEL_BRIDGE")
+
+try:
+    from ib_insync import IB, Stock, MarketOrder
+    HAS_IB = True
+except ImportError:
+    HAS_IB = False
 
 # Global State
 STATE = {
@@ -13,6 +24,43 @@ STATE = {
 }
 
 COINBASE = None
+IBKR = None
+
+def connect_ibkr(host, port, client_id):
+    global IBKR
+    if not HAS_IB:
+        logger.warning("ib_insync not installed. Defaulting to MOCK mode.")
+        return {"status": "warning", "message": "ib_insync not installed", "mode": "MOCK"}
+    
+    max_retries = 3
+    retry_delay = 2 # seconds
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            logger.info(f"Attempting to connect to IBKR Gateway (Attempt {attempt}/{max_retries}) at {host}:{port} with clientId={client_id}")
+            IBKR = IB()
+            IBKR.connect(host, port, clientId=client_id)
+            logger.info(f"Successfully connected to IBKR Gateway at {host}:{port}")
+            return {"status": "success", "message": f"Connected to IBKR at {host}:{port}", "mode": "LIVE"}
+        except Exception as e:
+            IBKR = None
+            logger.warning(f"Connection attempt {attempt} failed: {e}")
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"All {max_retries} connection attempts failed. Defaulting to MOCK mode.")
+                return {"status": "warning", "message": f"Failed after {max_retries} attempts: {str(e)}", "mode": "MOCK"}
+
+def disconnect_ibkr():
+    global IBKR
+    if IBKR:
+        try:
+            IBKR.disconnect()
+            logger.info("IBKR disconnected")
+        except Exception as e:
+            logger.error(f"Error during IBKR disconnect: {e}")
+        IBKR = None
+    return {"status": "success", "message": "IBKR disconnected"}
 
 def activate_coinbase(api_key, api_secret):
     global COINBASE
@@ -35,29 +83,43 @@ def execute_trade(symbol, side, quantity, price=0):
         "mode": STATE["mode"]
     }
 
-    if STATE["mode"] == "LIVE" and COINBASE:
-        try:
-            # Coinbase Advanced Trade uses product_id like BTC-USD
-            product = f"{symbol}-USD"
-            result = COINBASE.place_order(
-                product_id=product,
-                side=side,
-                size=quantity
-            )
-            trade_record["exchange_response"] = result
-            
-            # Check for immediate errors in response structure
-            if 'error' in result:
-                 trade_record["status"] = "REJECTED"
-                 print(f"LIVE TRADE REJECTED: {result}")
-            else:
-                 print(f"LIVE TRADE EXECUTED: {json.dumps(result)}")
-                 
-        except Exception as e:
-            trade_record["status"] = "FAILED"
-            trade_record["error"] = str(e)
-            print(f"LIVE TRADE FAILED: {e}")
-            return trade_record
+    if STATE["mode"] == "LIVE":
+        if COINBASE:
+            try:
+                # Coinbase Advanced Trade uses product_id like BTC-USD
+                product = f"{symbol}-USD"
+                result = COINBASE.place_order(
+                    product_id=product,
+                    side=side,
+                    size=quantity
+                )
+                trade_record["exchange_response"] = result
+                
+                # Check for immediate errors in response structure
+                if 'error' in result:
+                     trade_record["status"] = "REJECTED"
+                     print(f"LIVE TRADE REJECTED: {result}")
+                else:
+                     print(f"LIVE TRADE EXECUTED: {json.dumps(result)}")
+                     
+            except Exception as e:
+                trade_record["status"] = "FAILED"
+                trade_record["error"] = str(e)
+                print(f"LIVE TRADE FAILED: {e}")
+                return trade_record
+        elif IBKR:
+            try:
+                # Simple IBKR Market Order (assuming Stock for now in this bridge)
+                contract = Stock(symbol, 'SMART', 'USD')
+                order = MarketOrder(side, quantity)
+                trade = IBKR.placeOrder(contract, order)
+                trade_record["exchange_response"] = {"orderId": trade.order.orderId, "status": "SUBMITTED"}
+                print(f"LIVE IBKR TRADE SUBMITTED: {trade.order.orderId}")
+            except Exception as e:
+                trade_record["status"] = "FAILED"
+                trade_record["error"] = str(e)
+                print(f"LIVE IBKR TRADE FAILED: {e}")
+                return trade_record
 
     # Update Ledger/Portfolio (Simulated for Paper, tracked for Live)
     STATE["orders"].append(trade_record)
@@ -80,7 +142,7 @@ def list_open_orders():
 
 def main_loop():
     print("ARCHANGEL BRIDGE v2.1 - GABRIEL CLI")
-    print("Commands: trade <sym> <side> <qty> <price>, list-orders, activate-coinbase <key> <secret>, go-live, go-paper, add-funds <amt>, exit")
+    print("Commands: trade <sym> <side> <qty> <price>, list-orders, activate-coinbase <key> <secret>, connect-ibkr <host> <port> <id>, disconnect-ibkr, go-live, go-paper, add-funds <amt>, exit")
     
     while True:
         try:
@@ -104,6 +166,18 @@ def main_loop():
                     continue
                 key, secret = parts[1], parts[2]
                 print(json.dumps(activate_coinbase(key, secret)))
+                
+            elif cmd == "connect-ibkr":
+                if len(parts) < 4:
+                    print("Usage: connect-ibkr <host> <port> <client_id>")
+                    continue
+                host = parts[1]
+                port = int(parts[2])
+                client_id = int(parts[3])
+                print(json.dumps(connect_ibkr(host, port, client_id)))
+
+            elif cmd == "disconnect-ibkr":
+                print(json.dumps(disconnect_ibkr()))
                 
             elif cmd == "go-live":
                 STATE["mode"] = "LIVE"

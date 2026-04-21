@@ -46,12 +46,13 @@ const AlphaGauge: React.FC<AlphaGaugeProps> = ({ id }) => {
     return (
         <div id={id} className="tech-panel p-4 flex flex-col h-full bg-black/60">
             <div className="flex justify-between items-center mb-3">
-                <h2 className="text-sm font-bold text-amber-400 font-mono uppercase tracking-widest">// ESTIMATED ALPHA</h2>
+                <h2 className="micro-label">// ESTIMATED ALPHA</h2>
                 <LivePaperBadge />
             </div>
             <div className="flex-1 flex items-center justify-center">
                 <div className="relative w-48 h-48">
-                    <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
+                    <div className="absolute inset-0 radial-track opacity-20"></div>
+                    <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90 relative z-10">
                         {/* Background track */}
                         <path
                             d={describeArc(100, 100, 80, startAngle, endAngle)}
@@ -79,7 +80,7 @@ const AlphaGauge: React.FC<AlphaGaugeProps> = ({ id }) => {
                             </span>
                             <span className="text-2xl text-slate-400 font-mono ml-1">%</span>
                         </div>
-                        <span className="text-xs text-slate-500 font-mono mt-1">SWARM CONFIDENCE: HIGH</span>
+                        <span className="micro-label mt-1">SWARM CONFIDENCE: HIGH</span>
                     </div>
                 </div>
             </div>

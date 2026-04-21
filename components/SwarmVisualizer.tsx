@@ -95,7 +95,7 @@ const SwarmVisualizer: React.FC<SwarmVisualizerProps> = ({ id }) => {
             <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
                     <NetworkIcon className="w-5 h-5 text-amber-400" />
-                    <h2 className="text-xs font-bold text-amber-400 font-mono tracking-widest uppercase">// SWARM LEGIONS</h2>
+                    <h2 className="micro-label">// SWARM LEGIONS</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     <LivePaperBadge />

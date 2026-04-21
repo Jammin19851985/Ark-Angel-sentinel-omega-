@@ -8,7 +8,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 import { ActivityIcon } from './icons/ActivityIcon';
 import Loader from './Loader';
-import { TSX_SYMBOLS } from '../constants';
+import { TSX_SYMBOLS, GLOBAL_SYMBOLS } from '../constants';
 
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T | undefined>(undefined);
@@ -79,7 +79,14 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
         const matchesSearch = symbol.toLowerCase().includes(marketFilter.toLowerCase());
         const isCrypto = CRYPTO_SYMBOLS.includes(symbol);
         const isCanada = TSX_SYMBOLS.includes(symbol);
-        const matchesTab = activeTab === 'ALL' || (activeTab === 'CRYPTO' && isCrypto) || (activeTab === 'CANADA' && isCanada) || (activeTab === 'STOCKS' && !isCrypto && !isCanada);
+        const isGlobal = GLOBAL_SYMBOLS.includes(symbol);
+        
+        const matchesTab = 
+            activeTab === 'ALL' || 
+            (activeTab === 'CRYPTO' && isCrypto) || 
+            (activeTab === 'CANADA' && isCanada) || 
+            (activeTab === 'STOCKS' && isGlobal);
+            
         return matchesSearch && matchesTab;
     });
     
@@ -100,7 +107,7 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
         <div id={id} className="tech-panel p-3 flex flex-col h-full bg-black/60">
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                    <h2 className="text-xs font-bold text-amber-400 font-mono uppercase tracking-widest">// MARKET WATCH</h2>
+                    <h2 className="micro-label">// MARKET WATCH</h2>
                 </div>
                 <LivePaperBadge />
             </div>
