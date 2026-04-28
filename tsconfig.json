@@ -25,5 +25,26 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "./global.d.ts",
+    "./index.tsx",
+    "./App.tsx",
+    "./types.ts",
+    "./constants.ts",
+    "./rag_content.ts",
+    "./components/**/*",
+    "./contexts/**/*",
+    "./hooks/**/*",
+    "./services/**/*",
+    "./utils/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "AIToolkit.tsx",
+    "Intel.tsx",
+    "Nexus.tsx"
+  ]
 }

@@ -131,7 +131,7 @@ export const RagTab: React.FC = () => {
                                 <span className="text-[8px] text-slate-600 font-mono">HASH: {Math.random().toString(36).substring(7).toUpperCase()}</span>
                             </div>
                             <div className="text-sm text-slate-200 leading-relaxed font-sans bg-white/5 p-5 rounded border border-white/5 shadow-inner selection:bg-amber-500/30">
-                                <div className="whitespace-pre-wrap">{result.text}</div>
+                                <p className="whitespace-pre-wrap">{result.text}</p>
                             </div>
                         </div>
 

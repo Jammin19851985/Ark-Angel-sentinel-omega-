@@ -1,29 +1,25 @@
 
 import React, { useState } from 'react';
-import { ChartInfoOverlay, ChartInfo } from './ChartInfoOverlay';
 
 interface PieChartProps {
     data: { label: string; value: number }[];
-    info?: ChartInfo;
 }
 
+// Nano-Bananas Gradient Palette
 const GRADIENTS = [
-    { start: '#22d3ee', end: '#0891b2' }, 
-    { start: '#a78bfa', end: '#7c3aed' }, 
-    { start: '#fbbf24', end: '#d97706' }, 
-    { start: '#34d399', end: '#059669' }, 
-    { start: '#fb7185', end: '#e11d48' }, 
+    { start: '#0ea5e9', end: '#0c4a6e' }, // Sky
+    { start: '#8b5cf6', end: '#4c1d95' }, // Violet
+    { start: '#f59e0b', end: '#78350f' }, // Amber
+    { start: '#10b981', end: '#064e3b' }, // Emerald
+    { start: '#f43f5e', end: '#881337' }, // Rose
 ];
 
-const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
+const PieChart: React.FC<PieChartProps> = ({ data }) => {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    const total = data.reduce((sum, item) => sum + item.value, 0);
     
-    if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-slate-600 font-mono text-[10px]">Awaiting Dataset...</div>;
-
-    const total = data.reduce((sum, item) => sum + (item.value || 0), 0);
-    
-    if (total <= 0) {
-        return <div className="flex items-center justify-center h-full text-slate-500 font-mono text-xs uppercase tracking-widest">Zero Magnitude Event</div>;
+    if (total === 0) {
+        return <div className="flex items-center justify-center h-full text-slate-500 font-mono text-xs">NO DATA TO SYNTHESIZE</div>;
     }
 
     let startAngle = -90;
@@ -32,15 +28,13 @@ const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
     const cy = 125;
 
     const getCoordinatesForPercent = (percent: number) => {
-        if (isNaN(percent)) return [cx, cy];
         const x = cx + radius * Math.cos(2 * Math.PI * percent);
         const y = cy + radius * Math.sin(2 * Math.PI * percent);
         return [x, y];
     };
 
     return (
-        <div className="relative w-full h-full flex items-center justify-center group/chart">
-            <ChartInfoOverlay info={info} />
+        <div className="w-full h-full flex items-center justify-center relative">
             <svg viewBox="0 0 250 250" className="w-2/3 h-full overflow-visible">
                 <defs>
                     {GRADIENTS.map((g, i) => (
@@ -50,7 +44,7 @@ const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
                         </linearGradient>
                     ))}
                     <filter id="pie-glow">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
                         <feMerge>
                             <feMergeNode in="coloredBlur" />
                             <feMergeNode in="SourceGraphic" />
@@ -58,14 +52,11 @@ const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
                     </filter>
                 </defs>
 
-                {/* Outer Ring */}
-                <circle cx={cx} cy={cy} r={radius + 5} fill="none" stroke="#1e293b" strokeWidth="1" strokeDasharray="4 2" />
-
                 {data.map((item, i) => {
-                    const val = item.value || 0;
-                    const slicePercentage = val / total;
+                    const slicePercentage = item.value / total;
                     const endAngle = startAngle + slicePercentage * 360;
                     
+                    // Don't draw if 0 size
                     if (slicePercentage <= 0) return null;
 
                     const [startX, startY] = getCoordinatesForPercent(startAngle / 360);
@@ -82,20 +73,21 @@ const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
                     const isHovered = hoveredIndex === i;
                     const colorIndex = i % GRADIENTS.length;
 
+                    // Update angle for next slice
                     startAngle = endAngle;
 
                     return (
-                        <g key={`${item.label}-${i}`} 
+                        <g key={item.label} 
                            onMouseEnter={() => setHoveredIndex(i)}
                            onMouseLeave={() => setHoveredIndex(null)}
                            className="transition-all duration-300 ease-out cursor-pointer"
-                           style={{ transformOrigin: `${cx}px ${cy}px`, transform: isHovered ? 'scale(1.1)' : 'scale(1)' }}
+                           style={{ transformOrigin: `${cx}px ${cy}px`, transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
                         >
                             <path 
                                 d={pathData} 
                                 fill={`url(#pie-grad-${colorIndex})`}
-                                stroke="rgba(0,0,0,0.8)"
-                                strokeWidth="2"
+                                stroke="rgba(0,0,0,0.5)"
+                                strokeWidth="1"
                                 className="transition-all duration-300"
                                 filter={isHovered ? 'url(#pie-glow)' : ''}
                             />
@@ -103,23 +95,25 @@ const PieChart: React.FC<PieChartProps> = ({ data, info }) => {
                     );
                 })}
                 
-                <circle cx={cx} cy={cy} r={radius * 0.5} fill="#050508" stroke="#1e293b" strokeWidth="2" />
+                {/* Donut Hole */}
+                <circle cx={cx} cy={cy} r={radius * 0.6} fill="#000000" fillOpacity="0.4" />
+                <circle cx={cx} cy={cy} r={radius * 0.55} fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="1" />
             </svg>
 
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center z-10">
-                {hoveredIndex !== null && data[hoveredIndex] ? (
+            {/* Legend / Hover Info */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
+                {hoveredIndex !== null ? (
                     <div className="animate-fade-in-fast">
-                        <div className="text-xl font-bold text-white font-mono drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">
-                            {data[hoveredIndex].value || 0}
+                        <div className="text-xl font-bold text-white font-mono drop-shadow-md">
+                            {data[hoveredIndex].value}
                         </div>
-                        <div className="text-[9px] text-cyan-400 font-mono tracking-widest uppercase">
+                        <div className="text-[10px] text-slate-300 font-mono tracking-widest uppercase">
                             {data[hoveredIndex].label}
                         </div>
                     </div>
                 ) : (
-                    <div className="text-xs text-slate-500 font-mono uppercase tracking-widest">
-                        TOTAL<br/>
-                        <span className="text-slate-300 text-sm font-bold">{total.toLocaleString()}</span>
+                    <div className="text-xs text-slate-500 font-mono">
+                        TOTAL<br/>{total}
                     </div>
                 )}
             </div>

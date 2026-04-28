@@ -5,6 +5,7 @@ import { HeartbeatIcon } from './icons/HeartbeatIcon';
 // A tiny, silent WAV file encoded in Base64. This is used to keep the browser tab active.
 const SILENT_AUDIO_DATA_URI = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
+
 const KeepAwakeToggle: React.FC = () => {
     const [isAwake, setIsAwake] = useState(true);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -24,20 +25,28 @@ const KeepAwakeToggle: React.FC = () => {
     }, [isAwake]);
 
     return (
-        <div className="flex items-center space-x-2">
-             <span className={`text-[10px] font-mono tracking-widest uppercase transition-colors ${isAwake ? 'text-amber-400' : 'text-slate-500'}`}>
-                STASIS_FIELD
+        <div className="flex items-center space-x-3">
+             <span className={`text-sm font-medium transition-colors ${isAwake ? 'text-amber-400' : 'text-slate-400'}`}>
+                Keep Awake
             </span>
             <button
                 onClick={() => setIsAwake(!isAwake)}
                 type="button"
-                className={`alien-switch ${isAwake ? 'active' : ''}`}
+                className={`${
+                isAwake ? 'bg-amber-600' : 'bg-slate-700'
+                } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
+                role="switch"
                 aria-checked={isAwake}
+                aria-label={isAwake ? 'Deactivate Keep Awake' : 'Activate Keep Awake'}
                 title={isAwake ? 'Deactivate: Allow browser to suspend tab' : 'Activate: Prevent browser from suspending tab'}
             >
-                <div className="alien-switch-thumb flex items-center justify-center">
-                    <HeartbeatIcon className={`h-2.5 w-2.5 ${isAwake ? 'text-black animate-pulse' : 'text-slate-300'}`} />
-                </div>
+                <span
+                    aria-hidden="true"
+                    className={`${isAwake ? 'translate-x-5' : 'translate-x-0'}
+                    pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out flex items-center justify-center`}
+                >
+                    <HeartbeatIcon className={`h-3 w-3 transition-colors ${isAwake ? 'text-amber-600' : 'text-slate-500'}`} />
+                </span>
             </button>
         </div>
     );

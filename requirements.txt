@@ -1,4 +1,3 @@
-
 fastapi
 uvicorn
 ib-insync
@@ -10,8 +9,3 @@ requests
 flask-cors
 python-dotenv
 scikit-learn
-yfinance
-plotly
-streamlit
-aiohttp
-ccxt

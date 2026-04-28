@@ -17,7 +17,7 @@ interface LiveSession {
 
 // Always create a new instance to get the latest API key from the environment.
 const getAi = () => {
-    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.API_KEY;
     if (!apiKey) {
         console.error("API_KEY is not defined. Please ensure it's set in the environment.");
         throw new Error("API_KEY is missing. Cannot initialize GoogleGenAI for Live Audio.");
@@ -111,7 +111,7 @@ export const useLiveAudio = ({ addLog }: { addLog: (source: LogEntry['source'], 
             outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+                model: 'gemini-2.5-flash-native-audio-preview-09-2025',
                 callbacks: {
                     onopen: () => {
                         addLog('AI_TOOLKIT', 'Live audio connection opened.');

@@ -1,4 +1,25 @@
-�jh�֬�w"����+|-jע��+�ihm�R��^~�&r���'~("��+�*'~(�����'�l�yhrH�����h���
-��ez��f�j)r�ފjh��kj)߮����|
-b��b�覦���"�*'>*^�)�~�&n�$z���+�jh��)j�^��蚖�zj������⚚+���z�k�G�~�&jZal-��-����jh�ԭ��-���ZahI��w�����ɲ�����jh��b�A'�)�~�&q�b��jYhq�h�)���Bj��jP%����߮���f�� �+b�x����障* �+b�q'�)�~�&�����������(����������a�������&�X��Ǖ�`z�����
-���&�q��v�
+﻿import time
+from core.sentinel import ArchangelSentinel
+
+def main():
+    # Initialize Archangel Platform
+    archangel = ArchangelSentinel()
+    archangel.initialize_stack()
+    
+    # Bridge to Exchanges
+    archangel.bridge_to_kraken()
+    
+    # Set Autonomy Level (0: Paper, 1: Validated, 2: Full Autonomous)
+    archangel.executor.set_autonomy_level(0) 
+    
+    print("Archangel Trading Platform is online.")
+    
+    try:
+        while True:
+            archangel.run_autonomous_cycle()
+            time.sleep(60) # Run cycle every minute
+    except KeyboardInterrupt:
+        print("\nArchangel shutting down safely...")
+
+if __name__ == "__main__":
+    main()

@@ -103,7 +103,7 @@ const SentimentAnalysisTab: React.FC = () => {
                             </div>
                             <div>
                                 <h4 className="text-xs font-bold text-slate-400 mb-1">Summary</h4>
-                                <div className="text-sm text-slate-300 whitespace-pre-wrap">{result.summary}</div>
+                                <p className="text-sm text-slate-300 whitespace-pre-wrap">{result.summary}</p>
                             </div>
                             {result.sources && result.sources.length > 0 && (
                                 <div className="mt-4 pt-4 border-t border-slate-700">

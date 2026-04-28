@@ -271,7 +271,7 @@ const ImageStudioTab: React.FC<ImageStudioTabProps> = () => {
                             {mode === 'analyze' && (
                                 <div className="flex flex-col md:flex-row gap-4 w-full h-full">
                                     {(imageUrl || imageFile) && <img src={imageUrl || URL.createObjectURL(imageFile as File)} alt="For analysis" className="max-h-full md:max-h-64 md:max-w-[50%] object-contain rounded-md" />}
-                                    {analysisResult && <div className="text-sm text-slate-300 overflow-y-auto flex-1"><div className="whitespace-pre-wrap">{analysisResult}</div></div>}
+                                    {analysisResult && <div className="text-sm text-slate-300 overflow-y-auto flex-1"><p className="whitespace-pre-wrap">{analysisResult}</p></div>}
                                 </div>
                             )}
                             {(mode === 'edit') && (

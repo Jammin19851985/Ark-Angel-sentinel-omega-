@@ -1,28 +1,24 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+
+import './index.css';
+
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import { AppProvider } from './contexts/AppContext';
 
-const mount = () => {
-  const rootElement = document.getElementById('root');
-  if (!rootElement) {
-    console.error("Failed to find the root element");
-    return;
-  }
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
 
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <ErrorBoundary>
       <AppProvider>
         <App />
       </AppProvider>
-    </React.StrictMode>
-  );
-};
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', mount);
-} else {
-  mount();
-}
+    </ErrorBoundary>
+  </React.StrictMode>
+);
