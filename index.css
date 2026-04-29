@@ -103,3 +103,21 @@
   );
   animation: ark-sonar-sweep 2.6s linear infinite;
 }
+
+/* Enable global resizability for all ARK modules */
+.terminal-window, .terminal-section, .monitor-panel, #system_log_v17, .swarm-legions {
+    resize: both !important; 
+    overflow: auto !important;
+    min-width: 200px;
+    min-height: 150px;
+    border: 1px solid #ffcc00; /* Yellow Hub Accents */
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Ensure the SICO Engine and Intel Feed scale properly */
+.terminal-content {
+    flex: 1;
+    width: 100%;
+}
