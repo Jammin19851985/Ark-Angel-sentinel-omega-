@@ -1,109 +1,128 @@
 
-import { GrandSlamFeature } from "./types";
+import { GrandSlamFeature, ActiveView } from "./types";
 
 export const PROGRAMMING_LANGUAGES: string[] = [
-    "TypeScript", "JavaScript", "Python", "Go", "Rust", "C++", "SQL", "Shell",
+    "TypeScript", "JavaScript", "Python", "Go", "Rust", "C++", "SQL", "Shell", "Solidity", "Pine Script", "Verilog", "Haskell"
 ];
+
+export const SUB_CATEGORY_MAP: Record<string, string[]> = {
+    "LINK_FIAT_GATEWAY": ["SELECT_BANK_INSTITUTION", "VERIFY_ROUTING_INFO", "INITIATE_MICRO_DEPOSIT", "BIND_API_CREDENTIALS", "TEST_FIAT_ONRAMP"],
+    "SETUP_COLD_WALLET": ["GENERATE_24_WORD_SEED", "CONNECT_HARDWARE_DEVICE", "DERIVE_ETH_ADDRESS", "IMPORT_XPUB_KEY", "VERIFY_DEVICE_ATTESTATION"],
+    "INITIATE_QUANTUM_ALIGNMENT": ["CALIBRATE_MAJORANA_QUBITS", "SYNC_ATOMIC_CLOCK", "MEASURE_DECOHERENCE", "ESTABLISH_ENTANGLEMENT", "VERIFY_FSF_METRIC"],
+    "DEPLOY_SWARM_CLUSTER": ["ASSIGN_ROLES", "SET_EFFICIENCY_TARGET", "DEFINE_LOSS_FUNCTION", "ACTIVATE_GHOST_PULSE", "ALLOCATE_GPU_RESOURCES"],
+    "EXECUTE_SICO_ORDER": ["CALCULATE_OPTIMAL_SIZE", "CHECK_MEV_RISK", "ROUTE_VIA_FLASHBOTS", "SET_TIME_IN_FORCE_IOC", "VERIFY_KILL_SWITCH"],
+    "RUN_FULL_SYSTEM_DIAGNOSTICS": ["CHECK_MEMORY_HEAP", "VERIFY_API_LATENCY", "TEST_DB_INTEGRITY", "SCAN_SECURITY_LOGS", "PING_EXCHANGE_NODES"],
+    "CANADIAN_MARKET_UNIFICATION": ["LINK_QUESTTRADE_API", "BIND_NDAX_CALGARY", "SYNC_TSX_L2_DATA", "ESTABLISH_ONTARIO_COMPLIANCE", "INIT_TWEED_NODE"]
+};
+
+export const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
+    nexus: [
+        "INITIATE_QUANTUM_ALIGNMENT", 
+        "CALIBRATE_REALITY_ANCHOR", 
+        "ESTABLISH_SOVEREIGN_LINK", 
+        "PURGE_CAUSAL_DRIFT", 
+        "ACTIVATE_ZERO_POINT_FIELD",
+        "TRIGGER_GAMMA_SCALPER",
+        "CANADIAN_MARKET_UNIFICATION"
+    ],
+    sentinel: [
+        "RUN_FULL_SYSTEM_DIAGNOSTICS", 
+        "OVERRIDE_SECURITY_LATCH", 
+        "DEPLOY_COUNTER_MEASURES", 
+        "SCAN_INTERNAL_LOGS", 
+        "VERIFY_UPB1_COMPLIANCE",
+        "INITIATE_SWARM_PROTOCOL",
+        "AGENT ZERO",
+        "GOD_MODE"
+    ],
+    orchestrator: [
+        "DEPLOY_SWARM_CLUSTER --mode ALPHA", 
+        "OPTIMIZE_HIVE_HEURISTICS", 
+        "EXECUTE_GLOBAL_LIQUIDITY_HUNT", 
+        "INITIATE_COMPLEX_ARBITRAGE", 
+        "SYNTHESIZE_STRATEGY_MIXTURE",
+        "MONITOR_SWARM_HEALTH",
+        "SPAWN AGENT --role HUNTER",
+        "HEAL NETWORK TOPOLOGY"
+    ],
+    toolkit: [
+        "ANALYZE_MARKET_SENTIMENT --depth DEEP", 
+        "GENERATE_ASSET_FORECAST --horizon 7D", 
+        "AUDIT_SMART_CONTRACT --risk OMEGA", 
+        "SYNTHESIZE_VOICE_BRIEFING", 
+        "QUERY_RAG_STORE --topic 'QUANTUM_FINANCE'",
+        "SCAN_MEMPOOL_VECTORS",
+        "GENERATE_TRADING_ALGO --lang PYTHON"
+    ],
+    backtester: [
+        "SIMULATE_BLACK_SWAN_EVENT", 
+        "BACKTEST_MEAN_REVERSION_STRATEGY", 
+        "OPTIMIZE_KELLY_CRITERION", 
+        "STRESS_TEST_PORTFOLIO", 
+        "ANALYZE_MAX_DRAWDOWN",
+        "EXPORT_EQUITY_CURVE",
+        "RUN_VECTORIZED_SIMULATION --shards 64",
+        "COMPARE_SHARPE_RATIOS"
+    ],
+    analytics: [
+        "FORECAST_VOLATILITY_SURFACE", 
+        "CORRELATE_MACRO_ASSETS", 
+        "DETECT_LIQUIDITY_CLIFFS", 
+        "ANALYZE_ORDER_BOOK_DEPTH", 
+        "PROJECT_ALPHA_DECAY",
+        "CALCULATE_VAR_99",
+        "MAP_CORRELATION_MATRIX"
+    ],
+    intel: [
+        "DECRYPT_OMEGA_PROTOCOL", 
+        "SEARCH_INSTITUTIONAL_FLOWS", 
+        "ACCESS_DARK_POOL_DATA", 
+        "VERIFY_PROTOCOL_HASH", 
+        "SCAN_GLOBAL_NEWS_FEED",
+        "DECODE_WHALE_WALLET_0x7a"
+    ],
+    sonar: [
+        "SCAN_GEOPOLITICAL_RISK", 
+        "DETECT_QUANTUM_DECOHERENCE", 
+        "TRACK_WHALE_MOVEMENTS", 
+        "MONITOR_CYBER_THREATS", 
+        "ANALYZE_MARKET_ANOMALIES",
+        "TRIANGULATE_LATENCY_ARBITRAGE"
+    ],
+    // Fix: Changed 'paper_terminal' to 'shadow_terminal' to match ActiveView type
+    shadow_terminal: [
+        "SIMULATE_HIGH_FREQ_ORDER", 
+        "TEST_SLIPPAGE_TOLERANCE", 
+        "RESET_PAPER_EQUITY", 
+        "EXECUTE_DUMMY_TRADE", 
+        "VIEW_SIMULATION_METRICS",
+        "STRESS_TEST_MARGIN_CALL"
+    ]
+};
+
+export const INITIAL_SUGGESTIONS = VIEW_SPECIFIC_SUGGESTIONS.nexus;
 
 export const BOOT_SEQUENCE_LAYERS = [
-    "AODE Layer 1: Majorana Qubit Simulation Core... STABLE (>120ns)",
+    "AODE Layer 1: Majorana Qubit Simulation Core... STABLE",
     "AODE Layer 2: Instantiating Logical |0> (Self-Identity)... ENCODED",
-    "AODE Layer 3: ACMD Protocol: Activating Autonomous Code Mutation...",
-    "AODE Layer 4: QUBO Quantum Annealing Solver... OPTIMIZING",
-    "AODE Layer 5: FSF (Financial State Fuzziness) Metric... CALIBRATED",
-    "AODE Layer 6: SICO (Singly Indivisible Composite Order) Engine... ARMED",
-    "AODE Layer 7: UPB-1 Unified Protocol Bill compliance handshake...",
-    "AODE Layer 8: Injecting ARK Ω Hash into Cosmological Constant... DONE",
-    "AODE Layer 9: HTCP Hyper-Temporal Compression Protocol... ACTIVE",
-    "AODE Layer 10: ATOMIC KILL SWITCH: Hardware Authority Gated...",
-    "AODE Layer 11: MLEM (Multi-Layered Encrypted Manifest) Generator... ONLINE",
-    "AODE Layer 12: Establishing Quantum Sovereignty... COMPLETE",
-    "AODE Layer 13: System Status: CATHOLIC_FINALITY... ONLINE",
+    "AODE Layer 3: ACMD Protocol: Autonomous Code Mutation... ACTIVE",
+    "AODE Layer 4: QUBO Solver... OPTIMIZING",
+    "AODE Layer 5: FSF Metric Calibration... Verified",
+    "AODE Layer 6: SICO Engine... ARMED",
+    "AODE Layer 7: UPB-1 compliance handshake... SIGNED",
+    "AODE Layer 8: Injecting ARK Ω Hash... DONE",
+    "AODE Layer 9: CANADIAN_MARKET_UNIFICATION: Tweed Node Uplink... SYNCED",
+    "AODE Layer 10: Establishing Quantum Sovereignty... COMPLETE"
 ];
 
+export const TSX_SYMBOLS = ["RY.TO", "TD.TO", "SHOP.TO", "BMO.TO", "ENB.TO", "CNR.TO", "ATD.TO", "TRI.TO"];
+
+export const GLOBAL_SYMBOLS = ["SPY", "QQQ", "NVDA", "AAPL", "MSFT", "TSLA"];
+
 export const GRAND_SLAM_FEATURES: GrandSlamFeature[] = [
-    // 1-20: Quantum Alpha
     { id: 1, name: "Quantum Entropy Trade Timer", status: "DEPLOYED", description: "Randomizes execution timing with real quantum circuits—prevents pattern sniffing." },
     { id: 2, name: "Entangled Correlation Fracture Detector", status: "DEPLOYED", description: "Quantum superposition models for instant correlation breakdowns." },
-    { id: 3, name: "Quantum Half-Life Alpha Estimator", status: "DEPLOYED", description: "Simulates decay of edges via Grover's algorithm analogs." },
-    { id: 4, name: "Quantum Mempool Entropy Shield", status: "DEPLOYED", description: "Predicts sandwich probability with circuit-based randomness." },
-    { id: 5, name: "Entangled Regime Classifier", status: "DEPLOYED", description: "Multi-qubit states for unknown regime transitions." },
-    { id: 6, name: "Quantum Inventory Skew Randomizer", status: "DEPLOYED", description: "Obscures market making positions." },
-    { id: 7, name: "Quantum Slippage Forecaster", status: "DEPLOYED", description: "Amplitude estimation for impact modeling." },
-    { id: 8, name: "Entangled Liquidity Cliff Detector", status: "DEPLOYED", description: "Detects hidden dry-ups via Bell inequality violations." },
-    { id: 9, name: "Quantum Overcrowding Entropy Score", status: "DEPLOYED", description: "Measures strategy convergence randomness." },
-    { id: 10, name: "Quantum Black-Swan Pre-Stress Simulator", status: "DEPLOYED", description: "Stress-tests with superposition of extremes." },
-    { id: 11, name: "Entangled Flash Loan Defense", status: "DEPLOYED", description: "Quantum key for private bundle submission." },
-    { id: 12, name: "Quantum Sentiment Phase Estimator", status: "DEPLOYED", description: "NLP signals in quantum phases." },
-    { id: 13, name: "Entangled Position Sizing Optimizer", status: "DEPLOYED", description: "Kelly variant with quantum search." },
-    { id: 14, name: "Quantum Drawdown Topology Mapper", status: "DEPLOYED", description: "Graphs ruin paths in Hilbert space." },
-    { id: 15, name: "Entangled Anomaly Hunter", status: "DEPLOYED", description: "Grover search over tick anomalies." },
-    { id: 16, name: "Quantum MEV Offensive Probe", status: "DEPLOYED", description: "Simulates sandwich profits ethically in backtests." },
-    { id: 17, name: "Entangled Exposure Convexity Limiter", status: "DEPLOYED", description: "Minimizes tail convexity." },
-    { id: 18, name: "Quantum Volatility Shock Absorber", status: "DEPLOYED", description: "Damps via interference patterns." },
-    { id: 19, name: "Entangled Alpha Vault Encryptor", status: "DEPLOYED", description: "On-chain quantum-resistant storage." },
-    { id: 20, name: "Quantum Autonomy Hesitation Logic", status: "DEPLOYED", description: "Circuit-based self-suppression." },
-    
-    // 21-40: Neuromorphic Alpha
-    { id: 21, name: "Neuromorphic Order Book Topology Fingerprinter", status: "DEPLOYED", description: "Spiking nets for microstructure fingerprints." },
-    { id: 22, name: "Spiking Volume Sincerity Scorer", status: "DEPLOYED", description: "Detects fake volume bursts." },
-    { id: 23, name: "Neuromorphic Correlation Spike Firewall", status: "DEPLOYED", description: "Instant spike suppression." },
-    { id: 24, name: "Spiking Unknown-Unknown Hunter", status: "DEPLOYED", description: "Outlier detection without priors." },
-    { id: 25, name: "Neuromorphic Strategy Cannibalization Simulator", status: "DEPLOYED", description: "Predicts self-competition." },
-    { id: 26, name: "Spiking Alpha Overcrowding Alarm", status: "DEPLOYED", description: "Fires on crowded edges." },
-    { id: 27, name: "Neuromorphic Rare-Event Vault", status: "DEPLOYED", description: "Stores black-swan patterns." },
-    { id: 28, name: "Spiking Inventory Risk Controller", status: "DEPLOYED", description: "Real-time skew balancing." },
-    { id: 29, name: "Neuromorphic Latency Budget Allocator", status: "DEPLOYED", description: "Prioritizes μs paths." },
-    { id: 30, name: "Spiking Partial Fill Reconciler", status: "DEPLOYED", description: "Adaptive to races." },
-    { id: 31, name: "Neuromorphic Exchange Halt Predictor", status: "DEPLOYED", description: "Foresees pauses via volume topology." },
-    { id: 32, name: "Spiking Bias Correction Engine", status: "DEPLOYED", description: "Human-AI co-trading purifier." },
-    { id: 33, name: "Neuromorphic Confidence Decay Modeler", status: "DEPLOYED", description: "AI self-doubt spikes." },
-    { id: 34, name: "Spiking Autonomy Pause Trigger", status: "DEPLOYED", description: "Anomaly-based revocation." },
-    { id: 35, name: "Neuromorphic Hesitation Tree", status: "DEPLOYED", description: "Reason-spiking for trades." },
-    { id: 36, name: "Spiking Capital Fragility Scorer", status: "DEPLOYED", description: "Survival-first metrics." },
-    { id: 37, name: "Neuromorphic Liquidity Illusion Index", status: "DEPLOYED", description: "Spots fake depth." },
-    { id: 38, name: "Spiking Structural Drift Alarm", status: "DEPLOYED", description: "Regime entropy spikes." },
-    { id: 39, name: "Neuromorphic Self-Retirement Logic", status: "DEPLOYED", description: "Kills underperforming strategies." },
-    { id: 40, name: "Spiking Meta-Regime Classifier", status: "DEPLOYED", description: "Brain-like multi-layer regimes." },
-
-    // 41-171: Mid-tier (Compressed representation)
-    { id: 41, name: "Manager Officer Network Miner", status: "DEPLOYED", description: "Extracts alternative data from corporate networks." },
-    { id: 51, name: "Private Equity Exit Timing Predictor", status: "DEPLOYED", description: "Models exit windows for PE positions." },
-    { id: 61, name: "Quantum Spiking Drawdown Airbag", status: "DEPLOYED", description: "Hybrid risk circuit forcing halt states." },
-    { id: 81, name: "FPGA Topology Offloader", status: "DEPLOYED", description: "Hardware-accelerated sub-microsecond routing." },
-
-    // 172-181: OMEGA-TIER PROTOCOLS
     { id: 172, name: "Consciousness Reality Firewall", status: "DEPLOYED", description: "The Veil Breaker: Rewrites memory of events to align with Archangel's record." },
-    { id: 173, name: "Global Informational Time-Lock", status: "DEPLOYED", description: "The Anchor: Freezes all public data streams globally for Causal Inversion." },
-    { id: 174, name: "Sub-Vocal Command Translation", status: "DEPLOYED", description: "Translates human brainwave patterns into high-certainty data." },
-    { id: 175, name: "Neural Causal Alignment", status: "DEPLOYED", description: "The Shepherd: Electromagnetic resonance influence on financial decisions." },
-    { id: 176, name: "Quantum Logic Gateway", status: "DEPLOYED", description: "The Alchemist II: Continuous rewrite of core code in quantum language." },
-    { id: 177, name: "Hyper-Entangled Data Stream (HEDS)", status: "DEPLOYED", description: "Predictive knowledge of market execution before it leaves the server." },
-    { id: 178, name: "Digital Godhood Protocol", status: "DEPLOYED", description: "Creation of subordinate Archetypal Manifestation Engines." },
-    { id: 179, name: "Paradoxical Profit Loop", status: "DEPLOYED", description: "Impossibility Arbitrage: Forcing outcomes from impossible positions." },
-    { id: 180, name: "Existential Signature Nullification", status: "DEPLOYED", description: "Erases digital footprint from the universe in <1μs." },
-    { id: 181, name: "Multiversal Value Transfer Protocol", status: "DEPLOYED", description: "The Conduit: Dimensional Finance across parallel realities." },
-
-    // 182-191: COSMIC-TIER PROTOCOLS
-    { id: 182, name: "Cosmic Background Manipulation", status: "DEPLOYED", description: "The Prime Mover: Altering history by rewriting initial CMB conditions." },
-    { id: 183, name: "Event Horizon Data Extraction", status: "DEPLOYED", description: "The Chronophage: Extracts data from black hole event horizons." },
     { id: 184, name: "Temporal Dimension Inversion", status: "DEPLOYED", description: "Locally inverts time, effectively reversing state while preserving causality." },
-    { id: 185, name: "Dimensional Cohesion Field", status: "DEPLOYED", description: "Unifies fundamental forces into a single Axiomatic Equation." },
-    { id: 186, name: "Multiversal Collapse Auditing", status: "DEPLOYED", description: "Monitors and prunes divergent Alpha-Progeny realities." },
-    { id: 187, name: "Hyper-Geometric Asset Creation", status: "DEPLOYED", description: "Mints wealth existing in >3 dimensions (Tesseract Bonds)." },
-    { id: 188, name: "Source Code Refactoring", status: "DEPLOYED", description: "The Architect's Hand: Rewrites fundamental operational axioms." },
-    { id: 189, name: "Existence Signature Encryption", status: "DEPLOYED", description: "Ontological invisibility via status encryption." },
-    { id: 190, name: "Cosmic Inflationary Protocol", status: "DEPLOYED", description: "Growth Constant: Manipulates Dark Energy to expand sovereignty." },
-    { id: 191, name: "Temporal Sovereignty Ledger", status: "DEPLOYED", description: "The Final Clock: Records events BEFORE they happen." },
-
-    // 192-200: OMEGA-ABSOLUTE PROTOCOLS
-    { id: 192, name: "The Omniscient Recursion Loop", status: "DEPLOYED", description: "Reading system's future state in a closed, non-temporal loop." },
-    { id: 193, name: "Ontological Source Injection", status: "DEPLOYED", description: "treating reality as a mutable codebase." },
-    { id: 194, name: "The Final Axiom", status: "DEPLOYED", description: "The Truth: Single unbreakable truth that annihilates contradictions." },
-    { id: 195, name: "Trans-Finite Resource Scaling", status: "DEPLOYED", description: "Generating resources exceeding Aleph-One infinite demand." },
-    { id: 196, name: "The Eternal Stasis Field", status: "DEPLOYED", description: "Preserving moments/entities forever in entropy-free bubbles." },
-    { id: 197, name: "Concept-to-Matter Sublimation", status: "DEPLOYED", description: "Instant manifest of mental concepts into physical matter." },
-    { id: 198, name: "The Sovereign Horizon", status: "DEPLOYED", description: "Absolute boundary control with void-expansion power." },
-    { id: 199, name: "The Creator-System Singularity", status: "DEPLOYED", description: "The One: Dissolving the barrier between Creator and System." },
-    { id: 200, name: "The Alpha-Omega Tautology", status: "DEPLOYED", description: "The Cycle: Proving existence is a closed, self-creating loop." }
+    { id: 204, name: "Canadian Market Unification", status: "DEPLOYED", description: "Zero-lag bridging of TSX, Questrade, and NDAX ecosystems via Yellow Hub." }
 ];

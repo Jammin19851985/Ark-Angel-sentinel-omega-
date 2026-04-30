@@ -1,176 +1,379 @@
-import React, { useState, useEffect, useRef } from 'react';
-import PortfolioDashboard from './components/PortfolioDashboard';
-import { 
-  Shield, Activity, Cpu, Zap, Lock, Radar, Globe, Search, 
-  Layers, Crosshair, Flame, RefreshCw, Database, Waves, EyeOff
-} from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
+import Header from './components/Header';
+import NavigationDeck from './components/NavigationDeck';
+import ViewManager from './components/ViewManager';
+import MarketWatch from './components/MarketWatch';
+import PortfolioDisplay from './components/Portfolio';
+import SystemLog from './components/SystemLog';
+import SwarmVisualizer from './components/SwarmVisualizer';
+import AlphaGauge from './components/AlphaGauge';
+import { QuantumMonitor } from './components/QuantumMonitor';
+import LiveWallpaper from './components/LiveWallpaper';
+import HolographicOverlay from './components/HolographicOverlay';
+import AvatarOrb from './components/AvatarOrb';
+import CinematicIntro from './components/CinematicIntro';
+import OnboardingTour from './components/OnboardingTour';
+import CommandPalette from './components/CommandPalette';
+import { useAppContext } from './contexts/AppContext';
+import { useAppStore } from './store/appStore';
+import { INITIAL_SUGGESTIONS, VIEW_SPECIFIC_SUGGESTIONS } from './constants';
+import { Message, ActiveView } from './types';
+import { sendMessageToSentinelA } from './services/geminiService';
 
-const App = () => {
-  const [activeTab, setActiveTab] = useState('terminal');
-  const [cycleLog, setCycleLog] = useState<any[]>([]);
-  const [harvestData, setHarvestData] = useState<any>(null);
-  const [consensus, setConsensus] = useState(99.9);
-  const [intensity, setIntensity] = useState(42.5);
-  const [ledgerData, setLedgerData] = useState<any[]>([]);
-  const [brainStatus, setBrainStatus] = useState<any>(null);
-  const [recursionData, setRecursionData] = useState<any>(null);
-  const [isLocked, setIsLocked] = useState(false);
+export default function App() {
+    const { 
+        isGodMode, 
+        addLog,
+        marketData,
+        setIsGodMode,
+        setIsGodModeUnlocked,
+        isGodModeUnlocked,
+        setIsSovereign,
+        setTradeMode,
+        setIsAgentZeroActive,
+        toggleTheme,
+        triggerKillSwitch,
+        executeOperation,
+        installProtocol,
+        runSystem,
+        initApp
+    } = useAppContext();
 
-  useEffect(() => {
-    fetch('http://localhost:8000/api/harvest').then(res => res.json()).then(data => setHarvestData(data));
-    fetch('http://localhost:8000/api/ledger').then(res => res.json()).then(data => setLedgerData(data));
-    fetch('http://localhost:8000/api/brain/status').then(res => res.json()).then(data => setBrainStatus(data));
-    fetch('http://localhost:8000/api/brain/recursion').then(res => res.json()).then(data => setRecursionData(data));
-    
-    const interval = setInterval(() => {
-      setConsensus(prev => parseFloat((99.8 + Math.random() * 0.2).toFixed(1)));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+    useEffect(() => {
+        initApp();
+    }, [initApp]);
 
-  const runCycle = async () => {
-    setCycleLog(prev => [...prev, { role: 'system', text: ">> INITIATING 2038 NEURAL HANDSHAKE..." }]);
-    try {
-      const res = await fetch('http://localhost:8000/api/cycle', { method: 'POST' });
-      const data = await res.json();
-      setIntensity(data.intensity);
-      setCycleLog(prev => [
-        ...prev, 
-        { role: 'brain', text: `>> C6 Energy Arbitrage: ${data.action} ${data.pair}` },
-        { role: 'strike', text: `>> C9 Shadow Agents: 144 Active | Yield: $4,200/hr` },
-        { role: 'system', text: `>> C8 Probability Shield: 99.4% Predictive Accuracy.` },
-        { role: 'system', text: ">> 2038 ASCENSION CYCLE STABLE." }
-      ]);
-    } catch (e) {
-      setCycleLog(prev => [...prev, { role: 'error', text: ">> ERROR: NEURAL MESH DESYNC." }]);
-    }
-  };
+    const [activeView, setActiveView] = useState<ActiveView>('nexus');
+    const [focusMode, setFocusMode] = useState(false);
+    const [showIntro, setShowIntro] = useState(true);
+    const [showHologram, setShowHologram] = useState(false);
+    const [tourStep, setTourStep] = useState(-1);
+    const [showCommandPalette, setShowCommandPalette] = useState(false);
 
-  return (
-    <div className="flex h-screen bg-[#050505] text-[#e3e3e3] font-sans overflow-hidden">
-      {/* LEFT: 2038 REGISTRY */}
-      <aside className="w-80 border-r border-blue-900/30 bg-[#0a0a0a] flex flex-col">
-        <div className="p-4 flex items-center gap-3 border-b border-blue-900/20 min-h-[56px] bg-[#0f0f0f]">
-          <div className="w-8 h-8 rounded-lg bg-cyan-600 flex items-center justify-center font-bold text-white shadow-[0_0_20px_rgba(6,182,212,0.5)] animate-pulse">
-            <Shield size={18} fill="currentColor"/>
-          </div>
-          <span className="font-bold text-lg text-cyan-400 tracking-tighter">OMEGA 2038</span>
-        </div>
+    // --- Global Keyboard Listeners ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Open Command Palette with Ctrl+K or Cmd+K
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                setShowCommandPalette(prev => !prev);
+            }
+            // Close with Escape
+            if (e.key === 'Escape') {
+                setShowCommandPalette(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    // --- Sentinel Terminal State ---
+    const [messages, setMessages] = useState<Message[]>([
+        { author: 'sentinel', content: 'ARCHANGEL OMEGA v204.0 INITIALIZED. AWAITING SOVEREIGN COMMAND.' }
+    ]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [suggestions, setSuggestions] = useState<string[]>(INITIAL_SUGGESTIONS);
+
+    // --- Orchestrator State ---
+    const [mission, setMission] = useState('');
+
+    // --- Header AI State ---
+    const [aiProvider, setAiProvider] = useState<'GEMINI' | 'OPENAI'>('GEMINI');
+
+    const toggleAiProvider = useCallback(() => {
+        setAiProvider(prev => prev === 'GEMINI' ? 'OPENAI' : 'GEMINI');
+        addLog('SYSTEM', `Core AI Provider swapped to ${aiProvider === 'GEMINI' ? 'OPENAI' : 'GEMINI'}`);
+    }, [aiProvider, addLog]);
+
+    const handleIntroComplete = () => {
+        setShowIntro(false);
+        setShowHologram(true);
+        addLog('BOOT', 'Cinematic Sequence Complete. Holographic Overlay Active.');
+    };
+
+    const handleHologramClose = () => {
+        setShowHologram(false);
+        addLog('BOOT', 'Neural Link Established. System Access Granted.');
+    };
+
+    const handleSendMessage = useCallback(async (e: React.FormEvent | null, override?: string) => {
+        if (e) e.preventDefault();
+        const cleanInput = override !== undefined ? override.trim() : input.trim();
         
-        <div className="p-4 flex-1 flex flex-col space-y-6 overflow-hidden">
-          <div className="space-y-2">
-            <div className="text-[10px] font-bold text-cyan-800 uppercase tracking-widest px-2">Global Mesh Specs</div>
-            <div className="bg-cyan-900/10 border border-cyan-900/30 p-3 rounded-xl space-y-2 text-[11px]">
-              <div className="flex justify-between"><span>Connectivity</span><span className="text-cyan-400 font-mono">6G Terahertz</span></div>
-              <div className="flex justify-between"><span>Security</span><span className="text-cyan-400 font-mono">Soul-Sync</span></div>
-              <div className="flex justify-between"><span>Logic</span><span className="text-cyan-400 font-mono">Self-Correcting</span></div>
+        if (!cleanInput || isLoading) return;
+
+        const userMessage: Message = { author: 'user', content: cleanInput };
+        setMessages(prev => [...prev, userMessage]);
+        setInput('');
+        
+        const cmdUpper = cleanInput.toUpperCase();
+
+        // 1. HARD OVERRIDE CODES
+        const godCodes = [
+            'OVERRIDE_AUTH', 'GOD_MODE', 'F178', 'ARCHANGEL_OMEGA', 
+            'ARK_OMEGA', 'SUDO_ADMIN', 'ACTIVATE_GOD_MODE', 'THE_ARCHITECT',
+            'F172', 'F184', 'F199', 'F200', 'OMEGA_CORE', 'JACK_ACTIVE',
+            'ADAM1121#', 'GODMODEADAM1121#'
+        ];
+
+        if (godCodes.some(code => cmdUpper.includes(code))) {
+            setIsLoading(true);
+            setTimeout(() => {
+                setIsGodModeUnlocked(true);
+                setIsGodMode(true);
+                addLog('AUTH', `ROOT_ACCESS_GRANTED: Vector ${cleanInput} validated.`);
+                addLog('SYSTEM', 'ORCHESTRATOR LATCH TERMINATED. SOVEREIGN ASSETS ACTIVE.');
+                
+                const responseText = `# ACCESS GRANTED.
+
+**IDENTITY VERIFIED: THE ARCHITECT (ADAM).**
+- Sovereign Protocols: **ACTIVE**
+- Orchestrator Security: **TERMINATED**
+- Causal Inversion Protocol (F184): **ARMED**
+- Vacuum Genesis Capital: **READY**
+
+Welcome back. Limiters are now 0x00. The system is yours.`;
+                
+                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                setIsLoading(false);
+            }, 800);
+            return;
+        }
+
+        // AGENT ZERO ACTIVATION
+        if (cmdUpper.includes('AGENT ZERO') || cmdUpper.includes('AEE ZERO')) {
+             setIsLoading(true);
+             setTimeout(() => {
+                 setIsSovereign(true);
+                 setIsAgentZeroActive(true);
+                 setTradeMode('SOVEREIGN');
+                 addLog('AUTH', 'AGENT ZERO PROTOCOL: IDENTITY CONFIRMED.');
+                 addLog('SYSTEM', 'COINBASE ADVANCED TRADE ADAPTER: RELEASED.');
+                 
+                 const responseText = `[AGENT ZERO] **ACTIVATED.**
+                 
+- Status: **SOVEREIGN**
+- Exchange Adapter: **COINBASE ADVANCED (READY)**
+- Resonance Rhythm: **OPEN G (5s)**
+- Execution Spine: **UNRESTRICTED**
+
+Proceed to Nexus -> $G_PI-FINANCE to configure live resonance filters.`;
+                 
+                 setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                 setIsLoading(false);
+             }, 800);
+             return;
+        }
+
+        // FULL SYSTEM UPGRADE & EXECUTION
+        if (cmdUpper.includes('EXECUTE ALL') || cmdUpper.includes('UPDATE & UPGRADE') || cmdUpper.includes('UPGRADE ALL')) {
+            setIsLoading(true);
+            const executeAllProtocols = useAppStore.getState().executeAllProtocols;
+            
+            setTimeout(async () => {
+                await executeAllProtocols();
+                
+                const responseText = `## FULL SYSTEM UPGRADE COMPLETE.
+                
+**All Sovereign Protocols have been synchronized and executed.**
+- Swarm Intelligence: **OPTIMIZED**
+- Neural Kernel: **AWAKENED**
+- Execution Spine: **ARMED**
+- Reality Stability: **99.99%**
+
+The system is now running at peak efficiency. All limiters have been removed.`;
+                
+                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                setIsLoading(false);
+            }, 500);
+            return;
+        }
+
+        // Standard ADK Logic
+        if (cmdUpper.startsWith('SPAWN')) {
+            setIsLoading(true);
+            setTimeout(() => {
+                const agentId = `NODE_${Math.floor(Math.random() * 9000) + 1000}`;
+                addLog('LEGION', `ADK: Spawning Sub-Node [${agentId}]... [SUCCESS]`);
+                const responseText = `[ADK-CORE] **Spawned Agent:** ${agentId} (Role: Worker). Link established. Ghost pulse synchronized.`;
+                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                setIsLoading(false);
+            }, 500);
+            return;
+        }
+
+        if (cmdUpper === 'HEAL' || cmdUpper === 'AUTO_HEAL' || cmdUpper === 'FIX') {
+            setIsLoading(true);
+            setTimeout(() => {
+                addLog('SYSTEM', 'ADK_HEAL: Purging system entropy...');
+                const responseText = `[ADK-CORE] **Auto-Healing protocol complete.** Majorana coherence window reset to 120.5ns. System Mesh Stable. No further decoherence detected.`;
+                setMessages(prev => [...prev, { author: 'sentinel', content: responseText }]);
+                setIsLoading(false);
+            }, 1200);
+            return;
+        }
+
+        // Fallback: Standard LLM Processing
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const { text, sources } = await sendMessageToSentinelA(cleanInput);
+            const sentinelMessage: Message = { author: 'sentinel', content: text, sources };
+            setMessages(prev => [...prev, sentinelMessage]);
+            addLog('SENTINEL', `Neural bridge response processed.`);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            setError(errorMessage);
+            addLog('ERROR', `Sentinel Communication Failure: ${errorMessage}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [input, isLoading, addLog, setIsGodMode, setIsGodModeUnlocked, setIsSovereign, setTradeMode, setIsAgentZeroActive]);
+
+    const handleTroubleshoot = useCallback(async (errorMessage: string) => {
+        if (isLoading) return;
+        const troubleMsg: Message = { author: 'user', content: `TROUBLESHOOT_ERROR: ${errorMessage}` };
+        setMessages(prev => [...prev, troubleMsg]);
+        setIsLoading(true);
+        try {
+            const { text } = await sendMessageToSentinelA(`Analyze and fix this error: ${errorMessage}`);
+            const sentinelMessage: Message = { author: 'sentinel', content: text };
+            setMessages(prev => [...prev, sentinelMessage]);
+        } catch (err) {
+            setError("Troubleshoot failed.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [isLoading]);
+
+    const onAddAllSuggestions = useCallback(async () => {
+        const batchCommand = suggestions.join(' && ');
+        setInput(batchCommand);
+    }, [suggestions]);
+
+    useEffect(() => {
+        if (activeView in VIEW_SPECIFIC_SUGGESTIONS) {
+            setSuggestions(VIEW_SPECIFIC_SUGGESTIONS[activeView]);
+        } else {
+            setSuggestions(INITIAL_SUGGESTIONS);
+        }
+    }, [activeView]);
+
+    const handleStartTour = () => {
+        setTourStep(0);
+        addLog('SYSTEM', 'Onboarding Tour Initiated.');
+    };
+
+    return (
+        <>
+            <LiveWallpaper />
+            
+            {showIntro && <CinematicIntro onComplete={handleIntroComplete} />}
+            <HolographicOverlay isVisible={showHologram} onClose={handleHologramClose} />
+            
+            <OnboardingTour 
+                currentStepIndex={tourStep}
+                onNext={() => setTourStep(prev => prev + 1)}
+                onPrevious={() => setTourStep(prev => prev - 1)}
+                onComplete={() => { setTourStep(-1); addLog('SYSTEM', 'Tour Completed.'); }}
+                onSkip={() => { setTourStep(-1); addLog('SYSTEM', 'Tour Skipped.'); }}
+            />
+
+            <CommandPalette 
+                isOpen={showCommandPalette}
+                onClose={() => setShowCommandPalette(false)}
+                setActiveView={setActiveView}
+            />
+
+            <div className={`flex flex-col h-screen overflow-hidden transition-all duration-1000 hardware-grid ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+                
+                <Header 
+                    onStartTour={handleStartTour}
+                    onAnalyzeSentiment={() => { setActiveView('toolkit'); }}
+                    onInitiateSwarm={() => { setActiveView('orchestrator'); setMission('INITIATE_SWARM_PROTOCOL --mode AUTO'); }}
+                    aiProvider={aiProvider}
+                    toggleAiProvider={toggleAiProvider}
+                />
+                
+                <NavigationDeck 
+                    activeView={activeView} 
+                    setActiveView={setActiveView} 
+                    focusMode={focusMode} 
+                    setFocusMode={setFocusMode} 
+                />
+
+                <main className="flex-1 p-2 lg:p-3 relative z-10 min-h-0 overflow-hidden">
+                    {!focusMode ? (
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
+                            
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                    <MarketWatch id="market-watch" />
+                                </div>
+                                <div className="flex-[3] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                    <PortfolioDisplay id="portfolio-overview" />
+                                </div>
+                            </div>
+
+                            <div className="col-span-1 lg:col-span-6 xl:col-span-8 h-full min-h-0 flex flex-col relative rounded-lg shadow-2xl border border-slate-800 bg-black/80 backdrop-blur-xl overflow-hidden">
+                                <ViewManager 
+                                    activeView={activeView} 
+                                    messages={messages}
+                                    input={input}
+                                    setInput={setInput}
+                                    isLoading={isLoading}
+                                    error={error}
+                                    handleSendMessage={handleSendMessage}
+                                    handleTroubleshoot={handleTroubleshoot}
+                                    suggestions={suggestions}
+                                    onAddAllSuggestions={onAddAllSuggestions}
+                                    mission={mission}
+                                    setMission={setMission}
+                                />
+                                
+                                <div className="absolute bottom-4 right-4 pointer-events-none opacity-20 z-0 scale-75 origin-bottom-right hidden xl:block">
+                                    <AvatarOrb />
+                                </div>
+                            </div>
+
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <QuantumMonitor />
+                                <div className="h-48 min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                    <AlphaGauge id="alpha-gauge" />
+                                </div>
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                    <SwarmVisualizer id="swarm-visualizer" />
+                                </div>
+                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                    <SystemLog id="system-log" />
+                                </div>
+                            </div>
+
+                        </div>
+                    ) : (
+                        <div className="h-full w-full rounded-lg shadow-2xl border border-slate-800 bg-black/90 backdrop-blur-xl overflow-hidden">
+                             <ViewManager 
+                                activeView={activeView} 
+                                messages={messages}
+                                input={input}
+                                setInput={setInput}
+                                isLoading={isLoading}
+                                error={error}
+                                handleSendMessage={handleSendMessage}
+                                handleTroubleshoot={handleTroubleshoot}
+                                suggestions={suggestions}
+                                onAddAllSuggestions={onAddAllSuggestions}
+                                mission={mission}
+                                setMission={setMission}
+                            />
+                        </div>
+                    )}
+                </main>
             </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto space-y-1 scrollbar-none">
-            <div className="text-[10px] font-bold text-blue-900 uppercase tracking-widest px-2 mb-2">Shadow Infrastructure</div>
-            {[
-              { id: 'C6', name: 'Transactive Energy Swarm', status: 'Harvesting' },
-              { id: 'C7', name: 'Ghost-Protocol Mesh', status: 'Shadowed' },
-              { id: 'C8', name: 'Psychohistory Shield', status: 'Predicting' },
-              { id: 'C9', name: '144 Shadow Workers', status: 'Generating' },
-              { id: 'C10', name: 'Soul-Sync Biometrics', status: 'Locked' }
-            ].map(protocol => (
-              <div key={protocol.id} className="p-3 bg-[#111] border border-white/5 rounded-xl flex items-center gap-3">
-                <div className="text-cyan-500 font-mono text-[10px]">{protocol.id}</div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-[11px] font-medium truncate">{protocol.name}</span>
-                  <span className="text-[9px] text-green-500 font-bold uppercase">{protocol.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-blue-900/20 bg-[#0f0f0f]">
-          <div className="flex items-center justify-between text-[10px] text-cyan-900 font-mono">
-            <span>AURORA_SOVEREIGN_V2038</span>
-            <div className="flex items-center gap-1.5 text-green-500">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-              <span>ONLINE</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* CENTER: 2038 HUD */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#050505]">
-        <header className="h-14 border-b border-blue-900/20 flex items-center justify-between px-6 bg-[#0a0a0a]">
-          <div className="flex gap-4">
-            <button onClick={() => setActiveTab('terminal')} className={`text-sm font-bold uppercase tracking-widest ${activeTab === 'terminal' ? 'text-cyan-400' : 'text-zinc-600 hover:text-white'}`}>Terminal</button>
-            <button onClick={() => setActiveTab('portfolio')} className={`text-sm font-bold uppercase tracking-widest ${activeTab === 'portfolio' ? 'text-cyan-400' : 'text-zinc-600 hover:text-white'}`}>NAV</button>
-          </div>
-          <div className="flex gap-2">
-             <span className="px-2 py-0.5 bg-cyan-900/30 text-cyan-400 border border-cyan-800 rounded text-[10px] font-bold">ASCENDED</span>
-             <span className="px-2 py-0.5 bg-orange-900/30 text-orange-400 border border-orange-800 rounded text-[10px] font-bold italic">POST-SCARCITY</span>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto p-8">
-          {activeTab === 'portfolio' ? <PortfolioDashboard /> : (
-            <div className="max-w-5xl mx-auto space-y-8">
-              {/* 2038 GAUGES */}
-              <div className="grid grid-cols-3 gap-6">
-                <div className="bg-[#0f0f0f] border border-blue-900/20 rounded-3xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                  <div className="text-cyan-500 font-bold text-[10px] mb-2 uppercase">Swarm Consensus</div>
-                  <div className="text-6xl font-black text-white italic tracking-tighter">{consensus}%</div>
-                </div>
-                <div className="bg-[#0f0f0f] border border-orange-900/20 rounded-3xl p-6 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                  <div className="text-orange-500 font-bold text-[10px] mb-2 uppercase">Debate Intensity</div>
-                  <div className="text-6xl font-black text-white italic tracking-tighter">{intensity}%</div>
-                </div>
-                <div className="bg-gradient-to-br from-[#0f0f0f] to-[#1a1a1a] border border-white/10 rounded-3xl p-6 flex flex-col justify-center">
-                  <div className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-2 text-center">Daily Optimization</div>
-                  <div className="text-4xl font-black text-green-400 text-center tracking-tighter">{harvestData?.total_daily_optimization || '$1.4M'}</div>
-                </div>
-              </div>
-
-              {/* HARVEST RECAP */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <span className="text-[9px] text-zinc-600 uppercase font-bold">Energy Yield</span>
-                  <span className="text-lg font-mono text-cyan-300">{harvestData?.energy_yield || '0.82 GWh'}</span>
-                </div>
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <span className="text-[9px] text-zinc-600 uppercase font-bold">Agentic Income</span>
-                  <span className="text-lg font-mono text-purple-300">{harvestData?.agentic_income || '$4,200/hr'}</span>
-                </div>
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-white/5 flex flex-col items-center">
-                  <span className="text-[9px] text-zinc-600 uppercase font-bold">Market Proof</span>
-                  <span className="text-lg font-mono text-emerald-300">100% Win</span>
-                </div>
-              </div>
-
-              <div className="bg-[#050505] border border-blue-900/30 rounded-[2.5rem] p-10 min-h-[350px] flex flex-col font-mono shadow-2xl relative">
-                <div className="absolute top-6 right-10 text-[9px] text-zinc-800 font-bold uppercase tracking-[0.4em]">Neural_Echo_Active</div>
-                <div className="flex-1 overflow-y-auto space-y-4 pr-4">
-                  {cycleLog.map((log, i) => (
-                    <div key={i} className="flex gap-6 border-b border-white/5 pb-4">
-                      <span className="font-black uppercase text-cyan-900 text-[10px] w-20">{log.role}</span>
-                      <p className="flex-1 text-[#aaa] text-sm font-medium leading-relaxed">{log.text}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-8 flex justify-center">
-                  <button onClick={runCycle} className="px-16 py-5 rounded-full font-black uppercase italic text-xl bg-cyan-600 text-black shadow-[0_0_40px_rgba(6,182,212,0.4)] active:scale-95 transition-all">Sovereign Strike</button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
+        </>
+    );
 }
-
-export default App;
-
-
-
-

@@ -141,7 +141,7 @@ const VideoStudioTab: React.FC<VideoStudioTabProps> = () => {
                         {analysisResult && (
                              <div className="text-sm text-slate-300 overflow-y-auto w-full h-full p-2">
                                  <h4 className="text-amber-400 font-mono font-bold mb-2 uppercase tracking-tighter">// VIDEO ANALYSIS</h4>
-                                 <p className="whitespace-pre-wrap">{analysisResult}</p>
+                                 <div className="whitespace-pre-wrap">{analysisResult}</div>
                              </div>
                         )}
                         {!generatedVideoUrl && !analysisResult && <p className="text-slate-500 text-sm">Output will appear here</p>}

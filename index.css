@@ -1,123 +1,111 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700;800&family=Rajdhani:wght@300;500;700;900&family=Orbitron:wght@400;700;900&display=swap');
+@import "tailwindcss";
 
-/* --- Custom animations/utilities used in components (not provided by Tailwind by default) --- */
-
-@keyframes ark-scanline {
-  0% {
-    transform: translateY(-20%);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(220%);
-    opacity: 0;
-  }
+@theme {
+  --font-sans: "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-.animate-scan {
-  animation: ark-scanline 3.5s linear infinite;
+:root {
+  --bg-dark: #010101;
+  --bg-panel: #030304;
+  --primary: #00f3ff;
+  --primary-dim: rgba(0, 243, 255, 0.1);
+  --secondary: #bc13fe;
+  --danger: #ff0044;
+  --success: #00ff9d;
+  --warning: #f59e0b;
+  --neon-green: #39ff14;
+  --neon-pink: #ff00ff;
+  --neon-blue: #00f3ff;
+  --chip-bg: #09090b;
+  --chip-border: #1e293b;
+  --god-primary: #ffd700;
+  --god-secondary: #ffffff;
+  --bg-app: #010101;
+  --bg-panel-rgb: 3, 3, 5;
+  --bg-panel-border: rgba(0, 243, 255, 0.15);
+  --text-main: #e0e0e0;
+  --zero-primary: #10b981;
+  --zero-glow: rgba(16, 185, 129, 0.4);
 }
 
-@keyframes ark-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+body.light-theme {
+  --bg-app: #f1f5f9;
+  --bg-panel-rgb: 255, 255, 255;
+  --bg-panel-border: rgba(0, 0, 0, 0.1);
+  --text-main: #0f172a;
+  --primary: #00b4d8;
 }
 
-.animate-fade-in {
-  animation: ark-fade-in 450ms ease-out both;
+body {
+  margin: 0;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden; 
+  height: 100vh;
+  width: 100vw;
+  letter-spacing: 0.02em;
 }
 
-.animate-fade-in-fast {
-  animation: ark-fade-in 220ms ease-out both;
+body.agent-zero-active {
+  --primary: var(--zero-primary);
+  --primary-dim: rgba(16, 185, 129, 0.15);
+  background-image: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 80%), url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
 }
 
-/* Scoped scrollbar styling (some components also rely on global scrollbar rules in index.html) */
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #333 #050505;
+#root { height: 100%; width: 100%; display: flex; flex-direction: column; }
+
+.tech-panel {
+  position: relative;
+  background: #0a0a0b; /* Dark matte */
+  border: 1px solid rgba(255, 255, 255, 0.05); 
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  backdrop-filter: blur(12px);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Dashed radial track effect for gauges */
+.radial-track {
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #050505;
-  border-left: 1px solid #1a1a1a;
+/* Hardware-style micro-labels */
+.micro-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 0;
-  border: 1px solid #000;
+/* Status glow for active components */
+.status-glow-green {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+.status-glow-red {
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
 }
 
-/* Omni Sentry sonar background */
-.sonar-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(139, 92, 246, 0.14) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(139, 92, 246, 0.14) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* Grid background for main container */
+.hardware-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
-@keyframes ark-sonar-sweep {
-  0% {
-    transform: rotate(0deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.35;
-  }
-  100% {
-    transform: rotate(360deg);
-    opacity: 0;
-  }
+.scanline-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0, 0, 0, 0.1) 50%);
+  background-size: 100% 4px;
+  pointer-events: none; z-index: 999; opacity: 0.1;
 }
 
-.sonar-sweep {
-  position: absolute;
-  inset: -50%;
-  border-radius: 9999px;
-  background: conic-gradient(
-    from 180deg,
-    transparent 0deg,
-    rgba(139, 92, 246, 0.25) 50deg,
-    transparent 110deg
-  );
-  animation: ark-sonar-sweep 2.6s linear infinite;
-}
-
-/* Enable global resizability for all ARK modules */
-.terminal-window, .terminal-section, .monitor-panel, #system_log_v17, .swarm-legions {
-    resize: both !important; 
-    overflow: auto !important;
-    min-width: 200px;
-    min-height: 150px;
-    border: 1px solid #ffcc00; /* Yellow Hub Accents */
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Ensure the SICO Engine and Intel Feed scale properly */
-.terminal-content {
-    flex: 1;
-    width: 100%;
-}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: #333; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }

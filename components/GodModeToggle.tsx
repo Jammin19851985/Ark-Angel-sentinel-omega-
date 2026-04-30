@@ -17,43 +17,25 @@ const GodModeToggle: React.FC<GodModeToggleProps> = ({ isGodMode, setIsGodMode, 
     };
 
     return (
-        <div className="flex items-center space-x-3">
-             <span className={`text-sm font-medium transition-colors ${isGodMode ? 'text-amber-400' : 'text-slate-400'}`}>
-                {isGodMode ? 'God Mode' : 'Safe Mode'}
+        <div className="flex items-center space-x-3 group">
+             <span className={`text-[10px] font-mono font-bold tracking-widest uppercase transition-colors ${isGodMode ? 'text-amber-400 glow-text-gold' : 'text-slate-500'}`}>
+                {isGodMode ? 'GOD_MODE // ACTIVE' : 'SAFE_MODE'}
             </span>
             <button
                 onClick={toggleGodMode}
                 disabled={isLoading}
                 type="button"
-                className={`${
-                isGodMode ? 'god-mode-toggle-active' : 'bg-slate-700'
-                } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50`}
-                role="switch"
+                className={`alien-switch ${isGodMode ? 'active-god' : ''} disabled:opacity-50`}
                 aria-checked={isGodMode}
                 aria-label={isGodMode ? 'Deactivate God Mode' : 'Activate God Mode'}
             >
-                <span
-                    aria-hidden="true"
-                    className={`${isGodMode ? 'translate-x-5' : 'translate-x-0'}
-                    pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-                >
-                     <span
-                        className={`${
-                        isGodMode ? 'opacity-0 duration-100 ease-out' : 'opacity-100 duration-200 ease-in'
-                        } absolute inset-0 flex h-full w-full items-center justify-center transition-opacity`}
-                        aria-hidden="true"
-                    >
-                         <ShieldIcon className="h-3 w-3 text-slate-500 toggle-icon" />
-                    </span>
-                    <span
-                        className={`${
-                        isGodMode ? 'opacity-100 duration-200 ease-in' : 'opacity-0 duration-100 ease-out'
-                        } absolute inset-0 flex h-full w-full items-center justify-center transition-opacity`}
-                        aria-hidden="true"
-                    >
-                         <UnlockedLockIcon className="h-3 w-3 text-amber-300 toggle-icon" />
-                    </span>
-                </span>
+                <div className="alien-switch-thumb flex items-center justify-center">
+                    {isGodMode ? (
+                        <UnlockedLockIcon className="w-2.5 h-2.5 text-black animate-pulse" />
+                    ) : (
+                        <ShieldIcon className="w-2.5 h-2.5 text-slate-300" />
+                    )}
+                </div>
             </button>
         </div>
     );

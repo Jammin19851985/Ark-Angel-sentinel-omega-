@@ -3,6 +3,7 @@ export interface Message {
     author: 'sentinel' | 'user';
     content: string;
     sources?: any[]; 
+    provider?: 'GEMINI' | 'OPENAI';
 }
 
 export interface Holding {
@@ -30,6 +31,7 @@ export interface MarketData {
 
 export interface ExternalExchangeData {
     kraken: Record<string, { last: number; ask: number; bid: number }>;
+    coinbase?: Record<string, { last: number; ask: number; bid: number }>;
 }
 
 export interface ArbOpportunity {
@@ -57,7 +59,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE';
     message: string;
     complianceHash?: string;
 }
@@ -84,7 +86,7 @@ export interface Trade {
     quantity: number;
     price: number;
     pnl: number;
-    type: 'STANDARD' | 'SICO' | 'BRACKET_EXIT';
+    type: 'STANDARD' | 'SICO' | 'BRACKET_EXIT' | 'SOVEREIGN_HUNT';
     status: OrderState;
     auditHash?: string;
     tesScore?: number;
@@ -92,9 +94,11 @@ export interface Trade {
     quboEnergyAtExecution?: number;
     mlemVerified?: boolean;
     isPaper?: boolean;
+    isShadow?: boolean;
     qualityAtExecution?: number;
     capitalScaleAtExecution?: number;
     isAutonomous?: boolean;
+    exchange?: string;
 }
 
 export interface ActiveOrder {
@@ -121,7 +125,7 @@ export interface ProposedTrade {
     timestamp: number;
 }
 
-export type TradeMode = 'MANUAL' | 'AUTONOMOUS' | 'SOVEREIGN' | 'AODE_QUANTUM' | 'LIVE_IBKR';
+export type TradeMode = 'REAL_WORLD' | 'AUTONOMOUS' | 'SOVEREIGN' | 'AODE_QUANTUM' | 'LIVE_IBKR';
 
 export interface AnalyticsKPIs {
     winRate: number;
@@ -138,7 +142,7 @@ export interface ForecastPoint {
     price: number;
 }
 
-export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus' | 'paper_terminal';
+export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus' | 'shadow_terminal';
 
 export interface SonarSignal {
     id: number;
@@ -158,7 +162,14 @@ export interface LearningParams {
     optimizer: 'Adam' | 'SGD' | 'RMSprop';
 }
 
-export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params' | 'sentry';
+export type ToolkitTab = 'chat' | 'image' | 'video' | 'audio' | 'code' | 'sentiment' | 'rag' | 'learning_params' | 'sentry' | 'analysis';
+
+export interface CodeAnalysisResult {
+    bugs: string[];
+    security: string[];
+    optimizations: string[];
+    summary: string;
+}
 
 export interface AiToolkitState {
     activeTab: ToolkitTab;
@@ -166,6 +177,7 @@ export interface AiToolkitState {
         useSearch: boolean;
         useMaps: boolean;
         useThinking: boolean;
+        provider: 'gemini' | 'openai';
     };
     learningParams: LearningParams;
 }
@@ -243,6 +255,8 @@ export interface IbkrAccountInfo {
     marginUtilization: number;
     buyingPower: number;
     baseCurrency: string;
+    mode?: 'LIVE' | 'MOCK' | 'ERROR';
+    safetySwitch?: boolean;
 }
 
 export interface HardwareDevice {
@@ -279,6 +293,8 @@ export interface ArchangelCoreState {
     profitVault: number;
     hardwareDevices: HardwareDevice[];
     lastSystemOp?: 'EXECUTE' | 'INSTALL' | 'RUN';
+    regulatoryStatus?: 'BYPASSED' | 'BLINDED' | 'ACTIVE';
+    shadowModeActive?: boolean;
 }
 
 export interface PrimeSuggestion {
@@ -321,7 +337,7 @@ export interface RagQueryResult {
 }
 
 export interface ChatMessage {
-    author: 'gemini' | 'user';
+    author: 'gemini' | 'openai' | 'user';
     content: string;
     sources?: any[];
 }
@@ -422,3 +438,35 @@ export interface InterceptedAsset {
 }
 
 export type BacktestStrategy = 'sma_crossover' | 'rsi_momentum' | 'tri_arb' | 'hft_market_making';
+
+// PayPal Integration Types
+export interface PayPalReserves {
+    totalUSD: number;
+    status: 'SYNCHRONIZED' | 'DRIFTING' | 'OFFLINE';
+    lastAudit: number;
+    history: number[];
+}
+
+export interface PayPalOrder {
+    id: string;
+    approvalUrl: string;
+    amount: number;
+    status: 'CREATED' | 'APPROVED' | 'CAPTURED';
+}
+
+export interface BankingStatus {
+    errors: number;
+    lastSync: string;
+}
+
+export interface BankingConfig {
+    provider: string;
+    mode: 'LIVE' | 'SANDBOX';
+    triggerThreshold: number;
+    keepReserve: number;
+    targetEmail: string;
+    currency: string;
+    clientId?: string;
+    clientSecret?: string;
+    status: BankingStatus;
+}

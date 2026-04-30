@@ -4,24 +4,35 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && vite build",
-    "preview": "vite preview"
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "@google/genai": "^0.14.1",
-    "react-dom": "^19.2.0",
-    "react-markdown": "^10.1.0",
-    "framer-motion": "^11.18.0"
+    "@google/genai": "latest",
+    "@tailwindcss/vite": "^4.2.0",
+    "@types/cors": "^2.8.19",
+    "ccxt": "latest",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "framer-motion": "latest",
+    "http-proxy-middleware": "^3.0.5",
+    "lightweight-charts": "4.1.1",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-markdown": "latest",
+    "tailwindcss": "^4.2.0",
+    "ws": "^8.19.0",
+    "zustand": "latest"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.14.0",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.0.0",
-    "autoprefixer": "^10.4.27",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

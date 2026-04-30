@@ -9,6 +9,10 @@ import { RefreshIcon } from './icons/RefreshIcon';
 import { getSignalAnalysis, analyzeSentiment, analyzeQuantumVolatility } from '../services/geminiService';
 import Loader from './Loader';
 import { useAppContext } from '../contexts/AppContext';
+import { LivePaperBadge } from './LivePaperBadge';
+import ThreatDetectionModule from './ThreatDetectionModule';
+import { NetworkIcon } from './icons/NetworkIcon';
+import { RadarIcon } from './icons/RadarIcon';
 
 // High-contrast World Map Path
 const WorldMapSVG: React.FC = () => (
@@ -106,6 +110,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
     const [sentimentError, setSentimentError] = useState<string | null>(null);
     
     const [isNanoMode, setIsNanoMode] = useState(true);
+    const [activeModule, setActiveModule] = useState<'SIGNALS' | 'NETWORK'>('SIGNALS');
 
     const PAN_STEP = 50;
 
@@ -267,7 +272,7 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
 
 
     return (
-        <div id={id} className="bg-black/30 backdrop-blur-sm flex flex-col lg:flex-row h-full overflow-hidden relative">
+        <div id={id} className="bg-black/30 backdrop-blur-sm flex flex-col lg:flex-row h-full overflow-hidden relative tech-panel">
             {/* Scanning Overlay Effect */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent animate-[scan_4s_linear_infinite] opacity-30"></div>
@@ -354,7 +359,12 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
             <div className="w-full lg:w-96 bg-black/60 backdrop-blur-md border-l border-slate-800 flex flex-col z-20">
                 <div className="p-4 border-b border-slate-800 bg-black/40">
                     <div className="flex justify-between items-center mb-3">
-                        <h2 className="text-sm font-bold text-amber-400 font-mono">// SONAR // THREAT ANALYSIS</h2>
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-sm font-bold text-amber-400 font-mono uppercase tracking-widest">
+                                // SONAR // {activeModule === 'SIGNALS' ? 'THREAT ANALYSIS' : 'NETWORK IDS'}
+                            </h2>
+                            <LivePaperBadge />
+                        </div>
                         <button 
                             onClick={() => setIsNanoMode(!isNanoMode)} 
                             className={`text-[10px] font-mono border px-2 py-0.5 rounded transition-all ${isNanoMode ? 'bg-amber-900 border-amber-500 text-amber-400 shadow-[0_0_5px_rgba(245,158,11,0.5)]' : 'bg-black border-slate-700 text-slate-500'}`}
@@ -362,92 +372,116 @@ const Sonar: React.FC<SonarProps> = ({ id }) => {
                             VISUALS: {isNanoMode ? 'ON' : 'OFF'}
                         </button>
                     </div>
-                    <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                        <span className="text-xs text-slate-500 font-mono">FILTERS:</span >
-                        <FilterButton type="Financial" isActive={activeFilters.has('Financial')} onClick={handleFilterToggle} />
-                        <FilterButton type="Geopolitical" isActive={activeFilters.has('Geopolitical')} onClick={handleFilterToggle} />
-                        <FilterButton type="Cyber" isActive={activeFilters.has('Cyber')} onClick={handleFilterToggle} />
-                        <FilterButton type="Quantum" isActive={activeFilters.has('Quantum')} onClick={handleFilterToggle} />
-                    </div >
-                </div >
-                <div className="flex-1 p-4 overflow-y-auto">
-                    {selectedSignal ? (
-                        <div className="space-y-4 font-mono text-sm animate-fade-in-fast">
-                             <div className="border-b border-slate-800 pb-2">
-                                <h3 className={`text-lg font-bold ${selectedSignal.type === 'Quantum' ? 'text-violet-400' : threatConfig[selectedSignal.threat].color}`}>{selectedSignal.threat.toUpperCase()} THREAT</h3 >
-                                <p className={`text-xs font-bold uppercase tracking-widest ${signalTypeColors[selectedSignal.type]}`}>{selectedSignal.type} Event</p >
-                            </div >
-                            <div className="space-y-2 text-xs bg-black/40 p-2 rounded border border-white/5">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">ID:</span >
-                                    <span className="text-slate-300 font-bold">{selectedSignal.id}</span>
-                                </div >
-                                 <div className="flex justify-between">
-                                    <span className="text-slate-500">TIME:</span >
-                                    <span className="text-slate-300">{selectedSignal.timestamp}</span>
-                                </div >
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">COORDS:</span >
-                                    <span className="text-slate-300">{selectedSignal.lat.toFixed(2)}, {selectedSignal.lon.toFixed(2)}</span >
-                                </div >
-                                <div className="flex justify-between pt-2 border-t border-slate-700/50 mt-2">
-                                    <span className="text-slate-500">VECTOR:</span >
-                                    <span className="text-amber-100 text-right w-2/3">{selectedSignal.details}</span >
-                                </div >
-                            </div >
-                            
-                            {selectedSignal.type === 'Quantum' && (
-                                <div className="border border-violet-500/30 p-2 rounded bg-violet-900/10">
-                                    <h4 className="text-xs font-bold text-violet-400 mb-2 uppercase tracking-wider">// QUANTUM WAVEFUNCTION STATE</h4>
-                                    <WavefunctionVisualizer />
-                                </div>
-                            )}
 
-                            <div >
-                                <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">// SENTIMENT ANALYSIS</h4 >
-                                <div className="text-slate-300 bg-black/50 backdrop-blur-sm p-3 rounded space-y-3 border border-slate-700">
-                                    {isSentimentAnalyzing && <div className="flex items-center justify-center py-4"><Loader /></div >}
-                                    {sentimentError && <p className="text-red-400 text-xs">{sentimentError}</p >}
-                                    {sentimentResult && (
-                                        <>
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="font-bold">Overall Sentiment</span >
-                                                <span className={`px-2 py-0.5 rounded-full font-medium ${
-                                                    sentimentResult.overall_sentiment > 0.1 ? 'bg-green-900 text-green-300' :
-                                                    sentimentResult.overall_sentiment < -0.1 ? 'bg-red-900 text-red-300' :
-                                                    'bg-slate-700 text-slate-300'
-                                                }`}>
-                                                    {sentimentResult.sentiment_label}
-                                                </span >
-                                            </div >
-                                            <SentimentGauge score={sentimentResult.overall_sentiment} />
-                                            <p className="text-xs text-slate-400 pt-2 border-t border-slate-700/50 italic leading-relaxed">"{sentimentResult.summary}"</p >
-                                            <ul className="text-xs text-amber-300 space-y-1 pt-2">
-                                                {sentimentResult.key_topics.map((topic, i) => <li key={i} className="bg-amber-950/40 px-2 py-1 rounded truncate border border-amber-900/50">› {topic}</li>)}
-                                            </ul>
-                                        </>
-                                    )}
-                                </div >
-                            </div >
-                            <div className="border-t border-slate-800 pt-4">
-                                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono uppercase">
-                                    <span>Global Market Entropy:</span>
-                                    <span className="text-cyan-400 font-bold">{(quantumMetrics?.entropy || 0.45).toFixed(4)}</span>
-                                </div>
-                            </div>
-                        </div >
-                    ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 opacity-50">
-                            <RefreshIcon className="w-12 h-12 mb-4 animate-spin-slow" />
-                            <p>INITIALIZING SONAR SWEEP...</p >
+                    <div className="flex gap-2 mb-4">
+                        <button 
+                            onClick={() => setActiveModule('SIGNALS')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded border transition-all ${activeModule === 'SIGNALS' ? 'bg-amber-600 border-amber-400 text-white shadow-[0_0_10px_rgba(245,158,11,0.3)]' : 'bg-black border-slate-800 text-slate-500 hover:text-slate-300'}`}
+                        >
+                            <RadarIcon className="w-3 h-3" />
+                            Signals
+                        </button>
+                        <button 
+                            onClick={() => setActiveModule('NETWORK')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded border transition-all ${activeModule === 'NETWORK' ? 'bg-cyan-600 border-cyan-400 text-white shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'bg-black border-slate-800 text-slate-500 hover:text-slate-300'}`}
+                        >
+                            <NetworkIcon className="w-3 h-3" />
+                            Network
+                        </button>
+                    </div>
+
+                    {activeModule === 'SIGNALS' && (
+                        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <span className="text-xs text-slate-500 font-mono">FILTERS:</span >
+                            <FilterButton type="Financial" isActive={activeFilters.has('Financial')} onClick={handleFilterToggle} />
+                            <FilterButton type="Geopolitical" isActive={activeFilters.has('Geopolitical')} onClick={handleFilterToggle} />
+                            <FilterButton type="Cyber" isActive={activeFilters.has('Cyber')} onClick={handleFilterToggle} />
+                            <FilterButton type="Quantum" isActive={activeFilters.has('Quantum')} onClick={handleFilterToggle} />
                         </div >
                     )}
                 </div >
+                <div className="flex-1 p-4 overflow-y-auto">
+                    {activeModule === 'SIGNALS' ? (
+                        selectedSignal ? (
+                            <div className="space-y-4 font-mono text-sm animate-fade-in-fast">
+                                 <div className="border-b border-slate-800 pb-2">
+                                    <h3 className={`text-lg font-bold ${selectedSignal.type === 'Quantum' ? 'text-violet-400' : threatConfig[selectedSignal.threat].color}`}>{selectedSignal.threat.toUpperCase()} THREAT</h3 >
+                                    <div className={`text-xs font-bold uppercase tracking-widest ${signalTypeColors[selectedSignal.type]}`}>{selectedSignal.type} Event</div>
+                                </div >
+                                <div className="space-y-2 text-xs bg-black/40 p-2 rounded border border-white/5">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">ID:</span >
+                                        <span className="text-slate-300 font-bold">{selectedSignal.id}</span>
+                                    </div >
+                                     <div className="flex justify-between">
+                                        <span className="text-slate-500">TIME:</span >
+                                        <span className="text-slate-300">{selectedSignal.timestamp}</span>
+                                    </div >
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-500">COORDS:</span >
+                                        <span className="text-slate-300">{selectedSignal.lat.toFixed(2)}, {selectedSignal.lon.toFixed(2)}</span >
+                                    </div >
+                                    <div className="flex justify-between pt-2 border-t border-slate-700/50 mt-2">
+                                        <span className="text-slate-500">VECTOR:</span >
+                                        <span className="text-amber-100 text-right w-2/3">{selectedSignal.details}</span >
+                                    </div >
+                                </div >
+                                
+                                {selectedSignal.type === 'Quantum' && (
+                                    <div className="border border-violet-500/30 p-2 rounded bg-violet-900/10">
+                                        <h4 className="text-xs font-bold text-violet-400 mb-2 uppercase tracking-wider">// QUANTUM WAVEFUNCTION STATE</h4>
+                                        <WavefunctionVisualizer />
+                                    </div>
+                                )}
+    
+                                <div >
+                                    <h4 className="text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">// SENTIMENT ANALYSIS</h4 >
+                                    <div className="text-slate-300 bg-black/50 backdrop-blur-sm p-3 rounded space-y-3 border border-slate-700">
+                                        {isSentimentAnalyzing && <div className="flex items-center justify-center py-4"><Loader /></div >}
+                                        {sentimentError && <div className="text-red-400 text-xs">{sentimentError}</div>}
+                                        {sentimentResult && (
+                                            <>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="font-bold">Overall Sentiment</span >
+                                                    <span className={`px-2 py-0.5 rounded-full font-medium ${
+                                                        sentimentResult.overall_sentiment > 0.1 ? 'bg-green-900 text-green-300' :
+                                                        sentimentResult.overall_sentiment < -0.1 ? 'bg-red-900 text-red-300' :
+                                                        'bg-slate-700 text-slate-300'
+                                                    }`}>
+                                                        {sentimentResult.sentiment_label}
+                                                    </span >
+                                                </div >
+                                                <SentimentGauge score={sentimentResult.overall_sentiment} />
+                                                <div className="text-xs text-slate-400 pt-2 border-t border-slate-700/50 italic leading-relaxed">"{sentimentResult.summary}"</div>
+                                                <ul className="text-xs text-amber-300 space-y-1 pt-2">
+                                                    {sentimentResult.key_topics.map((topic, i) => <li key={i} className="bg-amber-950/40 px-2 py-1 rounded truncate border border-amber-900/50">› {topic}</li>)}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </div >
+                                </div >
+                                <div className="border-t border-slate-800 pt-4">
+                                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono uppercase">
+                                        <span>Global Market Entropy:</span>
+                                        <span className="text-cyan-400 font-bold">{(quantumMetrics?.entropy || 0.45).toFixed(4)}</span>
+                                    </div>
+                                </div>
+                            </div >
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 opacity-50">
+                                <RefreshIcon className="w-12 h-12 mb-4 animate-spin-slow" />
+                                <p>INITIALIZING SONAR SWEEP...</p >
+                            </div >
+                        )
+                    ) : (
+                        <ThreatDetectionModule />
+                    )}
+                </div >
                 <div className="p-4 border-t border-slate-800 text-xs font-mono text-slate-500 bg-black/40">
-                    <div className="flex justify-between">
-                        <p>STATUS: <span className="text-green-400 font-bold animate-pulse">LIVE MONITORING</span ></p >
-                        <p>SIGNALS: <span className="text-slate-300 font-bold">{signals.length}</span></p >
-                    </div>
+                        <div className="flex justify-between">
+                            <div>STATUS: <span className="text-green-400 font-bold animate-pulse">LIVE MONITORING</span></div>
+                            <div>SIGNALS: <span className="text-slate-300 font-bold">{signals.length}</span></div>
+                        </div>
                 </div >
             </div >
         </div >

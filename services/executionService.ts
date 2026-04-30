@@ -1,6 +1,7 @@
+
 import { ExecutionIntent } from "../utils/spine";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = "/spine-bridge";
 
 export interface ExecutionResponse {
     symbol: string;
@@ -13,6 +14,7 @@ export interface ExecutionResponse {
     reason_tree: string[];
     execution_status: string;
     intent_id?: string;
+    order_id?: string;
 }
 
 export const executionService = {
@@ -21,6 +23,7 @@ export const executionService = {
      * Gated by the Backend Execution Spine (IBKR + Hardware Auth).
      */
     async executeLiveTrade(intent: ExecutionIntent, confidence: number): Promise<ExecutionResponse> {
+        console.log(">> SENDING LIVE EXECUTION INTENT:", intent);
         try {
             const response = await fetch(`${API_BASE_URL}/trade`, {
                 method: 'POST',
@@ -31,7 +34,7 @@ export const executionService = {
                     quantity: intent.quantity,
                     limit_price: intent.price,
                     confidence: confidence,
-                    order_type: "MARKET"
+                    order_type: "MARKET" // SICO orders default to Market for immediacy
                 })
             });
 
@@ -40,7 +43,7 @@ export const executionService = {
             if (!response.ok) {
                 const detail = data.detail || {};
                 throw new Error(detail.verdict === 'REJECT' 
-                    ? `SPINE_REJECTION: ${detail.reason_tree?.join(' | ') || detail.reason}`
+                    ? `SPINE_REJECTION: ${detail.reason}`
                     : `API_ERROR: ${response.statusText}`);
             }
 
@@ -56,11 +59,36 @@ export const executionService = {
      */
     async checkHealth(): Promise<boolean> {
         try {
-            const res = await fetch(`${API_BASE_URL}/health`, { 
+            let res = await fetch(`${API_BASE_URL}/health`, { 
                 signal: AbortSignal.timeout(2000) 
             });
+
+            if (res.status === 401) {
+                console.warn("[EXECUTION_SERVICE] 401 Detected. Attempting direct-health fallback...");
+                res = await fetch(`${API_BASE_URL}/direct-health`, {
+                    signal: AbortSignal.timeout(2000)
+                });
+            }
+
             return res.ok;
         } catch {
+            return false;
+        }
+    },
+
+    /**
+     * Toggles the live execution safety switch on the backend.
+     */
+    async toggleLiveExecution(enabled: boolean): Promise<boolean> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/system/toggle-live`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error("FAILED_TO_TOGGLE_LIVE_EXECUTION:", error);
             return false;
         }
     }
