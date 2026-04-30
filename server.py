@@ -15,6 +15,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), "SentinelCore"))
+try:
+    from singularity_router import singularity_router
+    app.include_router(singularity_router)
+except ImportError as e:
+    print(f"Singularity Router not injected yet: {e}")
+
 sentinel = ArchangelSentinel()
 
 @app.get("/api/status")
