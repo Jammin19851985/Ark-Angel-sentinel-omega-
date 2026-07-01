@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { LogEntry } from '../types';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { TrashIcon } from './icons/TrashIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 
@@ -47,25 +48,49 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     AUTH: 'text-fuchsia-500 font-bold',
     FINANCE: 'text-emerald-600 font-bold',
     CORE: 'text-cyan-300 font-bold',
+    ALERT: 'text-rose-500 font-bold',
 };
 
 const SystemLog: React.FC<{ id: string }> = ({ id }) => {
-    const { logs } = useAppContext();
+    const { logs, clearLogs } = useAppContext();
     const logContainerRef = useRef<HTMLDivElement>(null);
     const [activeFilter, setActiveFilter] = useState<'ALL' | LogEntry['source']>('ALL');
+    const [autoScroll, setAutoScroll] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
+        if (!autoScroll) return;
         const node = logContainerRef.current;
         if (node) {
             const isNearBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 100;
-            if (isNearBottom) node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' });
+            if (isNearBottom || autoScroll) node.scrollTo({ top: node.scrollHeight, behavior: 'smooth' });
         }
-    }, [logs]);
+    }, [logs, autoScroll]);
 
     const filteredLogs = useMemo(() => {
-        if (activeFilter === 'ALL') return logs;
-        return logs.filter(log => log.source === activeFilter);
-    }, [logs, activeFilter]);
+        let result = logs;
+        if (activeFilter !== 'ALL') {
+            result = result.filter(log => log.source === activeFilter);
+        }
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(log => log.message.toLowerCase().includes(query) || log.source.toLowerCase().includes(query));
+        }
+        return result;
+    }, [logs, activeFilter, searchQuery]);
+
+    const handleExport = () => {
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + "Timestamp,Source,Message\n" 
+            + logs.map(e => `${e.timestamp},${e.source},"${e.message.replace(/"/g, '""')}"`).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `system_logs_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     const LogFilterButton: React.FC<{ filter: 'ALL' | LogEntry['source']; label: string }> = ({ filter, label }) => (
         <button
@@ -87,15 +112,35 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
                     <span className="w-1 h-1 bg-amber-500 rounded-full animate-ping"></span>
                     System_Log_v17
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-4">
+                    <label className="flex items-center space-x-1.5 text-[9px] text-slate-400 cursor-pointer hover:text-slate-300">
+                        <input
+                            type="checkbox"
+                            checked={autoScroll}
+                            onChange={(e) => setAutoScroll(e.target.checked)}
+                            className="w-2.5 h-2.5 accent-amber-500 bg-slate-900 border-slate-700 rounded-sm cursor-pointer"
+                        />
+                        <span>AUTO-SCROLL</span>
+                    </label>
                     <LivePaperBadge />
-                    <button className="flex items-center space-x-1 text-[8px] px-2 py-0.5 rounded-sm bg-slate-900 border border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500 transition-colors">
+                    <button onClick={handleExport} className="flex items-center space-x-1 text-[8px] px-2 py-0.5 rounded-sm bg-slate-900 border border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500 transition-colors">
                         <DownloadIcon className="w-2 h-2" />
                         <span>EXPORT</span>
                     </button>
+                    <button onClick={clearLogs} className="flex items-center space-x-1 text-[8px] px-2 py-0.5 rounded-sm bg-slate-900 border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500 transition-colors">
+                        <TrashIcon className="w-2 h-2" />
+                        <span>CLEAR</span>
+                    </button>
                 </div>
             </div>
-            <div className="px-2 py-1 border-b border-slate-800 flex flex-wrap gap-1 bg-black/40">
+            <div className="px-2 py-1 border-b border-slate-800 flex flex-wrap gap-1 items-center bg-black/40">
+                <input
+                    type="text"
+                    placeholder="Search logs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-slate-900 border border-slate-700 text-slate-300 text-[9px] px-2 py-0.5 rounded-sm focus:outline-none focus:border-amber-500 mr-2 w-32"
+                />
                 <LogFilterButton filter="ALL" label="All" />
                 <LogFilterButton filter="ERROR" label="Err" />
                 <LogFilterButton filter="HARDWARE" label="Hdw" />

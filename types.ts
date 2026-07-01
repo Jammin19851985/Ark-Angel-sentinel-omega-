@@ -59,7 +59,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE' | 'ALERT';
     message: string;
     complianceHash?: string;
 }
@@ -142,7 +142,7 @@ export interface ForecastPoint {
     price: number;
 }
 
-export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus' | 'shadow_terminal';
+export type ActiveView = 'sentinel' | 'orchestrator' | 'toolkit' | 'backtester' | 'analytics' | 'intel' | 'sonar' | 'nexus' | 'shadow_terminal' | 'gdrive' | 'keep' | 'banking';
 
 export interface SonarSignal {
     id: number;
@@ -178,6 +178,7 @@ export interface AiToolkitState {
         useMaps: boolean;
         useThinking: boolean;
         provider: 'gemini' | 'openai';
+        readAloud: boolean;
     };
     learningParams: LearningParams;
 }

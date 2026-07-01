@@ -42,7 +42,12 @@ try:
     from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
 except ImportError as e:
+    import sys
+    import os
     logger.error(f"CRITICAL: Missing dependency: {str(e)}")
+    logger.error(f"PYTHONPATH: {os.getenv('PYTHONPATH')}")
+    logger.error(f"SYS_PATH: {sys.path}")
+    logger.error(f"CURRENT_DIR: {os.getcwd()}")
     logger.error("Please ensure 'fastapi', 'uvicorn', and 'pydantic' are installed.")
     sys.exit(1)
 
@@ -232,6 +237,46 @@ async def broadcast_market_data():
                     
         await asyncio.sleep(0.5) # 2Hz update rate for fluid motion
 
+@app.get("/quantum-sync")
+async def quantum_sync():
+    symbols = {
+        "BTC": "BTCUSDT", "ETH": "ETHUSDT", "SOL": "SOLUSDT", "ADA": "ADAUSDT"
+    }
+    market_updates = {}
+    for sym, pair in symbols.items():
+        base = 67420.50 if sym == "BTC" else 3541.25 if sym == "ETH" else 148.80 if sym == "SOL" else 0.46
+        price = base * (1 + (random.uniform(-0.0005, 0.0005)))
+        market_updates[sym] = {
+            "price": round(price, 2 if price > 1 else 4),
+            "change": round(random.uniform(-2.5, 2.5), 2),
+            "volume": round(random.uniform(100000000, 5000000000), 0)
+        }
+    indices_dict = { "SPY": 512.45, "QQQ": 438.20 }
+    for sym, base in indices_dict.items():
+        price = base * (1 + (random.uniform(-0.0001, 0.0001)))
+        market_updates[sym] = {
+            "price": round(price, 2),
+            "change": round(random.uniform(-0.5, 0.5), 2),
+            "volume": round(random.uniform(50000000, 200000000), 0)
+        }
+    
+    return {
+        "quantum": {
+            "type": "QUANTUM_UPDATE",
+            "timestamp": time.time(),
+            "qubit_coherence": round(random.uniform(98.5, 99.9), 2),
+            "entropy_level": round(random.uniform(0.01, 0.05), 4),
+            "causal_drift": round(random.uniform(-0.001, 0.001), 6),
+            "market_resonance": round(random.uniform(0.7, 0.95), 2),
+            "active_agents": len(active_websockets) + 12
+        },
+        "market": {
+            "type": "MARKET_UPDATE",
+            "timestamp": time.time(),
+            "updates": market_updates
+        }
+    }
+
 @app.get("/health")
 async def health_check():
     deps = {
@@ -365,7 +410,7 @@ async def get_status():
         return {
             "status": "LIVE" if ibkr.connected else "CONNECTING",
             "mode": "LIVE" if state.live_execution and not ibkr.is_mock else "MOCK",
-            "active_connections": 4,
+            "active_connections": len(active_websockets),
             "buying_power": buying_power,
             "unrealized_pnl": state.get_pnl(),
             "latency_ms": state.metrics.latency,
@@ -386,8 +431,8 @@ async def get_status():
 if __name__ == "__main__":
     try:
         import uvicorn
-        logger.info("Starting Archangel Spine on 0.0.0.0:8888")
-        uvicorn.run(app, host="0.0.0.0", port=8888)
+        logger.info("Starting Archangel Spine on 0.0.0.0:8123")
+        uvicorn.run(app, host="0.0.0.0", port=8123, loop="asyncio")
     except ImportError:
         logger.error("CRITICAL: uvicorn not found. Spine cannot start.")
         import sys

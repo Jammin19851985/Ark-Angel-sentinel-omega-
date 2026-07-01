@@ -32,11 +32,15 @@ const Analytics: React.FC<AnalyticsProps> = ({ id }) => {
     const [showConfidence, setShowConfidence] = useState(true);
     const [selectedPoint, setSelectedPoint] = useState<ForecastPoint | null>(null);
 
+    const fetchedSymbols = React.useRef<Set<string>>(new Set());
+
     useEffect(() => {
         const fetchForecast = async () => {
             const btcPrice = marketData['BTC']?.price;
             if (!btcPrice || btcPrice === 0) return;
-
+            if (fetchedSymbols.current.has('BTC')) return; // Already fetched
+            
+            fetchedSymbols.current.add('BTC');
             setIsForecastLoading(true);
             try {
                 addLog('SENTINEL', 'Generating predictive forecast for BTC...');
@@ -48,10 +52,15 @@ const Analytics: React.FC<AnalyticsProps> = ({ id }) => {
                 setForecast([{ date: today, price: btcPrice }, ...safeForecastData]);
                 
                 addLog('SENTINEL', 'BTC forecast received and rendered.');
-            } catch (error) {
+            } catch (error: any) {
                 const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-                console.error("Failed to fetch forecast:", error);
-                addLog('ERROR', `Failed to generate predictive forecast: ${errorMessage}`);
+                console.warn("Failed to fetch forecast:", error?.message || error);
+                
+                if (errorMessage.includes("429")) {
+                    addLog('ERROR', `Predictive forecast rate limited. Retry later.`);
+                } else {
+                    addLog('ERROR', `Failed to generate predictive forecast: ${errorMessage}`);
+                }
             } finally {
                 setIsForecastLoading(false);
             }

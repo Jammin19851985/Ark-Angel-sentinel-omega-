@@ -18,23 +18,69 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
     const [orderedSymbols, setOrderedSymbols] = useState<string[]>([]);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
+    // Sorting State
+    const [sortConfig, setSortConfig] = useState<{ key: 'asset' | 'value' | 'yield'; direction: 'asc' | 'desc' } | null>(null);
+
     // Sync orderedSymbols with portfolio keys, preserving existing order where possible
     useEffect(() => {
         const currentSymbols = Object.keys(portfolio);
         setOrderedSymbols(prev => {
-            // Keep existing symbols in their current order
             const existing = prev.filter(s => currentSymbols.includes(s));
-            // Add new symbols to the end
             const newSymbols = currentSymbols.filter(s => !prev.includes(s));
             return [...existing, ...newSymbols];
         });
     }, [portfolio]);
 
     const holdings = useMemo(() => {
-        return orderedSymbols
+        let items = orderedSymbols
             .map(s => portfolio[s])
             .filter(Boolean) as Holding[];
-    }, [orderedSymbols, portfolio]);
+
+        if (sortConfig) {
+            items.sort((a, b) => {
+                let aValue: any, bValue: any;
+                
+                const currentPriceA = marketData[a.symbol]?.price || a.avgPrice;
+                const currentPriceB = marketData[b.symbol]?.price || b.avgPrice;
+
+                switch (sortConfig.key) {
+                    case 'asset':
+                        aValue = a.symbol;
+                        bValue = b.symbol;
+                        break;
+                    case 'value':
+                        aValue = a.quantity * currentPriceA;
+                        bValue = b.quantity * currentPriceB;
+                        break;
+                    case 'yield':
+                        {
+                            const costA = a.quantity * a.avgPrice;
+                            aValue = costA > 0 ? ((a.quantity * currentPriceA - costA) / costA) : 0;
+                            const costB = b.quantity * b.avgPrice;
+                            bValue = costB > 0 ? ((b.quantity * currentPriceB - costB) / costB) : 0;
+                        }
+                        break;
+                }
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return items;
+    }, [orderedSymbols, portfolio, sortConfig, marketData]);
+
+    const requestSort = (key: 'asset' | 'value' | 'yield') => {
+        let direction: 'asc' | 'desc' = 'desc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'desc') {
+            direction = 'asc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     // Memoize financial calculations to ensure they update efficiently when marketData changes
     const { currentAssetValue, totalValue, totalCost, totalPnl, totalPnlPercent } = useMemo(() => {
@@ -188,10 +234,19 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
 
             <div className="border-t border-slate-800 pt-3 flex-1 flex flex-col min-h-0">
                 <div className="text-[8px] text-slate-600 grid grid-cols-12 gap-1 mb-2 px-1 font-bold uppercase tracking-widest bg-black/40 py-1 rounded-sm">
-                    <span className="col-span-3">Asset</span>
+                    <button className="col-span-3 hover:text-white text-left transition-colors flex items-center justify-start gap-1" onClick={() => requestSort('asset')}>
+                        Asset
+                        {sortConfig?.key === 'asset' && (<span>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>)}
+                    </button>
                     <span className="col-span-3 text-center">Trend</span>
-                    <span className="col-span-3 text-right">Value</span>
-                    <span className="col-span-3 text-right">Yield</span>
+                    <button className="col-span-3 hover:text-white text-right transition-colors flex items-center justify-end gap-1" onClick={() => requestSort('value')}>
+                        Value
+                        {sortConfig?.key === 'value' && (<span>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>)}
+                    </button>
+                    <button className="col-span-3 hover:text-white text-right transition-colors flex items-center justify-end gap-1" onClick={() => requestSort('yield')}>
+                        Yield
+                        {sortConfig?.key === 'yield' && (<span>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span>)}
+                    </button>
                 </div>
                 
                 <div className="space-y-1 flex-1 overflow-y-auto pr-1 custom-scrollbar">

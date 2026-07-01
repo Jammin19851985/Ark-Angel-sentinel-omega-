@@ -94,8 +94,8 @@ const LearningParamsConfigTab: React.FC = () => {
                         <label htmlFor="batch-size" className="block text-sm font-medium text-slate-300 mb-2">Batch Size</label>
                         <select
                             id="batch-size"
-                            value={tempLearningParams.batchSize}
-                            onChange={(e) => handleParamChange('batchSize', parseInt(e.target.value))}
+                            value={Number.isNaN(tempLearningParams.batchSize) ? '' : tempLearningParams.batchSize}
+                            onChange={(e) => handleParamChange('batchSize', e.target.value ? parseInt(e.target.value) : '')}
                             className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
                             disabled={isLoading}
                         >
@@ -130,8 +130,8 @@ const LearningParamsConfigTab: React.FC = () => {
                             min="1"
                             max="1000"
                             step="1"
-                            value={tempLearningParams.epochs}
-                            onChange={(e) => handleParamChange('epochs', parseInt(e.target.value))}
+                            value={Number.isNaN(tempLearningParams.epochs) ? '' : tempLearningParams.epochs}
+                            onChange={(e) => handleParamChange('epochs', e.target.value ? parseInt(e.target.value) : '')}
                             className="w-full bg-black/50 backdrop-blur-sm border border-slate-700 rounded-md p-2 text-sm text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition disabled:opacity-50"
                             disabled={isLoading}
                         />

@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Catch-All Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Safety and Validation Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Entity Integrity Validation Schemas
+    function isValidKeepNote(data) {
+      return data.keys().hasAll(['title', 'body', 'isPinned', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 5 &&
+             data.title is string && data.title.size() <= 256 &&
+             data.body is string && data.body.size() <= 5000 &&
+             data.isPinned is bool &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidSystemLog(data) {
+      return data.keys().hasAll(['type', 'message', 'timestamp']) &&
+             data.keys().size() == 3 &&
+             data.type is string && data.type.size() <= 32 &&
+             data.message is string && data.message.size() <= 4096 &&
+             data.timestamp is timestamp;
+    }
+
+    // 4. Secure Sovereign Sub-Collection Paths
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      
+      match /notes/{noteId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) && 
+                         isValidId(noteId) && 
+                         isValidKeepNote(incoming()) && 
+                         incoming().createdAt == request.time && 
+                         incoming().updatedAt == request.time;
+                         
+        allow update: if isOwner(userId) && 
+                         isValidId(noteId) && 
+                         isValidKeepNote(incoming()) && 
+                         incoming().createdAt == existing().createdAt && 
+                         incoming().updatedAt == request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'body', 'isPinned', 'updatedAt']);
+                         
+        allow delete: if isOwner(userId) && isValidId(noteId);
+      }
+
+      match /logs/{logId} {
+        // Log telemetry lines: Write-Once / Read-Only (Immutable forensics)
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) && 
+                         isValidId(logId) && 
+                         isValidSystemLog(incoming()) && 
+                         incoming().timestamp == request.time;
+                         
+        allow update, delete: if false; 
+      }
+    }
+  }
+}

@@ -61,7 +61,7 @@ const SICOControl: React.FC = () => {
                             min="10" 
                             max="500" 
                             step="0.1"
-                            value={sicoConfig.coherenceWindowNs}
+                            value={Number.isNaN(sicoConfig.coherenceWindowNs) ? '' : sicoConfig.coherenceWindowNs}
                             onChange={(e) => setSicoConfig({ coherenceWindowNs: parseFloat(e.target.value) })}
                             className="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                         />
@@ -69,7 +69,7 @@ const SICOControl: React.FC = () => {
                             <input 
                                 type="number"
                                 step="0.1"
-                                value={sicoConfig.coherenceWindowNs}
+                                value={Number.isNaN(sicoConfig.coherenceWindowNs) ? '' : sicoConfig.coherenceWindowNs}
                                 onChange={(e) => setSicoConfig({ coherenceWindowNs: parseFloat(e.target.value) || 0 })}
                                 className="w-16 bg-black border border-slate-700 rounded px-1.5 py-1 text-xs text-amber-500 focus:border-amber-400 outline-none text-right font-bold shadow-inner"
                             />
@@ -90,7 +90,7 @@ const SICOControl: React.FC = () => {
                             min="0.0001" 
                             max="0.02" 
                             step="0.0001"
-                            value={sicoConfig.minAlphaThreshold}
+                            value={Number.isNaN(sicoConfig.minAlphaThreshold) ? '' : sicoConfig.minAlphaThreshold}
                             onChange={(e) => setSicoConfig({ minAlphaThreshold: parseFloat(e.target.value) })}
                             className="flex-1 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                         />
@@ -98,7 +98,7 @@ const SICOControl: React.FC = () => {
                             <input 
                                 type="number"
                                 step="0.0001"
-                                value={sicoConfig.minAlphaThreshold}
+                                value={Number.isNaN(sicoConfig.minAlphaThreshold) ? '' : sicoConfig.minAlphaThreshold}
                                 onChange={(e) => setSicoConfig({ minAlphaThreshold: parseFloat(e.target.value) || 0 })}
                                 className="w-20 bg-black border border-slate-700 rounded px-1.5 py-1 text-xs text-amber-500 focus:border-amber-400 outline-none text-right font-bold shadow-inner"
                             />

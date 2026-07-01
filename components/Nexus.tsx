@@ -5,6 +5,7 @@ import GammaScalper from './GammaScalper';
 import ActiveGodProtocol from './ActiveGodProtocol';
 import ForensicAuditLog from './ForensicAuditLog';
 import HyperTemporalExecution from './HyperTemporalExecution';
+import ArchangelProtocols from './ArchangelProtocols';
 import ChaosFractal from './ChaosFractal';
 import SovereignFinancialManifestation from './SovereignFinancialManifestation';
 import HardwareController from './HardwareController';
@@ -134,30 +135,31 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
             <div className="relative z-20 flex flex-col lg:flex-row justify-between items-center p-3 border-b border-slate-800 bg-black/80 backdrop-blur-xl gap-4 shrink-0">
                 <div className="flex flex-col">
                     <div className="flex items-center gap-3">
-                        <h2 className={`text-2xl font-display font-bold tracking-[0.2em] uppercase ${killSwitchActive ? 'text-red-500' : isGodMode ? 'text-yellow-500' : 'text-cyan-400'}`}>
-                            <GlitchText text={`ARK Ω // ${killSwitchActive ? 'HALTED' : isGodMode ? 'YELLOW_HUB' : 'TWEED_ONTARIO'}`} isActive={isGodMode || killSwitchActive} />
+                        <h2 className={`flex flex-col text-2xl font-display font-bold tracking-[0.2em] uppercase ${killSwitchActive ? 'text-red-500' : isGodMode ? 'text-yellow-500' : 'text-cyan-400'}`}>
+                            <span className="opacity-80">ARK Ω //</span>
+                            <GlitchText text={killSwitchActive ? 'HALTED' : isGodMode ? 'YELLOW_HUB' : 'TWEED_ONTARIO'} isActive={isGodMode || killSwitchActive} />
                         </h2>
-                        <div className="flex items-center gap-2">
-                            <span className={`bg-black border ${isGodMode ? 'border-yellow-900 text-yellow-500' : 'border-slate-700 text-slate-300'} px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-lg`}>
-                                STATUS: <span className="animate-pulse">{systemStatus}</span>
-                            </span>
-                            <div className="flex items-center gap-2 px-2 py-0.5 bg-amber-900/20 border border-amber-500/30 rounded text-[9px] font-mono text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
-                                <ActivityIcon className="w-3 h-3" />
-                                <span className="font-bold">SICO_COLLAPSES: {sicoCollapses.toLocaleString()}</span>
+                        <div className="flex items-center gap-4 ml-8">
+                            <div className={`flex flex-col bg-black border ${isGodMode ? 'border-yellow-900 text-yellow-500' : 'border-slate-700 text-slate-300'} px-3 py-1 rounded text-[9px] font-bold uppercase tracking-widest shadow-lg`}>
+                                <span className="opacity-60 text-[8px]">STATUS:</span>
+                                <span className="animate-pulse text-xs">{systemStatus}</span>
+                            </div>
+                            <div className="flex items-start gap-2 px-3 py-1 bg-amber-900/20 border border-amber-500/30 rounded text-[9px] font-mono text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                                <ActivityIcon className="w-3 h-3 mt-0.5" />
+                                <div className="flex flex-col">
+                                    <span className="opacity-60 text-[8px] font-sans tracking-widest uppercase">SICO_COLLAPSES:</span>
+                                    <span className="font-bold text-xs">{sicoCollapses.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
-                    <div className="hidden lg:flex items-center gap-4 mr-4 bg-blue-950/20 px-3 py-1 border border-blue-900/50 rounded">
-                         <span className="text-[8px] text-blue-400 uppercase font-bold tracking-widest">PayPal Reserves:</span>
-                         <span className="text-xs text-blue-200 font-mono font-bold">${payPalReserves.totalUSD.toLocaleString()}</span>
-                    </div>
                     <LivePaperBadge />
                     <button
                         onClick={handleToggleLaunch}
-                        className={`px-4 py-1.5 font-bold text-[10px] tracking-[0.2em] border transition-all hover:bg-white/5 ${isNexusOnline ? 'text-red-500 border-red-900' : 'text-yellow-500 border-yellow-900'}`}
+                        className={`px-6 py-2 font-bold text-xs tracking-[0.2em] border transition-all hover:bg-white/5 ${isNexusOnline ? 'text-red-500 border-red-900' : 'text-yellow-500 border-yellow-900'}`}
                     >
                         {isNexusOnline ? 'SEVER_UPLINK' : 'INIT_MASTER_LOADER'}
                     </button>
@@ -225,6 +227,9 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                     </div>
                     <HardwareController />
                     <SovereignFinancialManifestation />
+                    <div className="h-56 shrink-0">
+                        <ArchangelProtocols />
+                    </div>
                     <div className="flex-1 min-h-[300px]">
                         <HyperTemporalExecution />
                     </div>

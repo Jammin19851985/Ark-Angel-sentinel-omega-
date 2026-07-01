@@ -4,14 +4,9 @@ uvicorn
 ib-insync
 pyserial
 pydantic
-numpy
-pandas
 requests
 flask-cors
 python-dotenv
-scikit-learn
 yfinance
-plotly
-streamlit
 aiohttp
 ccxt

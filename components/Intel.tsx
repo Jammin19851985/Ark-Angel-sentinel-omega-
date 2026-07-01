@@ -40,7 +40,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 app.post('/api/omega', async (req, res) => {
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
+            model: 'gemini-3.5-flash',
             contents: req.body.prompt
         });
         res.json({ text: response.text });
@@ -173,7 +173,7 @@ class AgentSwarm {
     async consultMidas(assetData) {
         console.log("🟡 [MIDAS] Analyzing Technical Indicators...");
         const response = await this.ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.5-flash",
             contents: \`Act as an expert quantitative analyst. Analyze this raw ticker data and calculate RSI, MACD, and Bollinger Bands. Data: \${JSON.stringify(assetData)}\`
         });
         return response.text;
@@ -182,7 +182,7 @@ class AgentSwarm {
     async consultDuchess(assetName) {
         console.log("🟣 [DUCHESS] Scanning Social Sentiment & Threat Vectors...");
         const response = await this.ai.models.generateContent({
-            model: "gemini-3-pro-preview",
+            model: "gemini-3.5-flash",
             contents: \`Act as a high-frequency trading sentiment analysis bot. Scan current internet context for \${assetName} and return a sentiment score from -1.0 to 1.0 with a 1-sentence justification.\`
         });
         return response.text;

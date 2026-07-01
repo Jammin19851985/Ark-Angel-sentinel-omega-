@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuantumEngine } from '../hooks/useQuantumEngine';
 import { Activity, Zap, Shield, Cpu, Network } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 
 export const QuantumMonitor: React.FC = () => {
     const { data, status, error } = useQuantumEngine();

@@ -1,7 +1,7 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Geolocation, ChatMessage } from '../../types';
-import { getGroundedResponse } from '../../services/geminiService';
+import { getGroundedResponse, generateSpeech } from '../../services/geminiService';
 import Loader from '../Loader';
 import { SearchIcon } from '../icons/SearchIcon';
 import { MapPinIcon } from '../icons/MapPinIcon';
@@ -9,6 +9,7 @@ import { BrainCircuitIcon } from '../icons/BrainCircuitIcon';
 import { GenerateContentResponse } from '@google/genai';
 import { useAppContext } from '../../contexts/AppContext';
 import ReactMarkdown, { Components } from 'react-markdown'; 
+import { Volume2 } from 'lucide-react';
 
 const ChatTab: React.FC = () => {
     const { addLog, aiToolkitState, setAiToolkitState } = useAppContext();
@@ -19,6 +20,7 @@ const ChatTab: React.FC = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
 
     // Helpers to update context state
     const toggleSetting = (key: keyof typeof chatSettings) => {
@@ -59,6 +61,29 @@ const ChatTab: React.FC = () => {
         }
     }, [chatSettings.useMaps, location, addLog, setAiToolkitState]);
 
+    const playAudio = async (text: string) => {
+        try {
+            // Check if SpeechSynthesis is preferred over generateSpeech for faster playback
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+            } else {
+                const audioBuffer = await generateSpeech(text, 'Kore');
+                if (!audioContextRef.current) {
+                    audioContextRef.current = new ((window as any).AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                }
+                const ctx = audioContextRef.current;
+                const source = ctx.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(ctx.destination);
+                source.start();
+            }
+        } catch (err) {
+            console.error('Failed to read aloud', err);
+        }
+    }
+
     const handleSendMessage = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
@@ -78,13 +103,18 @@ const ChatTab: React.FC = () => {
                 chatSettings.useThinking, 
                 location
             );
+            const responseText = response.text || "";
             const geminiMessage: ChatMessage = { 
                 author: 'gemini', 
-                content: response.text || "",
+                content: responseText,
                 sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || [],
             };
             setMessages(prev => [...prev, geminiMessage]);
             addLog('AI_TOOLKIT', 'Chat response received.');
+            
+            if (chatSettings.readAloud) {
+                playAudio(responseText);
+            }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
             setError(errorMessage);
@@ -185,10 +215,11 @@ const ChatTab: React.FC = () => {
             <h3 className="text-lg font-bold text-slate-200 mb-1">Chat Studio</h3>
             <p className="text-sm text-slate-400 mb-4">Converse with Gemini. Enhance responses with real-time information and advanced reasoning.</p>
             
-            <div className="flex items-center space-x-6 mb-4 p-3 bg-black/60 border border-slate-800 rounded-lg">
+            <div className="flex flex-wrap gap-4 items-center mb-4 p-3 bg-black/60 border border-slate-800 rounded-lg">
                 <Toggle enabled={chatSettings.useSearch} onToggle={() => toggleSetting('useSearch')} label="Search Grounding" icon={<SearchIcon className="w-3 h-3" />} />
                 <Toggle enabled={chatSettings.useMaps} onToggle={() => toggleSetting('useMaps')} label="Maps Grounding" icon={<MapPinIcon className="w-3 h-3" />} />
                 <Toggle enabled={chatSettings.useThinking} onToggle={() => toggleSetting('useThinking')} label="Thinking Mode" icon={<BrainCircuitIcon className="w-3 h-3" />} />
+                <Toggle enabled={chatSettings.readAloud || false} onToggle={() => toggleSetting('readAloud')} label="Read Aloud" icon={<Volume2 className="w-3 h-3" />} />
             </div>
 
             {locationError && <p className="text-xs text-red-400 mb-4">{locationError}</p>}

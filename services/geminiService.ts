@@ -16,7 +16,33 @@ const getApiKey = () => {
     return '';
 };
 
-const getAi = () => new GoogleGenAI({ apiKey: getApiKey() });
+const getAi = () => {
+    const ai = new GoogleGenAI({ apiKey: getApiKey() });
+    
+    const originalGenerateContent = ai.models.generateContent.bind(ai.models);
+    ai.models.generateContent = async (request: any) => {
+        let retries = 3;
+        let delay = 2000;
+        
+        while (retries > 0) {
+            try {
+                return await originalGenerateContent(request);
+            } catch (e: any) {
+                const isRateLimit = e.message?.includes('429') || e.message?.toLowerCase().includes('quota') || e.status === 429;
+                if (!isRateLimit || retries === 1) {
+                    throw e;
+                }
+                console.warn(`AODE_AI_WARN: Rate limit hit. Retrying in ${delay}ms...`);
+                await new Promise(r => setTimeout(r, delay));
+                delay *= 2;
+                retries--;
+            }
+        }
+        throw new Error("API failed after retries");
+    };
+
+    return ai;
+};
 
 const AODE_MANDATE = `
 ROLE: ARCHANGEL OMEGA DESIGNER-ENGINEER (AODE).
@@ -106,11 +132,12 @@ export const godModeAgentTools: FunctionDeclaration[] = [
 ];
 
 const handleAiError = (e: any) => {
-    console.error("AODE_AI_ERROR:", e);
-    const msg = e.message || String(e);
+    const msg = e.message || JSON.stringify(e) || String(e);
     if (msg.includes("429") || msg.toLowerCase().includes("quota")) {
+        console.warn("AODE: API Quota limit reached, tactical pause engaged.");
         return "AODE: QUOTA EXHAUSTED. Pete_The_Raccoon recommends a tactical pause (Wait 60s).";
     }
+    console.error("AODE_AI_ERROR:", e);
     if (msg.includes("500") || msg.toLowerCase().includes("overloaded")) {
         return "AODE: MODEL OVERLOADED. Resonance drift detected. Retrying in next cycle.";
     }
@@ -121,12 +148,11 @@ export const sendMessageToSentinelA = async (message: string): Promise<{ text: s
     try {
         const ai = getAi();
         const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
+            model: 'gemini-3.5-flash',
             contents: message,
             config: { 
                 systemInstruction: AODE_MANDATE,
-                tools: [{googleSearch: {}}],
-                thinkingConfig: { thinkingBudget: 16000 } 
+                tools: [{googleSearch: {}}]
             }
         });
         return {
@@ -142,7 +168,7 @@ export const analyzeCodeDeep = async (code: string, language: string): Promise<C
     try {
         const ai = getAi();
         const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
+            model: 'gemini-3.5-flash',
             contents: `AODE_DEEP_ANALYSIS [${language}]: Analyze this source for bugs, security vulnerabilities, and optimizations. Return JSON.
             
             CODE:
@@ -150,7 +176,6 @@ export const analyzeCodeDeep = async (code: string, language: string): Promise<C
             config: {
                 systemInstruction: AODE_MANDATE,
                 responseMimeType: "application/json",
-                thinkingConfig: { thinkingBudget: 32000 },
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
@@ -174,11 +199,10 @@ export const auditCode = async (code: string, language: string): Promise<string>
     try {
         const ai = getAi();
         const response = await ai.models.generateContent({ 
-            model: 'gemini-3.1-pro-preview', 
+            model: 'gemini-3.5-flash', 
             contents: `AODE_FORENSIC_AUDIT [${language}]: Audit this source for Causal Drift via Pete_The_Raccoon:\n\n${code}`,
             config: { 
-                systemInstruction: AODE_MANDATE,
-                thinkingConfig: { thinkingBudget: 32000 } 
+                systemInstruction: AODE_MANDATE
             }
         });
         return response.text || "";
@@ -191,11 +215,10 @@ export const generatePatchedCode = async (code: string, language: string, review
     try {
         const ai = getAi();
         const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
+            model: 'gemini-3.5-flash',
             contents: `AODE_ACMD_PATCH [${language}]: Applying Woodworking_Joinery patches. Hot-swap injection ready:\n\nCODE:\n${code}\n\nAUDIT:\n${review}\n\nReturn ONLY the patched source code.`,
             config: { 
-                systemInstruction: AODE_MANDATE,
-                thinkingConfig: { thinkingBudget: 16000 }
+                systemInstruction: AODE_MANDATE
             }
         });
         return response.text || "";
@@ -207,7 +230,7 @@ export const generatePatchedCode = async (code: string, language: string, review
 export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: `AODE_SENTIMENT_SCAN: "${q}". Return JSON.`,
         config: { 
             tools: [{googleSearch: {}}],
@@ -238,7 +261,7 @@ export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
 export const generateImage = async (p: string, ar: string) => {
     const ai = getAi();
     const response = await ai.models.generateContent({ 
-        model: 'gemini-2.5-flash-image', 
+        model: 'gemini-3.1-flash-image', 
         contents: p, 
         config: { imageConfig: { aspectRatio: ar as any } } 
     });
@@ -252,7 +275,7 @@ export const analyzeImage = async (image: File, prompt: string): Promise<string>
     const ai = getAi();
     const imagePart = await fileToGenerativePart(image);
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: { parts: [imagePart, { text: prompt }] },
         config: { systemInstruction: AODE_MANDATE }
     });
@@ -263,7 +286,7 @@ export const editImage = async (image: File, prompt: string): Promise<string> =>
     const ai = getAi();
     const imagePart = await fileToGenerativePart(image);
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
+        model: 'gemini-3.1-flash-image',
         contents: { parts: [imagePart, { text: prompt }] },
     });
     for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -297,7 +320,7 @@ export const analyzeVideo = async (video: File, prompt: string): Promise<string>
     const ai = getAi();
     const videoPart = await fileToGenerativePart(video);
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: { parts: [videoPart, { text: prompt }] },
         config: { systemInstruction: AODE_MANDATE }
     });
@@ -307,7 +330,7 @@ export const analyzeVideo = async (video: File, prompt: string): Promise<string>
 export const generateSpeech = async (text: string, voiceName: string): Promise<AudioBuffer> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
+        model: "gemini-3.1-flash-tts-preview",
         contents: [{ parts: [{ text }] }],
         config: { 
             responseModalities: [Modality.AUDIO], 
@@ -322,7 +345,7 @@ export const generateSpeech = async (text: string, voiceName: string): Promise<A
 export const getPredictiveForecast = async (symbol: string, currentPrice: number): Promise<ForecastPoint[]> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: `Synthesize a 7-day price forecast for ${symbol} starting from ${currentPrice}. Use Open_G Rhythm for variance. Return JSON array [{date, price}].`,
         config: { 
             responseMimeType: 'application/json', 
@@ -347,7 +370,7 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
     const ai = getAi();
     const context = RAG_CONTENT_CHUNKS.join('\n\n');
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: `Query Codex: "${q}"\n\nContext:\n${context}`,
         config: { 
             responseMimeType: "application/json", 
@@ -401,7 +424,7 @@ export const getGroundedResponse = async (
     }
 
     return await ai.models.generateContent({
-        model: useMaps ? 'gemini-flash-lite-latest' : 'gemini-3-flash-preview',
+        model: useMaps ? 'gemini-flash-lite-latest' : 'gemini-3.5-flash',
         contents: prompt,
         config
     });
@@ -417,11 +440,10 @@ export const analyzeBacktestResults = async (strategy: string, results: Backtest
     Provide forensic analysis through Pete_The_Raccoon's lens. Recommend Kelly Criterion sizing.`;
     
     const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3.5-flash',
         contents: prompt,
         config: { 
-            systemInstruction: AODE_MANDATE,
-            thinkingConfig: { thinkingBudget: 16000 }
+            systemInstruction: AODE_MANDATE
         }
     });
     return response.text || "";
@@ -438,7 +460,7 @@ export const runAgenticOrchestration = async (
     const ai = getAi();
     
     const planResponse = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: `AODE_MISSION_PLANNER: "${mission}". Generate step-by-step injection plan as JSON array of {id, description, toolName?}.`,
         config: {
             systemInstruction: AODE_MANDATE,
@@ -470,7 +492,7 @@ export const runAgenticOrchestration = async (
             resultText = await toolHandler(step.toolName, {});
         } else {
             const stepExec = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-3.5-flash',
                 contents: `EXECUTE_STEP: ${step.description}`,
                 config: { systemInstruction: AODE_MANDATE }
             });
@@ -486,7 +508,7 @@ export const runAgenticOrchestration = async (
 export const getSignalAnalysis = async (details: string): Promise<string> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: `AODE_SONAR_BRIEFING: Analyze this threat vector: "${details}"`,
         config: { systemInstruction: AODE_MANDATE }
     });
@@ -496,11 +518,10 @@ export const getSignalAnalysis = async (details: string): Promise<string> => {
 export const analyzeQuantumVolatility = async (details: string): Promise<string> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3.5-flash',
         contents: `AODE_QUANTUM_ANALYSIS: Detect Open_G variance for: "${details}"`,
         config: { 
-            systemInstruction: AODE_MANDATE,
-            thinkingConfig: { thinkingBudget: 16000 }
+            systemInstruction: AODE_MANDATE
         }
     });
     return response.text || "";
@@ -509,11 +530,10 @@ export const analyzeQuantumVolatility = async (details: string): Promise<string>
 export const runSwarmOptimization = async (kpis: AnalyticsKPIs): Promise<string> => {
     const ai = getAi();
     const response = await ai.models.generateContent({
-        model: 'gemini-3.1-pro-preview',
+        model: 'gemini-3.5-flash',
         contents: `AODE_SWARM_OPTIMIZATION: Current KPIs:\n- PnL: $${kpis.totalPnl}\n- WinRate: ${kpis.winRate}%\n- Sharpe: ${kpis.sharpeRatio}\n\nSynthesize hot-swap report.`,
         config: { 
-            systemInstruction: AODE_MANDATE,
-            thinkingConfig: { thinkingBudget: 24000 }
+            systemInstruction: AODE_MANDATE
         }
     });
     return response.text || "";

@@ -1,9 +1,10 @@
 
-import streamlit as st
-import plotly.graph_objects as go
+# import streamlit as st
+# import plotly.graph_objects as go
 import yfinance as yf
-import pandas as pd
+# import pandas as pd
 import time
+
 
 st.set_page_config(page_title="ARCHANGEL FUSION // COMMAND", layout="wide", page_icon="⚡")
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
 import { CpuChipIcon } from './icons/CpuChipIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
@@ -7,9 +7,74 @@ import { KeyIcon } from './icons/KeyIcon';
 import Loader from './Loader';
 
 const HardwareController: React.FC = () => {
-    const { coreState, signDevice, attestHardware, addLog } = useAppContext();
+    const { coreState, signDevice, attestHardware, addLog, reorderHardwareDevices } = useAppContext();
     const { hardwareDevices, hardwareSignedDevices, hardwareQuorumRequired, killSwitchActive } = coreState;
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+    const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+    const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+    const [utilizations, setUtilizations] = useState<Record<string, number>>({});
+    const [expandedDevices, setExpandedDevices] = useState<Record<string, boolean>>({});
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setUtilizations(prev => {
+                const next = { ...prev };
+                hardwareDevices.forEach(d => {
+                    const current = next[d.id] || 30;
+                    const change = (Math.random() * 40) - 20; // -20 to +20
+                    next[d.id] = Math.max(10, Math.min(95, current + change));
+                });
+                return next;
+            });
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [hardwareDevices]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.altKey && !isNaN(Number(e.key))) {
+                const num = Number(e.key);
+                if (num > 0 && num <= hardwareDevices.length) {
+                    e.preventDefault();
+                    const deviceId = hardwareDevices[num - 1].id;
+                    setExpandedDevices(prev => ({
+                        ...prev,
+                        [deviceId]: !prev[deviceId]
+                    }));
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [hardwareDevices]);
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggingIdx(index);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragOverIdx !== index) {
+            setDragOverIdx(index);
+        }
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setDragOverIdx(null);
+    };
+
+    const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+        e.preventDefault();
+        setDragOverIdx(null);
+        if (draggingIdx !== null && draggingIdx !== dropIndex) {
+            reorderHardwareDevices(draggingIdx, dropIndex);
+        }
+        setDraggingIdx(null);
+    };
 
     const handleAttest = async (deviceId: string) => {
         setIsProcessing(`ATTEST_${deviceId}`);
@@ -44,14 +109,38 @@ const HardwareController: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-                {hardwareDevices.map(device => {
+                {hardwareDevices.map((device, index) => {
                     const isSigned = hardwareSignedDevices.includes(device.id);
                     const isTampered = device.status === 'TAMPERED';
                     const processingAction = isProcessing && isProcessing.endsWith(device.id);
+                    const isDragging = draggingIdx === index;
+                    const isDragOver = dragOverIdx === index;
+                    const util = utilizations[device.id] || 30;
 
                     return (
-                        <div key={device.id} className={`p-2 rounded border transition-all duration-500 relative overflow-hidden ${isTampered ? 'bg-red-950/20 border-red-500 shadow-[0_0_15px_rgba(255,0,0,0.2)]' : 'bg-black/40 border-slate-700 hover:border-neon-pink/50'}`}>
+                        <div 
+                            key={device.id} 
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, index)}
+                            className={`p-2 rounded border transition-all duration-300 relative overflow-hidden cursor-grab active:cursor-grabbing hover:scale-[1.02] hover:z-20
+                                ${isTampered ? 'bg-red-950/20 border-red-500 shadow-[0_0_15px_rgba(255,0,0,0.2)] hover:shadow-[0_0_20px_rgba(255,0,0,0.4)]' : util > 90 ? 'bg-red-950/30 border-red-500 animate-pulse shadow-[0_0_15px_rgba(255,0,0,0.5)] hover:shadow-[0_0_20px_rgba(255,0,0,0.6)]' : 'bg-black/40 border-slate-700 hover:border-neon-pink hover:shadow-[0_0_15px_rgba(255,0,255,0.3)]'}
+                                ${isDragging ? 'opacity-40 border-dashed border-slate-500' : ''}
+                                ${isDragOver ? 'border-neon-green/80 bg-neon-green/10' : ''}
+                            `}
+                        >
                             {isSigned && <div className="absolute inset-0 bg-neon-green/5 pointer-events-none"></div>}
+                            {!isTampered && (
+                                <div 
+                                    className="absolute inset-0 pointer-events-none transition-all duration-1000 ease-in-out mix-blend-screen"
+                                    style={{
+                                        background: `radial-gradient(circle at center, rgba(0,255,170,${util / 100 * 0.15}) 0%, transparent 70%)`,
+                                        opacity: util / 100
+                                    }}
+                                />
+                            )}
                             
                             <div className="flex justify-between items-start mb-1 relative z-10">
                                 <div>
@@ -64,6 +153,47 @@ const HardwareController: React.FC = () => {
                                     {device.status}
                                 </div>
                             </div>
+
+                            <div className="mt-1.5 mb-2 relative z-10">
+                                <div className="flex justify-between text-[7px] text-slate-500 mb-0.5">
+                                    <span>UTILIZATION</span>
+                                    <span>{Math.round(util)}%</span>
+                                </div>
+                                <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                                    <div 
+                                        className={`h-full transition-all duration-1000 ease-in-out ${util > 80 ? 'bg-red-500' : util > 60 ? 'bg-amber-500' : 'bg-neon-green'}`}
+                                        style={{ width: `${util}%` }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex justify-center mt-1 relative z-10">
+                                <button 
+                                    onClick={() => setExpandedDevices(prev => ({ ...prev, [device.id]: !prev[device.id] }))}
+                                    className="text-[7px] text-slate-500 hover:text-neon-pink uppercase tracking-widest transition-colors flex items-center gap-1"
+                                >
+                                    {expandedDevices[device.id] ? 'HIDE DETAILS ▲' : 'SHOW DETAILS ▼'}
+                                </button>
+                            </div>
+
+                            {expandedDevices[device.id] && (
+                                <div className="mt-1.5 p-1.5 bg-black/50 border border-slate-800 rounded text-[8px] text-slate-400 space-y-1 relative z-10">
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">TEMP:</span>
+                                        <span className={util > 80 ? 'text-red-400' : util > 60 ? 'text-amber-400' : 'text-neon-green'}>
+                                            {Math.round(35 + util * 0.45)}°C
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">SERIAL:</span>
+                                        <span className="font-mono">SN-{device.id.replace(/[^A-Z0-9]/g, '').substring(0, 8)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-slate-600">FIRMWARE:</span>
+                                        <span className="text-slate-300">{device.firmwareVersion}</span>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-1 mt-2 relative z-10">
                                 <button 

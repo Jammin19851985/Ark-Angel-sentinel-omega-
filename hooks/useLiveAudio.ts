@@ -111,7 +111,7 @@ export const useLiveAudio = ({ addLog }: { addLog: (source: LogEntry['source'], 
             outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
             
             sessionPromiseRef.current = ai.live.connect({
-                model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+                model: 'gemini-3.1-flash-live-preview',
                 callbacks: {
                     onopen: () => {
                         addLog('AI_TOOLKIT', 'Live audio connection opened.');

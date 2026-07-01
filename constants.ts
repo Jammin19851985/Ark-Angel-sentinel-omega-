@@ -97,6 +97,27 @@ export const VIEW_SPECIFIC_SUGGESTIONS: Record<ActiveView, string[]> = {
         "EXECUTE_DUMMY_TRADE", 
         "VIEW_SIMULATION_METRICS",
         "STRESS_TEST_MARGIN_CALL"
+    ],
+    gdrive: [
+        "SYNCHRONIZE_MANIFEST",
+        "UPLOAD_SECURE_PAYLOAD",
+        "PURGE_STORAGE_BLOCK",
+        "COMPILE_DOCUMENT_DRAFT",
+        "VERIFY_ENCRYPTION_PLAUSIBILITY"
+    ],
+    keep: [
+        "RETRIEVE_MNEMOSYNE_LOG",
+        "SYNC_SECURE_PAYLOAD",
+        "PIN_STRATEGIC_MEMO",
+        "ATTACH_DRIVE_DATA"
+    ],
+    banking: [
+        "VERIFY_REAL_TIME_BALANCES",
+        "EXECUTE_ACH_SWEEP",
+        "REBALANCE_COLD_STORAGE",
+        "AUDIT_AML_COMPLIANCE",
+        "TRIGGER_FIAT_ONRAMP",
+        "CONNECT_PLAID_INSTITUTION"
     ]
 };
 

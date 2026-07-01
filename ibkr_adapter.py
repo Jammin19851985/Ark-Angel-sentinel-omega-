@@ -6,8 +6,8 @@ import logging
 # Ensure util.patchAsyncio() is called if ib_insync is available
 try:
     from ib_insync import IB, MarketOrder, LimitOrder, Crypto, Stock, Forex, Index, util
-    HAS_IB = True
     util.patchAsyncio()
+    HAS_IB = True
 except ImportError:
     HAS_IB = False
 
@@ -20,20 +20,21 @@ class IBKRAdapter:
         self.is_mock = True
         self.client_id = None
         self.account_id = None
+
+    async def connect(self, host: str, port: int, client_id: int):
+        self.client_id = client_id
+        logger.info(f"Connecting to IBKR Gateway at {host}:{port} (ID: {client_id})...")
         
-        if HAS_IB:
+        if HAS_IB and self.ib is None:
             try:
                 self.ib = IB()
             except Exception as e:
                 logger.error(f"Failed to initialize IB instance: {e}")
                 self.ib = None
 
-    async def connect(self, host: str, port: int, client_id: int):
-        self.client_id = client_id
-        logger.info(f"Connecting to IBKR Gateway at {host}:{port} (ID: {client_id})...")
-        
         if not HAS_IB or self.ib is None:
             logger.warning("ib_insync missing or failed to init. Engaging SHADOW_MOCK mode.")
+
             self.connected = False # Not truly connected to a gateway
             self.is_mock = True
             return

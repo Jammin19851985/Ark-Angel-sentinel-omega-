@@ -12,6 +12,9 @@ const Intel = lazy(() => import('./Intel'));
 const Sonar = lazy(() => import('./Sonar'));
 const Nexus = lazy(() => import('./Nexus'));
 const ShadowTerminal = lazy(() => import('./PaperTerminal'));
+const GoogleDriveManager = lazy(() => import('./GoogleDriveManager').then(m => ({ default: m.GoogleDriveManager })));
+const WorkspaceKeep = lazy(() => import('./WorkspaceKeep'));
+const RealWorldBanking = lazy(() => import('./RealWorldBanking'));
 
 interface ViewManagerProps {
     activeView: ActiveView;
@@ -68,6 +71,9 @@ const ViewManager: React.FC<ViewManagerProps> = (props) => {
                 {activeView === 'backtester' && <Backtester id="backtester-view" />}
                 {activeView === 'analytics' && <Analytics id="analytics-dashboard" />}
                 {activeView === 'intel' && <Intel id="intel-feed" />}
+                {activeView === 'gdrive' && <GoogleDriveManager id="gdrive-section" />}
+                {activeView === 'keep' && <WorkspaceKeep />}
+                {activeView === 'banking' && <RealWorldBanking />}
             </Suspense>
         </div>
     );

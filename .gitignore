@@ -1,10 +1,16 @@
 
 # Dependencies
 /node_modules
+venv/
+.venv/
+__pycache__/
+*.pyc
+/.python_deps
+/.python_user_base
+/.pip_cache
 
 # Build artifacts
 /build
-/dist
 /.parcel-cache
 
 # Environment variables

@@ -10,6 +10,7 @@ import { ChartPieIcon } from './icons/ChartPieIcon';
 import { SparklesIcon } from './icons/SparklesIcon';
 import { ChartBarIcon } from './icons/ChartBarIcon';
 import { BookOpenIcon } from './icons/BookOpenIcon';
+import { HardDrive } from 'lucide-react';
 
 interface NavigationDeckProps {
     activeView: ActiveView;
@@ -112,6 +113,30 @@ const NavigationDeck: React.FC<NavigationDeckProps> = ({ activeView, setActiveVi
                 id="tab-intel" 
                 activeView={activeView} 
                 onClick={() => handleViewChange('intel')} 
+            />
+            <CyberKey 
+                view="keep" 
+                label="Mnemosyne" 
+                icon={<BookOpenIcon className="w-2.5 h-2.5 text-cyan-400"/>} 
+                id="tab-keep" 
+                activeView={activeView} 
+                onClick={() => handleViewChange('keep')} 
+            />
+            <CyberKey 
+                view="gdrive" 
+                label="Workspace" 
+                icon={<HardDrive className="w-2.5 h-2.5 text-cyan-400"/>} 
+                id="tab-gdrive" 
+                activeView={activeView} 
+                onClick={() => handleViewChange('gdrive')} 
+            />
+            <CyberKey 
+                view="banking" 
+                label="Banking" 
+                icon={<BookOpenIcon className="w-2.5 h-2.5 text-cyan-400"/>} 
+                id="tab-banking" 
+                activeView={activeView} 
+                onClick={() => handleViewChange('banking')} 
             />
         </div>
     );

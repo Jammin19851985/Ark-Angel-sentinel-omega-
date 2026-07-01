@@ -18,70 +18,44 @@ export const useQuantumEngine = () => {
     const updateMarketData = useAppStore(state => state.updateMarketData);
 
     useEffect(() => {
-        let socket: WebSocket | null = null;
-        let reconnectTimeout: any = null;
-        let connectionTimeout: any = null;
+        let isMounted = true;
+        let pollTimeout: any = null;
 
-        const connect = () => {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const host = window.location.host;
-            const wsUrl = `${protocol}//${host}`;
-            
-            console.log(`[QuantumEngine] Connecting to ${wsUrl}...`);
-            setStatus('CONNECTING');
-            setError(null);
-            
-            socket = new WebSocket(wsUrl);
-
-            connectionTimeout = setTimeout(() => {
-                if (socket?.readyState !== WebSocket.OPEN) {
-                    console.warn("[QuantumEngine] Connection timeout.");
-                    socket?.close();
+        const pollData = async () => {
+            if (!isMounted) return;
+            try {
+                if (status !== 'CONNECTED') setStatus('CONNECTING');
+                
+                const res = await fetch('/spine-bridge/quantum-sync');
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                
+                const data = await res.json();
+                if (!isMounted) return;
+                
+                setData(data.quantum);
+                updateMarketData(data.market.updates);
+                
+                if (status !== 'CONNECTED') setStatus('CONNECTED');
+                setError(null);
+                
+                pollTimeout = setTimeout(pollData, 1000);
+            } catch (err: any) {
+                if (err.message !== "Failed to fetch" && !String(err).includes('429')) {
+                    console.warn("[QuantumEngine] Polling Error:", err.message);
+                }
+                if (isMounted) {
                     setStatus('ERROR');
-                    setError('CONNECTION_TIMEOUT');
+                    setError(err.message || 'POLLING_ERROR');
+                    pollTimeout = setTimeout(pollData, 5000);
                 }
-            }, 10000);
-
-            socket.onopen = () => {
-                console.log("[QuantumEngine] Connected to Execution Spine.");
-                setStatus('CONNECTED');
-                if (connectionTimeout) clearTimeout(connectionTimeout);
-            };
-
-            socket.onmessage = (event) => {
-                try {
-                    const parsed = JSON.parse(event.data);
-                    if (parsed.type === 'QUANTUM_UPDATE') {
-                        setData(parsed);
-                    } else if (parsed.type === 'MARKET_UPDATE') {
-                        updateMarketData(parsed.updates);
-                    }
-                } catch (err) {
-                    console.error("[QuantumEngine] Parse Error:", err);
-                }
-            };
-
-            socket.onclose = () => {
-                console.log("[QuantumEngine] Disconnected. Retrying in 5s...");
-                if (status !== 'ERROR') setStatus('DISCONNECTED');
-                reconnectTimeout = setTimeout(connect, 5000);
-                if (connectionTimeout) clearTimeout(connectionTimeout);
-            };
-
-            socket.onerror = (err) => {
-                console.error("[QuantumEngine] WebSocket Error:", err);
-                setStatus('ERROR');
-                setError('WEBSOCKET_ERROR');
-                socket?.close();
-            };
+            }
         };
 
-        connect();
+        pollData();
 
         return () => {
-            if (socket) socket.close();
-            if (reconnectTimeout) clearTimeout(reconnectTimeout);
-            if (connectionTimeout) clearTimeout(connectionTimeout);
+            isMounted = false;
+            if (pollTimeout) clearTimeout(pollTimeout);
         };
     }, []);
 

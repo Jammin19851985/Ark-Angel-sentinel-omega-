@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ActivityIcon } from './icons/ActivityIcon';
 import { ShieldIcon } from './icons/ShieldIcon';
 import { BrainCircuitIcon } from './icons/BrainCircuitIcon';

@@ -137,7 +137,7 @@ export class OmniBroker {
             console.log(`[OmniBroker] REAL_ORDER_FILLED: ${targetSymbol} ${side} ${amount} on ${exchangeId}`);
             return order;
         } catch (error: any) {
-            console.error(`[OmniBroker] EXECUTION_ABORTED [${exchangeId}]:`, error.message);
+            console.warn(`[OmniBroker] EXECUTION_ABORTED [${exchangeId}]:`, error.message);
             throw error;
         }
     }
@@ -169,7 +169,7 @@ export class OmniBroker {
             
             return results;
         } catch (error: any) {
-            console.error("[OmniBroker] Audit Failure:", error.message);
+            console.warn("[OmniBroker] Audit Failure:", error.message);
             throw error;
         }
     }

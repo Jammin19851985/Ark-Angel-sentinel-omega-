@@ -171,7 +171,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                         <div className="flex gap-2">
                             <input 
                                 type="number" 
-                                value={ppDepositAmount} 
+                                value={Number.isNaN(ppDepositAmount) ? '' : ppDepositAmount} 
                                 onChange={e => setPpDepositAmount(Number(e.target.value))}
                                 className="flex-1 bg-black border border-blue-900/50 rounded p-1.5 text-[10px] text-blue-400 outline-none"
                                 placeholder="Deposit Amt"
@@ -216,7 +216,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                                 />
                                 <input 
                                     type="number" 
-                                    value={ppWithdrawAmount} 
+                                    value={Number.isNaN(ppWithdrawAmount) ? '' : ppWithdrawAmount} 
                                     onChange={e => setPpWithdrawAmount(Number(e.target.value))}
                                     className="w-16 bg-black border border-blue-900/50 rounded p-1.5 text-[10px] text-blue-400 outline-none"
                                     placeholder="Amt"
@@ -252,7 +252,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                                 <label className="text-[8px] text-slate-500 uppercase font-bold">Profit Trigger ($)</label>
                                 <input 
                                     type="number" 
-                                    value={bankingConfig.triggerThreshold}
+                                    value={Number.isNaN(bankingConfig.triggerThreshold) ? '' : bankingConfig.triggerThreshold}
                                     onChange={(e) => setBankingConfig({ triggerThreshold: Number(e.target.value) })}
                                     className="bg-black border border-amber-900/50 rounded p-1.5 text-[10px] text-amber-400 outline-none focus:border-amber-500 transition-colors"
                                 />
@@ -261,7 +261,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                                 <label className="text-[8px] text-slate-500 uppercase font-bold">Min Reserve ($)</label>
                                 <input 
                                     type="number" 
-                                    value={bankingConfig.keepReserve}
+                                    value={Number.isNaN(bankingConfig.keepReserve) ? '' : bankingConfig.keepReserve}
                                     onChange={(e) => setBankingConfig({ keepReserve: Number(e.target.value) })}
                                     className="bg-black border border-amber-900/50 rounded p-1.5 text-[10px] text-amber-400 outline-none focus:border-amber-500 transition-colors"
                                 />
@@ -317,7 +317,7 @@ const SovereignFinancialManifestation: React.FC = () => {
                             <option value="BUY">BUY</option>
                             <option value="SELL">SELL</option>
                         </select>
-                        <input type="number" step="0.0001" value={tradeQuantity} onChange={e => setTradeQuantity(parseFloat(e.target.value))} className="w-full bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-white" placeholder="QTY" />
+                        <input type="number" step="0.0001" value={Number.isNaN(tradeQuantity) ? '' : tradeQuantity} onChange={e => setTradeQuantity(parseFloat(e.target.value))} className="w-full bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-white" placeholder="QTY" />
                         <input type="number" step="0.01" value={tradePrice} onChange={e => setTradePrice(e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded p-1.5 text-[10px] text-white" placeholder="PRICE" />
                     </div>
                     

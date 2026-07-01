@@ -1,20 +1,14 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MarketData } from '../types';
 import PriceTrendTooltip from './charts/PriceTrendTooltip';
 import { Sparkline } from './charts/Sparkline';
 import { SearchIcon } from './icons/SearchIcon';
+import { BellIcon } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
-import { ActivityIcon } from './icons/ActivityIcon';
 import Loader from './Loader';
 import { TSX_SYMBOLS, GLOBAL_SYMBOLS } from '../constants';
-
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
-  useEffect(() => { ref.current = value; }, [value]); 
-  return ref.current;
-}
 
 const MARKET_NEWS_HEADLINES = [
     { headline: "TSX leads global recovery as energy sector surges.", source: "Financial Post" },
@@ -28,32 +22,74 @@ interface MarketWatchProps { id: string; }
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'SOL', 'ADA'];
 
 const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
-    const { marketData, historicalMarketData, marketFilter, setMarketFilter, fetchSymbolData } = useAppContext();
+    const { marketData, historicalMarketData, marketFilter, setMarketFilter, fetchSymbolData, addLog } = useAppContext();
+    
+    // We use refs for tracking previous prices to strictly avoid re-render loops.
+    const prevPricesRef = useRef<Record<string, number>>({});
+    // Store flashes just for visual indications
     const [priceChanges, setPriceChanges] = useState<Record<string, 'up' | 'down'>>({});
-    const prevMarketData = usePrevious(marketData);
+    
     const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
     const [currentNewsIndex, setCurrentNewsIndex] = useState(0);
     const [activeTab, setActiveTab] = useState<'ALL' | 'CRYPTO' | 'STOCKS' | 'CANADA'>('ALL');
     const [isFetching, setIsFetching] = useState(false);
+    
+    // Custom Price Alert state
+    const [priceAlerts, setPriceAlerts] = useState<Record<string, { high?: number, low?: number }>>({});
+    const [alertModalSymbol, setAlertModalSymbol] = useState<string | null>(null);
+    const [tempHighAlert, setTempHighAlert] = useState<string>('');
+    const [tempLowAlert, setTempLowAlert] = useState<string>('');
 
+    // Request Notification permission
     useEffect(() => {
-        if (!prevMarketData) return;
+        if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }, []);
+
+    // Check alerts and update flashes
+    useEffect(() => {
         const changes: Record<string, 'up' | 'down'> = {};
         let hasChanges = false;
+        
         Object.keys(marketData).forEach(symbol => {
             const currentPrice = marketData[symbol]?.price;
-            const previousPrice = prevMarketData[symbol]?.price;
+            const previousPrice = prevPricesRef.current[symbol];
+            
             if (currentPrice && previousPrice && currentPrice !== previousPrice) {
                 changes[symbol] = currentPrice > previousPrice ? 'up' : 'down';
                 hasChanges = true;
             }
+            
+            // Trigger alerts
+            if (currentPrice) {
+                const alerts = priceAlerts[symbol];
+                if (alerts) {
+                    if (alerts.high && currentPrice >= alerts.high && (!previousPrice || previousPrice < alerts.high)) {
+                        triggerNotification(symbol, 'HIGH', currentPrice, alerts.high);
+                    }
+                    if (alerts.low && currentPrice <= alerts.low && (!previousPrice || previousPrice > alerts.low)) {
+                        triggerNotification(symbol, 'LOW', currentPrice, alerts.low);
+                    }
+                }
+                prevPricesRef.current[symbol] = currentPrice;
+            }
         });
+        
         if (hasChanges) {
-            setPriceChanges(changes);
-            const timer = setTimeout(() => setPriceChanges({}), 1500);
-            return () => clearTimeout(timer);
+            // setPriceChanges(changes);
+            // const timer = setTimeout(() => setPriceChanges({}), 1000);
+            // return () => clearTimeout(timer);
         }
-    }, [marketData, prevMarketData]);
+    }, [marketData, priceAlerts]);
+
+    const triggerNotification = useCallback((symbol: string, direction: 'HIGH' | 'LOW', currentPrice: number, threshold: number) => {
+        const msg = `${symbol} crossed ${direction} threshold! Current: $${currentPrice.toFixed(2)} (Alert: $${threshold.toFixed(2)})`;
+        addLog('ALERT', msg);
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Sovereign Alert', { body: msg });
+        }
+    }, [addLog]);
 
     useEffect(() => {
         const newsInterval = setInterval(() => setCurrentNewsIndex(prev => (prev + 1) % MARKET_NEWS_HEADLINES.length), 7000);
@@ -103,8 +139,34 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
         </button>
     );
 
+    const openAlertModal = (symbol: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setAlertModalSymbol(symbol);
+        setTempHighAlert(priceAlerts[symbol]?.high?.toString() || '');
+        setTempLowAlert(priceAlerts[symbol]?.low?.toString() || '');
+    };
+
+    const saveAlerts = () => {
+        if (alertModalSymbol) {
+            setPriceAlerts(prev => ({
+                ...prev,
+                [alertModalSymbol]: {
+                    high: tempHighAlert ? parseFloat(tempHighAlert) : undefined,
+                    low: tempLowAlert ? parseFloat(tempLowAlert) : undefined
+                }
+            }));
+            updateModalClose();
+        }
+    };
+    
+    const updateModalClose = () => {
+        setAlertModalSymbol(null);
+        setTempHighAlert('');
+        setTempLowAlert('');
+    };
+
     return (
-        <div id={id} className="tech-panel p-3 flex flex-col h-full bg-black/60">
+        <div id={id} className="tech-panel p-3 flex flex-col h-full bg-black/60 relative">
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <h2 className="micro-label">// MARKET WATCH</h2>
@@ -137,9 +199,9 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                 <div className="grid grid-cols-12 font-mono text-[9px] text-slate-600 px-2 pb-1 border-b border-slate-800 uppercase tracking-wider">
                     <span className="col-span-2">Sym</span>
                     <span className="col-span-2 text-center">Trend</span>
-                    <span className="col-span-2 text-right">Price</span>
-                    <span className="col-span-2 text-right">%Chg</span>
+                    <span className="col-span-3 text-right">Price</span>
                     <span className="col-span-4 text-right">Volume</span>
+                    <span className="col-span-1 border-transparent text-center">🔔</span>
                 </div>
                 <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1 custom-scrollbar">
                     {filteredSymbols.map((symbol) => {
@@ -147,6 +209,7 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                         const history = historicalMarketData[symbol] || [];
                         const formattedVolume = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(data.volume);
                         const isUp = history.length > 1 && history[history.length - 1] >= history[0];
+                        const hasAlert = priceAlerts[symbol]?.high || priceAlerts[symbol]?.low;
 
                         return (
                             <div 
@@ -159,13 +222,22 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                                 <div className="col-span-2 h-4 flex items-center justify-center opacity-80">
                                     <Sparkline data={history} width={40} height={16} color={isUp ? '#4ade80' : '#f87171'} strokeWidth={1} />
                                 </div>
-                                <span className={`font-medium text-right col-span-2 ${getPriceColorClass(symbol)}`}>
-                                    {data.price.toFixed(2)}
+                                <span className={`font-medium text-right col-span-3 flex flex-col items-end ${getPriceColorClass(symbol)}`}>
+                                    <span>{data.price.toFixed(2)}</span>
+                                    <span className={`text-[8px] ${data.change >= 0 ? 'text-green-500/70' : 'text-red-500/70'}`}>
+                                        {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
+                                    </span>
                                 </span>
-                                <span className={`text-right col-span-2 ${data.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                    {data.change.toFixed(2)}%
+                                <span className="text-slate-500 text-right col-span-4 flex items-center justify-end">
+                                    {formattedVolume}
                                 </span>
-                                <span className="text-slate-500 text-right col-span-4">{formattedVolume}</span>
+                                <button 
+                                    className={`col-span-1 flex items-center justify-center transition-colors ${hasAlert ? 'text-amber-400' : 'text-slate-700 hover:text-slate-400'}`}
+                                    onClick={(e) => openAlertModal(symbol, e)}
+                                    title="Set Price Alert"
+                                >
+                                    <BellIcon className="w-3 h-3" />
+                                </button>
                                 {hoveredSymbol === symbol && history.length > 1 && <PriceTrendTooltip history={history} />}
                             </div>
                         );
@@ -181,8 +253,48 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                     </div>
                 )}
             </div>
+
+            {/* Sub-modal for Alert Config */}
+            {alertModalSymbol && (
+                <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-md shadow-2xl p-4 w-full flex flex-col gap-3 font-mono">
+                        <div className="flex justify-between items-center text-slate-200 uppercase tracking-wider text-[10px] font-bold pb-2 border-b border-slate-800">
+                            <span>ALERT: {alertModalSymbol}</span>
+                            <button onClick={updateModalClose} className="text-slate-500 hover:text-slate-300">✕</button>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[9px] text-slate-400">HIGH THRESHOLD (Trigger above):</label>
+                            <input 
+                                type="number" 
+                                value={tempHighAlert}
+                                onChange={(e) => setTempHighAlert(e.target.value)}
+                                className="bg-black border border-slate-800 w-full px-2 py-1 text-[11px] text-amber-400 focus:border-amber-500 outline-none rounded-sm"
+                                placeholder="e.g. 150.00"
+                            />
+                        </div>
+                        
+                        <div className="flex flex-col gap-1">
+                            <label className="text-[9px] text-slate-400">LOW THRESHOLD (Trigger below):</label>
+                            <input 
+                                type="number" 
+                                value={tempLowAlert}
+                                onChange={(e) => setTempLowAlert(e.target.value)}
+                                className="bg-black border border-slate-800 w-full px-2 py-1 text-[11px] text-red-400 focus:border-red-500 outline-none rounded-sm"
+                                placeholder="e.g. 90.00"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-2">
+                            <button onClick={updateModalClose} className="px-3 py-1 text-[9px] uppercase border border-slate-700 text-slate-400 hover:bg-slate-800 rounded-sm transition">Cancel</button>
+                            <button onClick={saveAlerts} className="px-3 py-1 text-[9px] uppercase border border-amber-600/50 bg-amber-900/30 text-amber-400 hover:bg-amber-900/60 rounded-sm transition">Save Alerts</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
 export default React.memo(MarketWatch);
+

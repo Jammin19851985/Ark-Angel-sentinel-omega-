@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "KeepNote": {
+      "title": "Google Keep fallback note record structure",
+      "description": "Schema for notes persisted under the users specific account matching Google Keep blocks",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the note block"
+        },
+        "body": {
+          "type": "string",
+          "description": "Text body or list description content of the memo"
+        },
+        "isPinned": {
+          "type": "boolean",
+          "description": "Whether the note is pinned at the top"
+        },
+        "color": {
+          "type": "string",
+          "description": "Visual theme identifier or background color class"
+        },
+        "labels": {
+          "type": "array",
+          "description": "Array of tags or categorizations"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of block creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last edit"
+        }
+      },
+      "required": ["title", "body", "isPinned", "createdAt", "updatedAt"]
+    },
+    "SystemLog": {
+      "title": "Cloud synchronized system activity log structure",
+      "description": "Persisted action telemetry event records",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Logging class level: INFO, SYSTEM, AUTH, BOOT, ERROR"
+        },
+        "message": {
+          "type": "string",
+          "description": "The precise message logged in the system activity log"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the event occurred"
+        }
+      },
+      "required": ["type", "message", "timestamp"]
+    }
+  },
+  "firestore": {
+    "users/{userId}/notes/{noteId}": {
+      "schema": "KeepNote",
+      "description": "Cloud synchronized backup notes mirroring standard Google Keep"
+    },
+    "users/{userId}/logs/{logId}": {
+      "schema": "SystemLog",
+      "description": "Sovereign activity and sync event diagnostics feed log"
+    }
+  }
+}

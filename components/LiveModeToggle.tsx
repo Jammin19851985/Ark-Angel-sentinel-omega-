@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../contexts/AppContext';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { ShieldAlertIcon } from './icons/ShieldAlertIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
 

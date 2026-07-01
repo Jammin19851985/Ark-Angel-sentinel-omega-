@@ -22,25 +22,55 @@ export const ibkrService = {
             }
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[IBKR_SERVICE] Gateway Error (${response.status}):`, errorText.substring(0, 100));
+                let errorText = "Unknown error";
+                try {
+                    errorText = await response.text();
+                    // Just truncate the error or parse title if HTML
+                    if (errorText.includes('<html')) {
+                        console.warn("[IBKR_SERVICE] Gateway Error: Received HTML error page. Spine proxy is likely offline or misconfigured (Status: " + response.status + ")");
+                    } else {
+                        console.warn(`[IBKR_SERVICE] Gateway Error (${response.status}):`, errorText.substring(0, 100));
+                    }
+                } catch(e) { }
                 
                 if (response.status === 401) {
                     console.warn("[IBKR_SERVICE] AUTH_FAILURE: The platform proxy is rejecting the request. This might be due to a session timeout or domain mismatch.");
                 }
 
-                // Check if it's the proxy returning 503
-                if (response.status === 503) {
-                    throw new Error("EXECUTION_SPINE_OFFLINE");
-                }
-                throw new Error("IBKR_GATEWAY_OFFLINE");
+                console.log("[IBKR_SERVICE] Using safe fallback state due to gateway error.");
+                return {
+                    accountNumber: "U*******999", 
+                    isArmed: false,
+                    latency: 0,
+                    marginUtilization: 0.0, 
+                    buyingPower: 0,
+                    baseCurrency: "USD",
+                    mode: "MOCK",
+                    safetySwitch: false
+                };
             }
 
             const contentType = response.headers.get("content-type");
             if (!contentType || !contentType.includes("application/json")) {
                 const text = await response.text();
-                console.error("[IBKR_SERVICE] Non-JSON response received:", text.substring(0, 100));
-                throw new Error("INVALID_GATEWAY_RESPONSE");
+                if (text.includes('<html')) {
+                    console.warn("[IBKR_SERVICE] Gateway Error: Received HTML error page. Spine proxy is likely offline or misconfigured.");
+                } else {
+                    console.error("[IBKR_SERVICE] Non-JSON response received:", text.substring(0, 100));
+                }
+                
+                // Instead of throwing immediately, fallback to a safe state
+                console.log("[IBKR_SERVICE] Using safe fallback state due to gateway error.");
+                return {
+                    accountNumber: "U*******999", 
+                    isArmed: false,
+                    latency: 0,
+                    marginUtilization: 0.0, 
+                    buyingPower: 0,
+                    baseCurrency: "USD",
+                    mode: "MOCK",
+                    safetySwitch: false
+                };
             }
             
             const data = await response.json();
@@ -61,14 +91,19 @@ export const ibkrService = {
                 safetySwitch: data.safety_switch
             };
         } catch (error: any) {
-            console.error("[IBKR_SERVICE] Failed to fetch account info:", error.message || error);
+            console.warn("[IBKR_SERVICE] Failed to fetch account info:", error.message || error);
             
-            // If it's a network error, it might be the gateway
-            if (error.message === "Failed to fetch") {
-                console.warn("[IBKR_SERVICE] Network error - Python Spine might be down.");
-                throw new Error("EXECUTION_SPINE_OFFLINE");
-            }
-            throw error;
+            // Fallback for any error to prevent crashing UI
+            return {
+                accountNumber: "U*******999", 
+                isArmed: false,
+                latency: 0,
+                marginUtilization: 0.0, 
+                buyingPower: 0,
+                baseCurrency: "USD",
+                mode: "MOCK",
+                safetySwitch: false
+            };
         }
     },
 

@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { ForecastPoint } from '../../types';
 import { ChartInfoOverlay, ChartInfo } from './ChartInfoOverlay';
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine } from 'recharts';
 
 interface LineChartProps {
     data: ForecastPoint[];
@@ -11,6 +12,25 @@ interface LineChartProps {
     info?: ChartInfo;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-slate-900 border border-amber-500/50 p-2 rounded-sm shadow-lg backdrop-blur-sm z-50">
+                <p className="font-mono text-xs text-slate-300 font-bold mb-1 shadow-[0_0_8px_rgba(245,158,11,0.3)]">{label}</p>
+                <div className="flex flex-col space-y-1">
+                    {payload.map((entry: any, index: number) => (
+                        <p key={index} className="font-mono text-xs flex justify-between gap-4" style={{ color: entry.color }}>
+                            <span>{entry.name}:</span>
+                            <span className="font-bold">${Number(entry.value).toFixed(2)}</span>
+                        </p>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const LineChart: React.FC<LineChartProps> = ({ 
     data, 
     showTrace = true, 
@@ -18,140 +38,93 @@ const LineChart: React.FC<LineChartProps> = ({
     onPointSelect,
     info
 }) => {
-    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
     const validData = useMemo(() => {
         if (!Array.isArray(data)) return [];
-        return data.filter(d => d && d.price != null);
+        return data.filter(d => d && d.price != null).map(d => ({
+            ...d,
+            upperConf: d.price * 1.02,
+            lowerConf: d.price * 0.98,
+        }));
     }, [data]);
 
     if (validData.length < 2) {
         return <div className="text-center text-slate-500 h-full flex items-center justify-center font-mono text-xs">Awaiting Predictive Stream Signal...</div>;
     }
 
-    const width = 500;
-    const height = 250;
-    const padding = 20;
-    const chartWidth = width - 2 * padding;
-    const chartHeight = height - 2 * padding;
-
-    const values = validData.map(d => d.price);
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    const range = max - min === 0 ? 1 : max - min;
-    
-    const yBuffer = range * 0.1;
-    const domainMax = max + yBuffer;
-    const domainMin = min - yBuffer;
-    const domainRange = Math.max(0.0001, domainMax - domainMin);
-
-    const getX = (index: number) => (index / (validData.length - 1)) * chartWidth + padding;
-    const getY = (price: number) => (height - padding) - ((price - domainMin) / domainRange) * chartHeight;
-
-    const points = validData.map((point, i) => `${getX(i)},${getY(point.price)}`).join(' ');
-
-    const areaPoints = [
-        `${getX(0)},${height - padding}`,
-        ...validData.map((point, i) => `${getX(i)},${getY(point.price)}`),
-        `${getX(validData.length - 1)},${height - padding}`
-    ].join(' ');
-
-    const confidencePath = useMemo(() => {
-        const upperPoints = validData.map((point, i) => `${getX(i)},${getY(point.price * 1.02)}`);
-        const lowerPoints = validData.map((point, i) => `${getX(i)},${getY(point.price * 0.98)}`).reverse();
-        return `${upperPoints.join(' ')} ${lowerPoints.join(' ')}`;
-    }, [validData, getX, getY]);
+    const minPrice = Math.min(...validData.map(d => d.lowerConf || d.price));
+    const maxPrice = Math.max(...validData.map(d => d.upperConf || d.price));
+    const domainPadding = (maxPrice - minPrice) * 0.1;
 
     return (
         <div className="relative w-full h-full group/chart">
             <ChartInfoOverlay info={info} />
             
-            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-                <defs>
-                    <linearGradient id="line-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
-                        <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
-                    </linearGradient>
-                    <filter id="glow-line" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                </defs>
-
-                {[...Array(6)].map((_, i) => {
-                    const y = padding + (chartHeight / 5) * i;
-                    return (
-                        <line key={`grid-${i}`} x1={padding} y1={y} x2={width - padding} y2={y} stroke="#1e293b" strokeWidth="1" />
-                    );
-                })}
-                {[...Array(6)].map((_, i) => {
-                    const x = padding + (chartWidth / 5) * i;
-                    return (
-                        <line key={`vgrid-${i}`} x1={x} y1={padding} x2={x} y2={height - padding} stroke="#1e293b" strokeWidth="1" strokeDasharray="2,4" />
-                    );
-                })}
-
-                {showConfidence && (
-                    <polygon points={confidencePath} fill="#f59e0b" fillOpacity="0.05" />
-                )}
-
-                <polygon points={areaPoints} fill="url(#line-gradient)" />
-
-                {showTrace && (
-                    <polyline
-                        points={points}
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        filter="url(#glow-line)"
-                        className="drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]"
+            <ResponsiveContainer width="100%" height="100%">
+                <AreaChart 
+                    data={validData} 
+                    margin={{ top: 20, right: 10, left: -20, bottom: 0 }}
+                    onClick={(e: any) => {
+                        if (e && e.activePayload && onPointSelect) {
+                            onPointSelect(e.activePayload[0].payload as ForecastPoint);
+                        }
+                    }}
+                >
+                    <defs>
+                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.5}/>
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                        </linearGradient>
+                        <filter id="glow-neon" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={true} horizontal={true} />
+                    <XAxis 
+                        dataKey="date" 
+                        stroke="#475569" 
+                        fontSize={10} 
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontFamily: 'monospace', fill: '#64748b' }}
+                        tickFormatter={(val) => val.split(' ')[0]} 
                     />
-                )}
+                    <YAxis 
+                        domain={[minPrice - domainPadding, maxPrice + domainPadding]} 
+                        stroke="#475569"
+                        fontSize={10}
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontFamily: 'monospace', fill: '#64748b' }}
+                        tickFormatter={(val) => `$${val.toFixed(0)}`}
+                    />
+                    <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#f59e0b', strokeWidth: 1, strokeDasharray: '4 4' }} />
 
-                {validData.map((point, i) => {
-                    const x = getX(i);
-                    const y = getY(point.price);
-                    const isHovered = hoveredIndex === i;
+                    {showConfidence && (
+                        <>
+                            <Area type="monotone" dataKey="upperConf" stroke="none" fill="#f59e0b" fillOpacity={0.05} activeDot={false} />
+                            <Area type="monotone" dataKey="lowerConf" stroke="none" fill="#000" fillOpacity={0.5} activeDot={false} />
+                        </>
+                    )}
 
-                    return (
-                        <g 
-                            key={`pt-${i}`} 
-                            onMouseEnter={() => setHoveredIndex(i)}
-                            onMouseLeave={() => setHoveredIndex(null)}
-                            onClick={() => onPointSelect && onPointSelect(point)}
-                            className="cursor-pointer"
-                        >
-                            {isHovered && <circle cx={x} cy={y} r={8} fill="#f59e0b" fillOpacity="0.3" filter="url(#glow-line)" />}
-                            
-                            <circle 
-                                cx={x} 
-                                cy={y} 
-                                r={isHovered ? 4 : 2} 
-                                fill="#fff" 
-                                stroke="#f59e0b"
-                                strokeWidth="2"
-                                className="transition-all duration-200 ease-out"
-                            />
-                            <circle cx={x} cy={y} r={10} fill="transparent" />
-                            
-                            {isHovered && (
-                                <g>
-                                    <line x1={x} y1={padding} x2={x} y2={height - padding} stroke="#f59e0b" strokeWidth="1" strokeDasharray="4,2" />
-                                    <rect x={x - 35} y={y - 45} width="70" height="30" rx="2" fill="#0f172a" stroke="#f59e0b" strokeWidth="1" />
-                                    <text x={x} y={y - 26} textAnchor="middle" fontSize="10" fill="#fbbf24" className="font-mono font-bold">
-                                        ${point.price.toFixed(2)}
-                                    </text>
-                                </g>
-                            )}
-                        </g>
-                    );
-                })}
-            </svg>
+                    <Area 
+                        type="monotone" 
+                        dataKey="price" 
+                        name="Projected Price"
+                        stroke={showTrace ? "#f59e0b" : "none"}
+                        strokeWidth={showTrace ? 2 : 0}
+                        fillOpacity={1}
+                        fill="url(#colorPrice)"
+                        filter="url(#glow-neon)"
+                        activeDot={{ r: 6, fill: '#fff', stroke: '#f59e0b', strokeWidth: 2 }}
+                        style={{ filter: showTrace ? 'drop-shadow(0 0 6px rgba(245,158,11,0.5))' : 'none' }}
+                    />
+                </AreaChart>
+            </ResponsiveContainer>
         </div>
     );
 };

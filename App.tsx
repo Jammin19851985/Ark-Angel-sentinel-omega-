@@ -10,6 +10,7 @@ import AlphaGauge from './components/AlphaGauge';
 import { QuantumMonitor } from './components/QuantumMonitor';
 import LiveWallpaper from './components/LiveWallpaper';
 import HolographicOverlay from './components/HolographicOverlay';
+import NeuralSyncOverlay from './components/NeuralSyncOverlay';
 import AvatarOrb from './components/AvatarOrb';
 import CinematicIntro from './components/CinematicIntro';
 import OnboardingTour from './components/OnboardingTour';
@@ -19,6 +20,12 @@ import { useAppStore } from './store/appStore';
 import { INITIAL_SUGGESTIONS, VIEW_SPECIFIC_SUGGESTIONS } from './constants';
 import { Message, ActiveView } from './types';
 import { sendMessageToSentinelA } from './services/geminiService';
+
+import { SovereignCommandCenter } from './components/SovereignCommandCenter';
+
+import HardwareController from './components/HardwareController';
+
+import GlobalFPSHUD from './components/GlobalFPSHUD';
 
 export default function App() {
     const { 
@@ -38,11 +45,7 @@ export default function App() {
         runSystem,
         initApp
     } = useAppContext();
-
-    useEffect(() => {
-        initApp();
-    }, [initApp]);
-
+    
     const [activeView, setActiveView] = useState<ActiveView>('nexus');
     const [focusMode, setFocusMode] = useState(false);
     const [showIntro, setShowIntro] = useState(true);
@@ -270,10 +273,14 @@ The system is now running at peak efficiency. All limiters have been removed.`;
 
     return (
         <>
+            <GlobalFPSHUD />
+            <div className="scanline-overlay"></div>
+            <div className="crt-vignette"></div>
             <LiveWallpaper />
             
             {showIntro && <CinematicIntro onComplete={handleIntroComplete} />}
             <HolographicOverlay isVisible={showHologram} onClose={handleHologramClose} />
+            <NeuralSyncOverlay />
             
             <OnboardingTour 
                 currentStepIndex={tourStep}
@@ -311,6 +318,7 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
                             
                             <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <HardwareController />
                                 <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <MarketWatch id="market-watch" />
                                 </div>
@@ -341,6 +349,7 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                             </div>
 
                             <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
+                                <SovereignCommandCenter />
                                 <QuantumMonitor />
                                 <div className="h-48 min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
                                     <AlphaGauge id="alpha-gauge" />

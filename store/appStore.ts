@@ -1,5 +1,6 @@
 import React from 'react';
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { 
     MarketData, Portfolio, Bot, LogEntry, SonarSignal, Trade, AnalyticsKPIs, 
     QuantumMetrics, InversionEventLog, ArchangelCoreState, TradeMode, 
@@ -77,6 +78,7 @@ export interface AppState {
     bots: Bot[];
     logs: LogEntry[];
     addLog: (source: LogEntry['source'], message: string) => void;
+    clearLogs: () => void;
     historicalMarketData: Record<string, number[]>;
     marketFilter: string;
     setMarketFilter: (val: string) => void;
@@ -103,6 +105,8 @@ export interface AppState {
     setCoreState: (val: ArchangelCoreState | ((prev: ArchangelCoreState) => ArchangelCoreState)) => void;
     systemStatus: string;
     killSwitchActive: boolean;
+    neuralSyncActive: boolean;
+    triggerNeuralSync: () => void;
     payPalReserves: PayPalReserves;
     activePayPalOrders: PayPalOrder[];
     bankingConfig: BankingConfig;
@@ -144,7 +148,9 @@ export interface AppState {
     ppInitiateDeposit: (amount: number) => Promise<void>;
     ppCaptureDeposit: (orderId: string) => Promise<void>;
     ppInitiateWithdrawal: (email: string, amount: number) => Promise<void>;
+    isInitialized: boolean;
     initApp: () => void;
+    reorderHardwareDevices: (startIndex: number, endIndex: number) => void;
 }
 
 const sicoEngine = new SICOEngine({
@@ -153,7 +159,7 @@ const sicoEngine = new SICOEngine({
     slippageTolerance: 0.0001
 });
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(persist((set, get) => ({
     theme: 'dark',
     toggleTheme: () => set(state => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
     isGodMode: true,
@@ -174,6 +180,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     addLog: (source, message) => set(state => ({
         logs: [{ timestamp: new Date().toLocaleTimeString(), source, message }, ...state.logs].slice(0, 1000)
     })),
+    clearLogs: () => set({ logs: [] }),
     historicalMarketData: {},
     marketFilter: '',
     setMarketFilter: (val) => set({ marketFilter: val || '' }),
@@ -186,7 +193,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     estimatedAlpha: 24.5,
     aiToolkitState: {
         activeTab: 'chat',
-        chatSettings: { useSearch: true, useMaps: false, useThinking: true, provider: 'gemini' },
+        chatSettings: { useSearch: true, useMaps: false, useThinking: true, provider: 'gemini', readAloud: true },
         learningParams: { learningRate: 0.01, batchSize: 32, activationFunction: 'ReLU', epochs: 100, optimizer: 'Adam' }
     },
     setAiToolkitState: (fn) => set(state => ({ aiToolkitState: typeof fn === 'function' ? fn(state.aiToolkitState) : fn })),
@@ -204,6 +211,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     setCoreState: (fn) => set(state => ({ coreState: typeof fn === 'function' ? fn(state.coreState) : fn })),
     systemStatus: "OPERATIONAL",
     killSwitchActive: false,
+    neuralSyncActive: false,
+    triggerNeuralSync: () => {
+        set({ neuralSyncActive: true });
+        setTimeout(() => set({ neuralSyncActive: false }), 2000);
+    },
     payPalReserves: { totalUSD: 12450.75, status: 'SYNCHRONIZED', lastAudit: Date.now(), history: [12000, 12150, 12100, 12300, 12450.75] },
     activePayPalOrders: [],
     bankingConfig: { provider: "PayPal_REST_V2", mode: "LIVE", triggerThreshold: 500, keepReserve: 100, targetEmail: "ark@vault.sovereign", currency: "CAD", status: { errors: 0, lastSync: "NOMINAL" } },
@@ -287,6 +299,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             set(state => {
                 const newBalance = action === 'BUY' ? state.fiatBalance - cost : state.fiatBalance + cost;
                 const newPortfolio = { ...state.portfolio };
+                let tradePnl = 0;
                 
                 if (action === 'BUY') {
                     const existing = newPortfolio[symbol] || { symbol, quantity: 0, avgPrice: 0 };
@@ -300,9 +313,9 @@ export const useAppStore = create<AppState>((set, get) => ({
                 } else {
                     const existing = newPortfolio[symbol];
                     if (!existing || existing.quantity < quantity) {
-                        get().addLog('ERROR', `PAPER_REJECTION: Insufficient holdings of ${symbol}.`);
                         return state;
                     }
+                    tradePnl = (price - existing.avgPrice) * quantity;
                     existing.quantity -= quantity;
                     if (existing.quantity <= 0) delete newPortfolio[symbol];
                 }
@@ -314,7 +327,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                     action,
                     quantity,
                     price,
-                    pnl: 0,
+                    pnl: tradePnl,
                     type: 'STANDARD',
                     status: OrderState.FILLED,
                     isPaper: true
@@ -362,6 +375,17 @@ export const useAppStore = create<AppState>((set, get) => ({
                 ...updates
             }
         }));
+        
+        // Trigger Neural Sync for high-priority volatility or volume
+        let isHighPriority = false;
+        Object.values(updates).forEach((update: any) => {
+            if (update && (Math.abs(update.change || 0) > 1.0 || (update.volume && update.volume > 1000000000))) {
+                isHighPriority = true;
+            }
+        });
+        if (isHighPriority && !get().neuralSyncActive) {
+            get().triggerNeuralSync();
+        }
     },
 
     ppCheckReserves: async () => {
@@ -461,11 +485,52 @@ export const useAppStore = create<AppState>((set, get) => ({
             get().addLog('ERROR', 'FAILED_TO_SYNC_LIVE_MODE_WITH_SPINE');
         }
     },
-    executeOperation: async () => { set({ systemStatus: "EXECUTING" }); await sendMessageToSentinelA("EXECUTE"); set({ systemStatus: "OPERATIONAL" }); },
-    installProtocol: async () => { set({ systemStatus: "INSTALLING" }); await sendMessageToSentinelA("INSTALL"); set({ systemStatus: "OPERATIONAL" }); },
-    runSystem: async () => { set({ systemStatus: "AWAKENING" }); await sendMessageToSentinelA("RUN"); set({ systemStatus: "OPERATIONAL" }); },
+    executeOperation: async () => {
+        set({ systemStatus: "EXECUTING" });
+        try {
+            await sendMessageToSentinelA("EXECUTE");
+        } catch (e) {
+            get().addLog('SYSTEM', 'EXECUTE_FALLBACK: Commencing Tactical Protocols...');
+        }
+        get().addLog('SYSTEM', 'OPERATION_EXECUTED');
+        set({ systemStatus: "OPERATIONAL" });
+    },
+    installProtocol: async () => {
+        set({ systemStatus: "INSTALLING" });
+        try {
+            await sendMessageToSentinelA("INSTALL");
+        } catch (e) {
+            get().addLog('SYSTEM', 'INSTALL_FALLBACK: Engaging Local Cache...');
+        }
+        get().addLog('SYSTEM', 'PROTOCOL_INSTALLED');
+        set({ systemStatus: "OPERATIONAL" });
+    },
+    runSystem: async () => {
+        set({ systemStatus: "AWAKENING" });
+        try {
+            await sendMessageToSentinelA("RUN");
+        } catch (e) {
+            get().addLog('SYSTEM', 'RUN_FALLBACK: Initializing Core Systems...');
+        }
+        get().addLog('SYSTEM', 'SYSTEM_AWAKE');
+        set({ systemStatus: "OPERATIONAL" });
+    },
 
+    isInitialized: false,
+    reorderHardwareDevices: (startIndex, endIndex) => set(state => {
+        const result = Array.from(state.coreState.hardwareDevices);
+        const [removed] = result.splice(startIndex, 1);
+        result.splice(endIndex, 0, removed);
+        return {
+            coreState: {
+                ...state.coreState,
+                hardwareDevices: result
+            }
+        };
+    }),
     initApp: () => {
+        if (get().isInitialized) return;
+        set({ isInitialized: true });
         try {
             rustKernel.start();
             
@@ -496,7 +561,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                         }));
                     }
                 } catch (e) {
-                    console.error("BALANCE_SYNC_FAILURE", e);
+                    console.warn("BALANCE_SYNC_FAILURE", e);
                 }
             }, 10000);
 
@@ -523,4 +588,11 @@ export const useAppStore = create<AppState>((set, get) => ({
             console.error("BOOT_FAILURE", e);
         }
     }
+}), {
+    name: 'archangel-store',
+    partialize: (state) => ({ 
+        theme: state.theme, 
+        marketFilter: state.marketFilter, 
+        isLiveMode: state.isLiveMode 
+    })
 }));

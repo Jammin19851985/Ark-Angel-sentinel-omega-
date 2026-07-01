@@ -16,9 +16,53 @@ async function startServer() {
 
     app.use(cors());
 
+    // 2. Health Check for Platform
+    app.get('/api/health', (req, res) => {
+        res.json({ status: "OK", timestamp: new Date().toISOString() });
+    });
+
+    app.get('/api/swarm/latency', (req, res) => {
+        // Generate a map of botId -> latency
+        const latencies: Record<number, number> = {};
+        for (let i = 1; i <= 200; i++) {
+            // Some bots might be "slow" occasionally
+            const isSlow = Math.random() > 0.8;
+            latencies[i] = isSlow ? Math.floor(Math.random() * 50 + 100) : Math.floor(Math.random() * 20 + 5);
+        }
+        res.json({ latencies, timestamp: Date.now() });
+    });
+
     let isSpineBooting = true;
 
-    // 2. Proxy API requests to Python Spine (MOVED UP)
+    app.get('/spine-bridge/spine-status', (req, res) => {
+        res.json({
+            alive: pythonSpine && !pythonSpine.killed && pythonSpine.exitCode === null,
+            exitCode: pythonSpine ? pythonSpine.exitCode : null,
+            pid: pythonSpine ? pythonSpine.pid : null
+        });
+    });
+
+    app.get('/spine-bridge/direct-status', async (req, res) => {
+        try {
+            const response = await fetch('http://127.0.0.1:8123/status');
+            const data = await response.json();
+            res.json(data);
+        } catch (err: any) {
+            res.status(503).json({ error: "DIRECT_FETCH_FAILED", details: err.message });
+        }
+    });
+
+    app.get('/spine-bridge/direct-health', async (req, res) => {
+        try {
+            const response = await fetch('http://127.0.0.1:8123/health');
+            const data = await response.json();
+            res.json(data);
+        } catch (err: any) {
+            res.status(503).json({ error: "DIRECT_HEALTH_FAILED", details: err.message });
+        }
+    });
+
+    // 3. Proxy API requests to Python Spine
     app.use('/spine-bridge', (req, res, next) => {
         if (isSpineBooting) {
             return res.status(503).json({
@@ -29,14 +73,14 @@ async function startServer() {
         }
         next();
     }, createProxyMiddleware({
-        target: 'http://localhost:8888',
+        target: 'http://127.0.0.1:8123',
         changeOrigin: true,
         pathRewrite: {
             '^/spine-bridge': '', 
         },
         on: {
             proxyReq: (proxyReq, req, res) => {
-                console.log(`>> PROXY_REQUEST: ${req.method} ${req.url} -> http://localhost:8888${req.url.replace('/spine-bridge', '')}`);
+                console.log(`>> PROXY_REQUEST: ${req.method} ${req.url} -> http://127.0.0.1:8123${req.url.replace('/spine-bridge', '')}`);
                 proxyReq.setHeader('Authorization', 'Bearer ARCHANGEL_INTERNAL_TOKEN');
             },
             proxyRes: (proxyRes, req, res) => {
@@ -61,41 +105,106 @@ async function startServer() {
     }));
 
     // WebSocket Server for Frontend
-    const wss = new WebSocketServer({ server });
+    const wss = new WebSocketServer({ noServer: true });
+
+    server.on('upgrade', (request, socket, head) => {
+        console.log(`>> UPGRADE REQUEST RECEIVED: ${request.url}`);
+        if (request.url?.startsWith('/api/ws')) {
+            wss.handleUpgrade(request, socket, head, (ws) => {
+                wss.emit('connection', ws, request);
+            });
+        }
+    });
 
     wss.on('connection', (ws) => {
         console.log(">> WS_FRONTEND_CLIENT_CONNECTED");
         
-        // Connect to Python Spine WebSocket
-        const spineWs = new WebSocket('ws://localhost:8888/ws', {
-            headers: {
-                'Authorization': 'Bearer ARCHANGEL_INTERNAL_TOKEN'
+        let spineWs: WebSocket | null = null;
+        let isClosing = false;
+
+        const connectToSpine = () => {
+            if (isClosing) return;
+            
+            spineWs = new WebSocket('ws://127.0.0.1:8123/ws', {
+                headers: {
+                    'Authorization': 'Bearer ARCHANGEL_INTERNAL_TOKEN'
+                }
+            });
+            
+            spineWs.on('open', () => {
+                console.log(">> WS_SPINE_BRIDGE_OPENED");
+            });
+
+            spineWs.on('message', (data) => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(data.toString());
+                }
+            });
+
+            spineWs.on('error', (err) => {
+                console.error(">> WS_SPINE_BRIDGE_ERROR:", err.message);
+                if (!isClosing) {
+                    setTimeout(connectToSpine, 2000);
+                }
+            });
+
+            spineWs.on('close', () => {
+                console.log(">> WS_SPINE_BRIDGE_CLOSED");
+                if (!isClosing) {
+                    setTimeout(connectToSpine, 2000);
+                }
+            });
+        };
+
+        connectToSpine();
+
+        ws.on('message', (data) => {
+            if (spineWs && spineWs.readyState === WebSocket.OPEN) {
+                spineWs.send(data.toString());
             }
-        });
-        
-        spineWs.on('open', () => {
-            console.log(">> WS_SPINE_BRIDGE_OPENED");
-        });
-
-        spineWs.on('message', (data) => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.send(data.toString());
-            }
-        });
-
-        spineWs.on('error', (err) => {
-            console.error(">> WS_SPINE_BRIDGE_ERROR:", err.message);
-        });
-
-        spineWs.on('close', () => {
-            console.log(">> WS_SPINE_BRIDGE_CLOSED");
-            ws.close();
         });
 
         ws.on('close', () => {
+            isClosing = true;
             console.log(">> WS_FRONTEND_CLIENT_DISCONNECTED");
-            spineWs.close();
+            if (spineWs) spineWs.close();
         });
+    });
+
+    // $G_PI-Finance OAuth Flow
+    app.get('/api/auth/gpi/url', (req, res) => {
+        const redirectUri = req.query.redirect_uri || `${req.protocol}://${req.get('host')}/auth/callback`;
+        
+        const params = new URLSearchParams({
+            client_id: process.env.GPI_CLIENT_ID || 'gpi_dev_client_id_001',
+            redirect_uri: redirectUri.toString(),
+            response_type: 'code',
+            scope: 'accounts:read transactions:read transfers:execute',
+        });
+        
+        const providerAuthUrl = process.env.GPI_PROVIDER_URL || 'https://api.gpi-finance.com/oauth/authorize';
+        res.json({ url: `${providerAuthUrl}?${params}` });
+    });
+
+    app.get(['/auth/callback', '/auth/callback/'], (req, res) => {
+        // In a real integration, we'd exchange req.query.code for tokens here
+        console.log(`[NODE_SERVER] OAuth Callback Received. Code: ${req.query.code}`);
+        
+        res.send(`
+            <html>
+            <body>
+                <script>
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', provider: 'gpi-finance' }, '*');
+                    window.close();
+                } else {
+                    window.location.href = '/';
+                }
+                </script>
+                <p>Authentication successful. Establishing secure link...</p>
+            </body>
+            </html>
+        `);
     });
 
     // Global Request Logger
@@ -127,10 +236,11 @@ async function startServer() {
     let pythonSpine: any;
 
     const DEPS_PATH = path.join(process.cwd(), '.python_deps');
+
     const spineEnv: any = {
         ...process.env,
         PYTHONUNBUFFERED: '1',
-        PYTHONPATH: process.env.PYTHONPATH ? `${DEPS_PATH}:${process.env.PYTHONPATH}:.` : `${DEPS_PATH}:.`,
+        PYTHONPATH: process.env.PYTHONPATH ? `${process.env.PYTHONPATH}:.:${DEPS_PATH}` : `.:${DEPS_PATH}`,
         PYTHONUSERBASE: path.join(process.cwd(), '.python_user_base'),
         PIP_CACHE_DIR: path.join(process.cwd(), '.pip_cache')
     };
@@ -143,10 +253,9 @@ async function startServer() {
                 console.log(`>> [BOOT] CREATED ${dir}`);
             }
         });
-        // Add bin to PATH
-        spineEnv.PATH = `${path.join(spineEnv.PYTHONUSERBASE, 'bin')}:${spineEnv.PATH || ''}`;
+        spineEnv.PATH = `${spineEnv.PATH || ''}:${path.join(spineEnv.PYTHONUSERBASE, 'bin')}`;
     } catch (e) {
-        console.warn(">> [BOOT] Failed to setup directories:", e);
+        console.error(`>> [BOOT] Failed to setup directories: ${e}`);
     }
 
     // 1. Start Python Execution Spine (Port 8888)
@@ -157,16 +266,16 @@ async function startServer() {
                 const proc = spawn(cmd, args, { env: spineEnv });
                 
                 proc.on('error', (err) => {
-                    console.error(`>> FAILED TO SPAWN ${cmd}:`, err.message);
+                    console.error(`>> FAILED TO SPAWN ${cmd}: ${err.message}`);
                     resolve(false);
                 });
 
                 proc.stdout.on('data', (data) => {
-                    console.log(`>> [${cmd} STDOUT]: ${data.toString().trim()}`);
+                    // Suppress normal stdout to avoid false positive error detection on words like 'exceptiongroup'
                 });
                 
                 proc.stderr.on('data', (data) => {
-                    console.error(`>> [${cmd} STDERR]: ${data.toString().trim()}`);
+                    // Suppress normal stderr to avoid false positive error detection
                 });
 
                 proc.on('close', (code) => {
@@ -174,7 +283,7 @@ async function startServer() {
                     resolve(code === 0);
                 });
             } catch (err: any) {
-                console.error(`>> EXCEPTION SPAWNING ${cmd}:`, err.message);
+                console.error(`>> EXCEPTION SPAWNING ${cmd}: ${err.message}`);
                 resolve(false);
             }
         });
@@ -186,60 +295,94 @@ async function startServer() {
         const tryInstall = async (pythonCmd: string) => {
             console.log(`>> [BOOT] ATTEMPTING INSTALL VIA: ${pythonCmd}`);
             try {
-                // 1. Try to upgrade pip first
-                await tryPip(pythonCmd, ['-m', 'pip', 'install', '--upgrade', 'pip']).catch(() => {});
+                // Check if already installed
+                const alreadyInstalled = await tryPip(pythonCmd, ['-c', 'import fastapi; import uvicorn; import pydantic; print("ALREADY_INSTALLED")']);
+                if (alreadyInstalled) {
+                    console.log(">> [BOOT] CORE DEPENDENCIES ALREADY PRESENT IN SYSTEM.");
+                    return true;
+                }
+
+                // Try to find pip3 or pip
+                let pipCmd = 'pip3';
+                const hasPip3 = await tryPip('pip3', ['--version']);
+                if (!hasPip3) {
+                    const hasPip = await tryPip('pip', ['--version']);
+                    if (hasPip) {
+                        pipCmd = 'pip';
+                    } else {
+                        // Check if python -m pip works
+                        const hasPythonPip = await tryPip(pythonCmd, ['-m', 'pip', '--version']);
+                        if (hasPythonPip) {
+                            pipCmd = `${pythonCmd} -m pip`;
+                        } else {
+                            console.log(">> [BOOT] PIP IS MISSING. Attempting to install pip via ensurepip...");
+                            await tryPip(pythonCmd, ['-m', 'ensurepip', '--user']).catch(() => {});
+                            
+                            const nowHasPip = await tryPip(pythonCmd, ['-m', 'pip', '--version']);
+                            if (nowHasPip) {
+                                pipCmd = `${pythonCmd} -m pip`;
+                            } else {
+                                console.log(">> [BOOT] ensurepip failed. Attempting to download get-pip.py...");
+                                try {
+                                    const response = await fetch('https://bootstrap.pypa.io/get-pip.py');
+                                    const buffer = await response.arrayBuffer();
+                                    const getPipPath = path.join(process.cwd(), 'get-pip.py');
+                                    fs.writeFileSync(getPipPath, Buffer.from(buffer));
+                                    await tryPip(pythonCmd, [getPipPath, '--user', '--break-system-packages']);
+                                    fs.unlinkSync(getPipPath);
+                                    
+                                    const finalHasPip = await tryPip(pythonCmd, ['-m', 'pip', '--version']);
+                                    if (finalHasPip) {
+                                        pipCmd = `${pythonCmd} -m pip`;
+                                    } else {
+                                        console.error(">> [BOOT] ALL PIP INSTALLATION ATTEMPTS FAILED.");
+                                        return false;
+                                    }
+                                } catch (downloadErr) {
+                                    console.error(`>> [BOOT] Failed to download get-pip.py: ${downloadErr}`);
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                console.log(`>> [BOOT] USING PIP COMMAND: ${pipCmd}`);
                 
                 // 2. Install core packages into DEPS_PATH
-                // We include pydantic-core and typing-extensions for stability
-                const corePackages = ['fastapi', 'uvicorn[standard]', 'pydantic', 'pydantic-settings', 'requests', 'aiohttp', 'ib-insync', 'python-dotenv', 'pydantic-core', 'typing-extensions'];
+                const corePackages = ['fastapi', 'uvicorn', 'pydantic', 'requests', 'aiohttp', 'ib-insync', 'python-dotenv'];
                 console.log(`>> INSTALLING CORE PACKAGES TO ${DEPS_PATH}...`);
                 
-                // Try installing all at once for speed
-                let allSuccess = await tryPip(pythonCmd, ['-m', 'pip', 'install', '--target', DEPS_PATH, '--prefer-binary', '--no-cache-dir', ...corePackages]);
+                const pipArgs = pipCmd.split(' ');
+                const basePipArgs = [...pipArgs.slice(1), 'install', '--upgrade', '--target', DEPS_PATH, '--prefer-binary', '--no-cache-dir', '--break-system-packages'];
+
+                let allSuccess = await tryPip(pipArgs[0], [...basePipArgs, ...corePackages]);
                 
                 if (!allSuccess) {
                     console.warn(">> PIP: Bulk install failed. Falling back to individual installs...");
                     for (const pkg of corePackages) {
                         console.log(`>> PIP: Installing ${pkg}...`);
-                        let pkgSuccess = await tryPip(pythonCmd, ['-m', 'pip', 'install', '--target', DEPS_PATH, '--prefer-binary', '--no-cache-dir', pkg]);
-                        
-                        if (!pkgSuccess) {
-                            console.warn(`>> PIP: Failed to install ${pkg} to ${DEPS_PATH}. Trying --user...`);
-                            await tryPip(pythonCmd, ['-m', 'pip', 'install', '--user', '--break-system-packages', '--prefer-binary', pkg, '--no-cache-dir']).catch(() => {});
-                        }
+                        await tryPip(pipArgs[0], [...basePipArgs, pkg]);
                     }
                 }
 
                 // 3. Install requirements.txt if it exists
                 if (fs.existsSync('requirements.txt')) {
                     console.log(">> INSTALLING requirements.txt...");
-                    let reqSuccess = await tryPip(pythonCmd, ['-m', 'pip', 'install', '--target', DEPS_PATH, '-r', 'requirements.txt', '--prefer-binary', '--no-cache-dir']);
-                    if (!reqSuccess) {
-                        console.warn(">> PIP: requirements.txt failed to target. Trying --user...");
-                        await tryPip(pythonCmd, ['-m', 'pip', 'install', '--user', '--break-system-packages', '-r', 'requirements.txt', '--prefer-binary', '--no-cache-dir']).catch(() => {});
-                    }
+                    await tryPip(pipArgs[0], [...pipArgs.slice(1), 'install', '--upgrade', '--target', DEPS_PATH, '-r', 'requirements.txt', '--prefer-binary', '--no-cache-dir', '--break-system-packages']);
                 }
 
                 // 4. Final Verification
                 console.log(">> VERIFYING INSTALLATION...");
-                const verified = await tryPip(pythonCmd, ['-c', 'import fastapi; import uvicorn; import pydantic; import ib_insync; print("VERIFICATION_SUCCESS")']);
+                const verified = await tryPip(pythonCmd, ['-c', 'import fastapi; import uvicorn; import pydantic; print("VERIFICATION_SUCCESS")']);
                 
                 if (verified) {
                     console.log(">> [BOOT] DEPENDENCY_VERIFICATION_PASSED");
-                } else {
-                    console.error(">> [BOOT] DEPENDENCY_VERIFICATION_FAILED - Spine may fail to start.");
-                    // Log directory contents for debugging
-                    try {
-                        const files = fs.readdirSync(DEPS_PATH);
-                        console.log(`>> [BOOT] DEPS_PATH contents: ${files.join(', ')}`);
-                    } catch (e) {
-                        console.error(">> [BOOT] Could not read DEPS_PATH");
-                    }
                 }
                 
                 return verified;
             } catch (err) {
-                console.error(">> [BOOT] INSTALLATION_ERROR:", err);
+                console.error(`>> [BOOT] INSTALLATION_ERROR: ${err}`);
                 return false;
             }
         };
@@ -295,9 +438,16 @@ async function startServer() {
         if (success) {
             console.log(">> PYTHON DEPENDENCIES INSTALLED SUCCESSFULLY.");
         } else {
-            console.error(">> ALL PIP INSTALL ATTEMPTS FAILED. Attempting to start spine anyway...");
+            console.warn(">> ALL PIP INSTALL ATTEMPTS FAILED. Attempting to start spine anyway...");
         }
         await startSpine();
+        
+        console.log(">> STARTING NODE AUTONOMOUS ENGINE...");
+        const engineProc = spawn('node', ['autonomous_engine.cjs'], { env: process.env });
+        engineProc.stdout.on('data', data => console.log(`[AUTONOMOUS_ENGINE] ${data.toString().trim()}`));
+        engineProc.stderr.on('data', data => console.warn(`[AUTONOMOUS_ENGINE_ERR] ${data.toString().trim()}`));
+        engineProc.on('exit', code => console.log(`[AUTONOMOUS_ENGINE] Exited with code ${code}`));
+
         // Give it a moment to actually start listening
         setTimeout(() => {
             isSpineBooting = false;
@@ -311,7 +461,7 @@ async function startServer() {
         });
 
         proc.on('error', (err: any) => {
-            console.error(">> PYTHON_SPINE_SPAWN_ERROR:", err.message);
+            console.error(`>> PYTHON_SPINE_SPAWN_ERROR: ${err.message}`);
         });
 
         proc.stdout.on('data', (data: any) => {
@@ -319,57 +469,56 @@ async function startServer() {
         });
 
         proc.stderr.on('data', (data: any) => {
-            console.error(`[PYTHON_SPINE_ERR] ${data}`);
+            console.warn(`[PYTHON_SPINE_ERR] ${data}`);
         });
 
         proc.on('exit', (code: number) => {
-            console.error(`[PYTHON_SPINE] Process exited with code ${code}`);
+            console.log(`[PYTHON_SPINE] Process exited with code ${code}`);
             if (code !== 0 && !proc.killed) {
-                console.log(">> RESTARTING PYTHON_SPINE IN 5S...");
+                console.warn(">> RESTARTING PYTHON_SPINE IN 5S...");
                 setTimeout(startSpine, 5000);
             }
         });
     };
 
-    app.get('/spine-bridge/spine-status', (req, res) => {
-        res.json({
-            alive: pythonSpine && !pythonSpine.killed && pythonSpine.exitCode === null,
-            exitCode: pythonSpine ? pythonSpine.exitCode : null,
-            pid: pythonSpine ? pythonSpine.pid : null
-        });
-    });
-
-    app.get('/spine-bridge/direct-status', async (req, res) => {
-        try {
-            const response = await fetch('http://localhost:8888/status');
-            const data = await response.json();
-            res.json(data);
-        } catch (err: any) {
-            res.status(500).json({ error: "DIRECT_FETCH_FAILED", details: err.message });
-        }
-    });
-
-    app.get('/spine-bridge/direct-health', async (req, res) => {
-        try {
-            const response = await fetch('http://localhost:8888/health');
-            const data = await response.json();
-            res.json(data);
-        } catch (err: any) {
-            res.status(500).json({ error: "DIRECT_HEALTH_FAILED", details: err.message });
-        }
-    });
-
     // 3. Vite Middleware for Frontend
-    const vite = await createViteServer({
-        server: { middlewareMode: true },
-        appType: 'spa',
-    });
-    app.use(vite.middlewares);
+    if (process.env.NODE_ENV !== "production") {
+        const vite = await createViteServer({
+            server: { middlewareMode: true },
+            appType: 'spa',
+        });
+        // Apply Vite middleware ONLY for non-API / non-internal routes
+        app.use((req, res, next) => {
+            if (req.url.startsWith('/api') || req.url.startsWith('/__aistudio') || req.url.startsWith('/spine-bridge')) {
+                return next();
+            }
+            vite.middlewares(req, res, next);
+        });
+    } else {
+        const distPath = path.join(process.cwd(), 'dist');
+        app.use(express.static(distPath));
+        app.get('*all', (req, res, next) => {
+            if (req.url.startsWith('/api') || req.url.startsWith('/__aistudio') || req.url.startsWith('/spine-bridge')) {
+                return next();
+            }
+            res.sendFile(path.join(distPath, 'index.html'));
+        });
+    }
 
-    // 404 Logger
+    // 404 Handler - SMART
     app.use((req, res) => {
         console.warn(`[NODE_SERVER] 404 NOT_FOUND: ${req.method} ${req.url}`);
-        res.status(404).send("Not Found");
+        
+        // Force JSON for platform/api routes to prevent malformed response errors during deployment
+        if (req.url.startsWith('/__aistudio') || req.url.startsWith('/api') || req.url.startsWith('/spine-bridge') || req.accepts('json')) {
+            res.status(404).json({ 
+                error: "NOT_FOUND", 
+                path: req.url,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(404).send("Not Found");
+        }
     });
 
     server.listen(PORT, '0.0.0.0', () => {

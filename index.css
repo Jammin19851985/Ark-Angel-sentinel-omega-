@@ -6,6 +6,11 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@property --bg-app { syntax: "<color>"; inherits: true; initial-value: #010101; }
+@property --bg-panel-border { syntax: "<color>"; inherits: true; initial-value: rgba(0, 243, 255, 0.15); }
+@property --text-main { syntax: "<color>"; inherits: true; initial-value: #e0e0e0; }
+@property --primary { syntax: "<color>"; inherits: true; initial-value: #00f3ff; }
+
 :root {
   --bg-dark: #010101;
   --bg-panel: #030304;
@@ -47,6 +52,7 @@ body {
   height: 100vh;
   width: 100vw;
   letter-spacing: 0.02em;
+  transition: all 0.5s ease-in-out, --bg-app 0.5s ease-in-out, --bg-panel-border 0.5s ease-in-out, --text-main 0.5s ease-in-out, --primary 0.5s ease-in-out;
 }
 
 body.agent-zero-active {
@@ -101,9 +107,38 @@ body.agent-zero-active {
 
 .scanline-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0, 0, 0, 0.1) 50%);
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0, 0, 0, 0.15) 50%);
   background-size: 100% 4px;
-  pointer-events: none; z-index: 999; opacity: 0.1;
+  pointer-events: none; z-index: 999; opacity: 0.15;
+}
+
+.crt-vignette {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at center, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none; z-index: 998;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes pulse-fast {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(0.98); }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
+
+.animate-pulse-fast {
+  animation: pulse-fast 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }

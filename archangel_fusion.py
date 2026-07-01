@@ -5,8 +5,8 @@ import logging
 import sqlite3
 import datetime
 import yfinance as yf
-import pandas as pd
-import numpy as np
+# import pandas as pd
+# import numpy as np
 import aiohttp
 from dataclasses import dataclass
 from typing import List, Optional
