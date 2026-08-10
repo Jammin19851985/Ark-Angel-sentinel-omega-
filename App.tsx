@@ -1,4 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
+const NewFeatureBadge = () => (
+    <div className="absolute -top-1.5 -right-1.5 z-[100] flex">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+        <div className="relative bg-amber-500 text-black text-[8px] md:text-[9px] font-bold px-1.5 py-0.5 rounded shadow-[0_0_15px_rgba(245,158,11,1)] border border-amber-200 tracking-widest uppercase">
+            NEW
+        </div>
+    </div>
+);
 import Header from './components/Header';
 import NavigationDeck from './components/NavigationDeck';
 import ViewManager from './components/ViewManager';
@@ -22,6 +31,7 @@ import { Message, ActiveView } from './types';
 import { sendMessageToSentinelA } from './services/geminiService';
 
 import { SovereignCommandCenter } from './components/SovereignCommandCenter';
+import OmniCoreAgent from './components/OmniCoreAgent';
 
 import HardwareController from './components/HardwareController';
 
@@ -317,17 +327,20 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                     {!focusMode ? (
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
                             
-                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
-                                <HardwareController />
-                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0 perspective-[2000px]">
+                                <div className="relative">
+                                    <NewFeatureBadge />
+                                    <HardwareController />
+                                </div>
+                                <div className="flex-[2] min-h-0 overflow-visible">
                                     <MarketWatch id="market-watch" />
                                 </div>
-                                <div className="flex-[3] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                <div className="flex-[3] min-h-0 overflow-visible">
                                     <PortfolioDisplay id="portfolio-overview" />
                                 </div>
                             </div>
 
-                            <div className="col-span-1 lg:col-span-6 xl:col-span-8 h-full min-h-0 flex flex-col relative rounded-lg shadow-2xl border border-slate-800 bg-black/80 backdrop-blur-xl overflow-hidden">
+                            <div className="col-span-1 lg:col-span-6 xl:col-span-8 h-full min-h-0 flex flex-col relative tech-panel holographic-panel overflow-hidden">
                                 <ViewManager 
                                     activeView={activeView} 
                                     messages={messages}
@@ -348,23 +361,26 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                                 </div>
                             </div>
 
-                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0">
-                                <SovereignCommandCenter />
-                                <QuantumMonitor />
-                                <div className="h-48 min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
-                                    <AlphaGauge id="alpha-gauge" />
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0 perspective-[2000px]">
+                                <div className="relative">
+                                    <NewFeatureBadge />
+                                    <SovereignCommandCenter />
                                 </div>
-                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                <div className="flex-[4] min-h-0 overflow-visible relative">
+                                    <NewFeatureBadge />
+                                    <OmniCoreAgent id="omnicore-agent" />
+                                </div>
+                                <div className="flex-[2] min-h-0 overflow-visible">
                                     <SwarmVisualizer id="swarm-visualizer" />
                                 </div>
-                                <div className="flex-[2] min-h-0 rounded-lg shadow-lg border border-slate-800 bg-black/60 backdrop-blur-md overflow-hidden">
+                                <div className="flex-[2] min-h-0 overflow-visible">
                                     <SystemLog id="system-log" />
                                 </div>
                             </div>
 
                         </div>
                     ) : (
-                        <div className="h-full w-full rounded-lg shadow-2xl border border-slate-800 bg-black/90 backdrop-blur-xl overflow-hidden">
+                        <div className="h-full w-full tech-panel holographic-panel overflow-hidden">
                              <ViewManager 
                                 activeView={activeView} 
                                 messages={messages}

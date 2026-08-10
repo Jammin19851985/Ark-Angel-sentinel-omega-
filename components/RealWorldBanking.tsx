@@ -82,8 +82,12 @@ export const RealWorldBanking: React.FC = () => {
                 if (integrationDoc.exists() && integrationDoc.data().status === 'connected') {
                     setIsConnected(true);
                 }
-            } catch (error) {
-                console.error("Failed to check integration status", error);
+            } catch (error: any) {
+                if (error?.message?.includes('offline') || error?.code === 'unavailable') {
+                    console.warn("[BANKING] Operating in offline mode. Firestore integration check deferred.");
+                } else {
+                    console.warn("Failed to check integration status:", error?.message || error);
+                }
             }
         });
         

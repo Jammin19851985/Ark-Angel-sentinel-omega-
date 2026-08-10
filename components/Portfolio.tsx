@@ -4,6 +4,7 @@ import { Holding } from '../types';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 import { Sparkline } from './charts/Sparkline';
+import PriceTrendTooltip from './charts/PriceTrendTooltip';
 
 interface PortfolioDisplayProps {
     id: string;
@@ -167,7 +168,7 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
     };
 
     return (
-        <div id={id} className="tech-panel p-3 flex flex-col font-mono h-full bg-black/60">
+        <div id={id} className="tech-panel holographic-panel p-3 flex flex-col font-mono h-full bg-black/60">
             <div className="flex justify-between items-center mb-3">
                 <h2 className="micro-label">// ASSET_LEDGER</h2>
                 <div className="flex items-center gap-2">
@@ -275,8 +276,10 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                                     onDragOver={handleDragOver}
                                     onDrop={(e) => handleDrop(e, index)}
                                     onDragEnd={handleDragEnd}
+                                    onMouseEnter={() => setHoverIndex(index)}
+                                    onMouseLeave={() => setHoverIndex(null)}
                                     className={`grid grid-cols-12 gap-1 text-slate-300 items-center p-1.5 rounded-sm border transition-all relative group cursor-grab active:cursor-grabbing
-                                        ${draggedIndex === index ? 'opacity-30 border-dashed border-slate-600' : 'border-slate-800/50 bg-[#08080a] hover:border-slate-600'}
+                                        ${draggedIndex === index ? 'opacity-30 border-dashed border-slate-600' : 'border-slate-800/50 bg-[#08080a] hover:border-slate-600 hover:bg-white/5'}
                                     `}
                                 >
                                     {/* Drag Handle Overlay (Visible on Hover) */}
@@ -312,6 +315,10 @@ const PortfolioDisplay: React.FC<PortfolioDisplayProps> = ({ id }) => {
                                             {pnlPercent.toFixed(2)}%
                                         </span>
                                     </div>
+
+                                    {hoverIndex === index && history.length > 1 && (
+                                        <PriceTrendTooltip history={history} />
+                                    )}
                                 </div>
                             );
                         })

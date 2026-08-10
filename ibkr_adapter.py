@@ -12,6 +12,8 @@ except ImportError:
     HAS_IB = False
 
 logger = logging.getLogger("IBKR_ADAPTER")
+# Suppress noisy ib_insync library connection logging
+logging.getLogger("ib_insync").setLevel(logging.CRITICAL)
 
 class IBKRAdapter:
     def __init__(self):
@@ -25,17 +27,48 @@ class IBKRAdapter:
         self.client_id = client_id
         logger.info(f"Connecting to IBKR Gateway at {host}:{port} (ID: {client_id})...")
         
-        if HAS_IB and self.ib is None:
+        if HAS_IB:
             try:
+                # Force standard asyncio event loop alignment inside current execution context
+                loop = asyncio.get_running_loop()
+                asyncio.set_event_loop(loop)
+                util.patchAsyncio()
+                logger.info("Aligned and patched asyncio event loop.")
+            except Exception as e:
+                logger.error(f"Failed to patch asyncio event loop: {e}")
+
+            try:
+                # Disconnect any legacy IB instance before creating a fresh one bound to the active loop
+                if self.ib is not None:
+                    try:
+                        self.ib.disconnect()
+                    except:
+                        pass
                 self.ib = IB()
             except Exception as e:
-                logger.error(f"Failed to initialize IB instance: {e}")
+                logger.error(f"Failed to initialize fresh IB instance: {e}")
                 self.ib = None
 
         if not HAS_IB or self.ib is None:
             logger.warning("ib_insync missing or failed to init. Engaging SHADOW_MOCK mode.")
 
             self.connected = False # Not truly connected to a gateway
+            self.is_mock = True
+            return
+
+        # Pre-check if TCP port is open to avoid noisy connection-refused errors in third-party lib
+        port_open = False
+        try:
+            reader, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=2.0)
+            writer.close()
+            await writer.wait_closed()
+            port_open = True
+        except Exception:
+            port_open = False
+
+        if not port_open:
+            logger.info(f"Port {port} on {host} is closed/unreachable. Activating SHADOW_MOCK engine safely.")
+            self.connected = False
             self.is_mock = True
             return
 
@@ -143,12 +176,13 @@ class IBKRAdapter:
 
             trade = self.ib.placeOrder(contract, order)
             
+            import time
             # Async wait for fill or rejection
             timeout = 60.0 # Increased timeout for real execution
-            start_time = asyncio.get_event_loop().time()
+            start_time = time.time()
             
             while not trade.isDone():
-                if asyncio.get_event_loop().time() - start_time > timeout:
+                if time.time() - start_time > timeout:
                     # Don't cancel, just report timeout. The order might still fill.
                     logger.warning(f"Order {trade.order.orderId} timed out waiting for fill.")
                     return f"PENDING_{trade.order.orderId}"

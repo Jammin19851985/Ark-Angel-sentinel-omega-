@@ -8,17 +8,94 @@ import path from 'path';
 import fs from 'fs';
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
+import { GoogleGenAI } from '@google/genai';
 
 async function startServer() {
     const app = express();
     const PORT = 3000;
     const server = createServer(app);
 
+    let pythonSpine: any = null;
+    let activePythonCmd: string | null = null;
+    let isSpineBooting = true;
+
     app.use(cors());
 
     // 2. Health Check for Platform
     app.get('/api/health', (req, res) => {
         res.json({ status: "OK", timestamp: new Date().toISOString() });
+    });
+
+    // Gemini API Secure Server-Side Proxy
+    let aiInstance: any = null;
+    const getServerAi = () => {
+        if (!aiInstance) {
+            const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+            if (!apiKey) {
+                console.warn(">> [GEMINI_PROXY] Warning: GEMINI_API_KEY is not defined in server environment variables.");
+            }
+            aiInstance = new GoogleGenAI({ apiKey });
+        }
+        return aiInstance;
+    };
+
+    app.post('/api/gemini/proxy', express.json(), async (req, res) => {
+        try {
+            const { method, model, contents, config, prompt, image, aspectRatio } = req.body;
+            const ai = getServerAi();
+            
+            if (method === 'generateContent') {
+                let response;
+                const modelsToTry = Array.from(new Set([model || 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash-lite']));
+                let lastError: any = null;
+
+                for (const candidateModel of modelsToTry) {
+                    try {
+                        response = await ai.models.generateContent({
+                            model: candidateModel,
+                            contents,
+                            config
+                        });
+                        lastError = null;
+                        break;
+                    } catch (err: any) {
+                        lastError = err;
+                        const errStr = String(err?.message || err || '');
+                        const isQuota = errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota') || err?.status === 'RESOURCE_EXHAUSTED';
+                        if (isQuota) {
+                            console.warn(`>> [GEMINI_PROXY] Quota/Rate limit on ${candidateModel}, trying next model fallback...`);
+                            continue;
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
+
+                if (response) {
+                    return res.json({ success: true, data: response });
+                } else {
+                    console.warn(">> [GEMINI_PROXY] All candidate models exhausted due to rate limits/quota.");
+                    return res.status(429).json({
+                        success: false,
+                        error: "Quota or rate limit exceeded across all available Gemini models.",
+                        isQuotaExceeded: true
+                    });
+                }
+            } else if (method === 'generateVideos') {
+                let operation = await ai.models.generateVideos({
+                    model: model || 'veo-3.1-fast-generate-preview',
+                    prompt,
+                    image,
+                    config: config || { numberOfVideos: 1, resolution: '720p', aspectRatio }
+                });
+                return res.json({ success: true, data: operation });
+            } else {
+                return res.status(400).json({ success: false, error: `Unsupported method: ${method}` });
+            }
+        } catch (error: any) {
+            console.error(">> [GEMINI_PROXY_ERROR]:", error);
+            return res.status(500).json({ success: false, error: error.message || String(error) });
+        }
     });
 
     app.get('/api/swarm/latency', (req, res) => {
@@ -32,7 +109,20 @@ async function startServer() {
         res.json({ latencies, timestamp: Date.now() });
     });
 
-    let isSpineBooting = true;
+    app.get('/api/telemetry-stream', (req, res) => {
+        const logPath = path.join(process.cwd(), 'telemetry_stream', 'market_shifts.log');
+        if (fs.existsSync(logPath)) {
+            try {
+                const content = fs.readFileSync(logPath, 'utf8');
+                const lines = content.split('\n').filter(Boolean);
+                res.json({ status: "ACTIVE", logs: lines.slice(-100) });
+            } catch (err: any) {
+                res.status(500).json({ status: "ERROR", error: err.message });
+            }
+        } else {
+            res.json({ status: "INACTIVE", logs: [] });
+        }
+    });
 
     app.get('/spine-bridge/spine-status', (req, res) => {
         res.json({
@@ -233,7 +323,6 @@ async function startServer() {
     });
 
     console.log(">> INITIATING ARCHANGEL OMEGA MULTI-KERNEL BOOT...");
-    let pythonSpine: any;
 
     const DEPS_PATH = path.join(process.cwd(), '.python_deps');
 
@@ -259,28 +348,41 @@ async function startServer() {
     }
 
     // 1. Start Python Execution Spine (Port 8888)
-    const tryPip = (cmd: string, args: string[]): Promise<boolean> => {
+    const tryPip = (cmd: string, args: string[], timeoutMs = 15000): Promise<boolean> => {
         return new Promise((resolve) => {
             console.log(`>> EXECUTING: ${cmd} ${args.join(' ')}`);
             try {
                 const proc = spawn(cmd, args, { env: spineEnv });
+                let settled = false;
+
+                const timer = setTimeout(() => {
+                    if (!settled) {
+                        settled = true;
+                        console.warn(`>> TIMEOUT (${timeoutMs}ms) EXECUTING: ${cmd} ${args.join(' ')}`);
+                        try { proc.kill(); } catch (e) {}
+                        resolve(false);
+                    }
+                }, timeoutMs);
                 
                 proc.on('error', (err) => {
-                    console.error(`>> FAILED TO SPAWN ${cmd}: ${err.message}`);
-                    resolve(false);
+                    if (!settled) {
+                        settled = true;
+                        clearTimeout(timer);
+                        console.error(`>> FAILED TO SPAWN ${cmd}: ${err.message}`);
+                        resolve(false);
+                    }
                 });
 
-                proc.stdout.on('data', (data) => {
-                    // Suppress normal stdout to avoid false positive error detection on words like 'exceptiongroup'
-                });
-                
-                proc.stderr.on('data', (data) => {
-                    // Suppress normal stderr to avoid false positive error detection
-                });
+                proc.stdout.on('data', (data) => {});
+                proc.stderr.on('data', (data) => {});
 
                 proc.on('close', (code) => {
-                    console.log(`>> ${cmd} exited with code ${code}`);
-                    resolve(code === 0);
+                    if (!settled) {
+                        settled = true;
+                        clearTimeout(timer);
+                        console.log(`>> ${cmd} exited with code ${code}`);
+                        resolve(code === 0);
+                    }
                 });
             } catch (err: any) {
                 console.error(`>> EXCEPTION SPAWNING ${cmd}: ${err.message}`);
@@ -391,6 +493,7 @@ async function startServer() {
         let success = false;
         const hasPython3 = await tryPip('python3', ['--version']);
         if (hasPython3) {
+            activePythonCmd = 'python3';
             success = await tryInstall('python3');
         }
         
@@ -398,6 +501,7 @@ async function startServer() {
         if (!success) {
             const hasPython = await tryPip('python', ['--version']);
             if (hasPython) {
+                activePythonCmd = 'python';
                 success = await tryInstall('python');
             }
         }
@@ -407,6 +511,10 @@ async function startServer() {
 
     const startSpine = async () => {
         console.log(">> STARTING PYTHON EXECUTION SPINE...");
+        if (!activePythonCmd) {
+            console.warn(">> SKIPPING PYTHON SPINE BOOT: NO PYTHON INTERPRETER FOUND.");
+            return;
+        }
         
         const trySpawn = (cmd: string, args: string[]) => {
             return new Promise((resolve) => {
@@ -420,17 +528,12 @@ async function startServer() {
             });
         };
 
-        let proc = await trySpawn('python3', ['server.py']);
-        if (!proc) {
-            console.warn(">> python3 failed, trying python...");
-            proc = await trySpawn('python', ['server.py']);
-        }
-
+        let proc = await trySpawn(activePythonCmd, ['server.py']);
         if (proc) {
             pythonSpine = proc;
             setupSpineHandlers(pythonSpine);
         } else {
-            console.error(">> FAILED TO START PYTHON SPINE WITH BOTH python3 AND python.");
+            console.error(`>> FAILED TO START PYTHON SPINE WITH ${activePythonCmd}.`);
         }
     };
 
@@ -447,6 +550,18 @@ async function startServer() {
         engineProc.stdout.on('data', data => console.log(`[AUTONOMOUS_ENGINE] ${data.toString().trim()}`));
         engineProc.stderr.on('data', data => console.warn(`[AUTONOMOUS_ENGINE_ERR] ${data.toString().trim()}`));
         engineProc.on('exit', code => console.log(`[AUTONOMOUS_ENGINE] Exited with code ${code}`));
+        engineProc.on('error', err => console.warn(`[AUTONOMOUS_ENGINE_ERR] Failed to start: ${err.message}`));
+
+        console.log(">> STARTING PYTHON OMNICORE ENGINE...");
+        if (activePythonCmd) {
+            const omnicoreProc = spawn(activePythonCmd, ['scripts/ark_angel_omnicore.py', '--daemon'], { env: process.env });
+            omnicoreProc.stdout.on('data', data => console.log(`[OMNICORE] ${data.toString().trim()}`));
+            omnicoreProc.stderr.on('data', data => console.warn(`[OMNICORE_ERR] ${data.toString().trim()}`));
+            omnicoreProc.on('exit', code => console.log(`[OMNICORE] Exited with code ${code}`));
+            omnicoreProc.on('error', err => console.warn(`[OMNICORE_ERR] Failed to start: ${err.message}`));
+        } else {
+            console.warn(">> SKIPPING PYTHON OMNICORE ENGINE: NO PYTHON INTERPRETER FOUND.");
+        }
 
         // Give it a moment to actually start listening
         setTimeout(() => {
@@ -526,9 +641,23 @@ async function startServer() {
     });
 
     // Cleanup on exit
-    process.on('SIGINT', () => {
-        pythonSpine.kill();
-        process.exit();
+    const cleanup = () => {
+        console.log(">> SERVER_SHUTTING_DOWN");
+        if (pythonSpine && typeof pythonSpine.kill === 'function') {
+            try { pythonSpine.kill(); } catch (e) {}
+        }
+        process.exit(0);
+    };
+
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+
+    process.on('uncaughtException', (err) => {
+        console.error('>> UNCAUGHT_EXCEPTION:', err);
+    });
+
+    process.on('unhandledRejection', (reason) => {
+        console.error('>> UNHANDLED_REJECTION:', reason);
     });
 }
 

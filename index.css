@@ -65,12 +65,62 @@ body.agent-zero-active {
 
 .tech-panel {
   position: relative;
-  background: #0a0a0b; /* Dark matte */
-  border: 1px solid rgba(255, 255, 255, 0.05); 
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-  backdrop-filter: blur(12px);
+  background: rgba(10, 10, 11, 0.4); /* Dark matte with more transparency for hologram */
+  border: 1px solid rgba(0, 243, 255, 0.2); 
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 15px rgba(0, 243, 255, 0.05);
+  backdrop-filter: blur(16px);
   border-radius: 8px;
   overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.tech-panel:hover {
+  transform: translateY(-2px) scale(1.01) perspective(1000px) rotateX(1deg) rotateY(-1deg);
+  box-shadow: 0 15px 35px rgba(0, 243, 255, 0.2), inset 0 0 25px rgba(0, 243, 255, 0.1);
+  border-color: rgba(0, 243, 255, 0.4);
+  z-index: 10;
+}
+
+/* Holographic accents */
+.tech-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(to right, transparent, rgba(0, 243, 255, 0.1), transparent);
+  transform: skewX(-25deg);
+  animation: hologram-sweep 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes hologram-sweep {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.tech-panel.holographic-panel {
+  background: rgba(0, 10, 15, 0.6);
+  border: 1px solid rgba(0, 243, 255, 0.4);
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.1);
+  animation: hologram-flicker 4s infinite alternate;
+}
+
+.shadow-cyan {
+  text-shadow: 0 0 5px rgba(0, 243, 255, 0.8), 0 0 10px rgba(0, 243, 255, 0.4);
+}
+
+.shadow-text {
+  text-shadow: 0 0 8px currentColor;
+}
+
+@keyframes hologram-flicker {
+  0%, 100% { opacity: 1; }
+  5%, 15% { opacity: 0.95; }
+  10% { opacity: 0.85; }
+  90% { opacity: 1; }
+  92% { opacity: 0.9; }
+  95% { opacity: 1; }
 }
 
 /* Dashed radial track effect for gauges */

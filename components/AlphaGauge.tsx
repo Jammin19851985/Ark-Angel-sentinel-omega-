@@ -44,7 +44,7 @@ const AlphaGauge: React.FC<AlphaGaugeProps> = ({ id }) => {
     const valueAngle = startAngle + (valuePercentage * range);
 
     return (
-        <div id={id} className="tech-panel p-4 flex flex-col h-full bg-black/60">
+        <div id={id} className="tech-panel holographic-panel p-4 flex flex-col h-full bg-black/60">
             <div className="flex justify-between items-center mb-3">
                 <h2 className="micro-label">// ESTIMATED ALPHA</h2>
                 <LivePaperBadge />

@@ -97,7 +97,7 @@ export const SovereignCommandCenter: React.FC = () => {
     }, [systemStatus]);
 
     return (
-        <div className="bg-black/60 border border-slate-800 rounded-sm p-4 font-mono flex flex-col space-y-4 relative overflow-hidden group hover:border-cyan-500/30 transition-colors duration-500 shadow-2xl">
+        <div className="tech-panel holographic-panel border border-slate-800 rounded-sm p-4 font-mono flex flex-col space-y-4 relative overflow-hidden group hover:border-cyan-500/30 transition-colors duration-500 shadow-2xl">
             <div className="absolute top-0 left-0 w-full h-[1px] bg-cyan-500/10 animate-scan pointer-events-none" />
             
             <div className="flex justify-between items-center border-b border-white/5 pb-2">
@@ -159,50 +159,50 @@ export const SovereignCommandCenter: React.FC = () => {
             <div className="flex flex-col gap-3">
                 {/* Global Execution */}
                 <button 
-                    onClick={executeAllProtocols}
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); executeAllProtocols(); }}
                     disabled={systemStatus !== 'OPERATIONAL' || killSwitchActive}
-                    className="flex items-center justify-center gap-3 bg-cyan-950/20 border border-cyan-900/50 hover:bg-cyan-500 hover:text-black transition-all p-3 rounded group/btn disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex flex-col items-center justify-center bg-black/40 border border-slate-800/80 hover:bg-white/5 hover:border-slate-500 transition-all p-3 rounded group/btn disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <Zap className={`w-4 h-4 ${systemStatus === 'UPGRADING' ? 'animate-spin' : 'group-hover/btn:animate-pulse'}`} />
-                    <div className="flex flex-col items-start">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Execute All Protocols</span>
-                        <span className="text-[7px] opacity-70 uppercase">Upgrade & Launch Sequence</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 group-hover/btn:text-white uppercase tracking-widest transition-colors">Execute All Protocols</span>
                     </div>
+                    <span className="text-[7px] text-slate-600 uppercase mt-0.5">Upgrade & Launch Sequence</span>
                 </button>
 
                 {/* Manual Trade */}
                 <button 
                     onClick={handleManualTrade}
                     disabled={killSwitchActive}
-                    className={`flex items-center justify-center gap-3 border transition-all p-3 rounded group/btn disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`flex flex-col items-center justify-center border transition-all p-3 rounded group/btn disabled:opacity-50 disabled:cursor-not-allowed ${
                         tradeConfirmState === 'EXECUTED' 
                             ? 'bg-neon-green/20 border-neon-green/50 text-neon-green'
                             : tradeConfirmState === 'CONFIRMING'
                                 ? 'bg-amber-950/40 border-amber-500 text-amber-500 animate-pulse'
-                                : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-white/5 hover:text-white hover:border-slate-500'
+                                : 'bg-black/40 border-slate-800/80 text-slate-400 hover:bg-white/5 hover:text-white hover:border-slate-500'
                     }`}
                 >
-                    <ActivityIcon className={`w-4 h-4 ${tradeConfirmState === 'CONFIRMING' ? 'animate-bounce' : ''}`} />
-                    <div className="flex flex-col items-start">
-                        <span className="text-[10px] font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-2">
+                        <ActivityIcon className={`w-3.5 h-3.5 ${tradeConfirmState === 'CONFIRMING' ? 'animate-bounce' : 'text-slate-500 group-hover/btn:text-white transition-colors'}`} />
+                        <span className="text-[10px] font-bold uppercase tracking-widest transition-colors group-hover/btn:text-white">
                             {tradeConfirmState === 'EXECUTED' ? 'TRADE EXECUTED' : tradeConfirmState === 'CONFIRMING' ? 'CONFIRM TRADE?' : 'MANUAL SCALP'}
                         </span>
-                        <span className="text-[7px] opacity-70 uppercase">
-                            {tradeConfirmState === 'EXECUTED' ? 'SUCCESS' : tradeConfirmState === 'CONFIRMING' ? 'CLICK AGAIN TO EXECUTE' : 'FORCE EXECUTION'}
-                        </span>
                     </div>
+                    <span className="text-[7px] text-slate-600 uppercase mt-0.5">
+                        {tradeConfirmState === 'EXECUTED' ? 'SUCCESS' : tradeConfirmState === 'CONFIRMING' ? 'CLICK AGAIN TO EXECUTE' : 'FORCE EXECUTION'}
+                    </span>
                 </button>
 
                 {/* Kill Switch */}
                 <button 
                     onClick={triggerKillSwitch}
-                    className={`flex items-center justify-center gap-3 border transition-all p-3 rounded group/btn ${killSwitchActive ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-500 hover:bg-emerald-500 hover:text-black' : 'bg-red-950/20 border-red-900/50 text-red-500 hover:bg-red-500 hover:text-black'}`}
+                    className={`flex flex-col items-center justify-center border transition-all p-3 rounded group/btn ${killSwitchActive ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-500 hover:bg-emerald-500 hover:text-black' : 'bg-black/40 border-red-900/30 text-red-500 hover:bg-red-950/40 hover:border-red-500/50'}`}
                 >
-                    <Lock className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-                    <div className="flex flex-col items-start">
+                    <div className="flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />
                         <span className="text-[10px] font-bold uppercase tracking-widest">{killSwitchActive ? 'Disengage Kill Switch' : 'Emergency Kill Switch'}</span>
-                        <span className="text-[7px] opacity-70 uppercase">{killSwitchActive ? 'Resume Operations' : 'Halt All Execution'}</span>
                     </div>
+                    <span className="text-[7px] text-red-900/70 uppercase mt-0.5">{killSwitchActive ? 'Resume Operations' : 'Halt All Execution'}</span>
                 </button>
             </div>
 

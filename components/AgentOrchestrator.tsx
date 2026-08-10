@@ -224,7 +224,7 @@ const AgentOrchestrator: React.FC<AgentOrchestratorProps> = ({
     };
 
     return (
-        <div id={id} className="tech-panel flex flex-col h-full overflow-hidden relative">
+        <div id={id} className="tech-panel holographic-panel flex flex-col h-full overflow-hidden relative">
             {/* Global Cascade Visual Overlays */}
             {systemStatus.includes("CASCADE") && (
                 <div className="absolute inset-0 z-50 pointer-events-none border-4 border-amber-500/50 animate-pulse bg-amber-500/5 backdrop-blur-[2px]">

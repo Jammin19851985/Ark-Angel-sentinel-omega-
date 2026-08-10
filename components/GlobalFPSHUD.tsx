@@ -27,7 +27,7 @@ const GlobalFPSHUD: React.FC = () => {
     }, []);
 
     return (
-        <div className="fixed top-2 right-2 pointer-events-none z-[1000] flex gap-2 font-mono text-[8px] uppercase tracking-widest text-slate-500 opacity-80 backdrop-blur-sm bg-black/40 px-2 py-1 rounded border border-slate-800">
+        <div className="fixed top-14 right-4 pointer-events-none z-[1000] flex gap-2 font-mono text-[8px] uppercase tracking-widest text-slate-500 opacity-80 backdrop-blur-sm bg-black/40 px-2 py-1 rounded border border-slate-800">
             <div className="flex gap-1 items-center">
                 <span className={fps > 45 ? 'text-neon-green' : fps > 30 ? 'text-amber-400' : 'text-red-500'}>
                     FPS {fps}

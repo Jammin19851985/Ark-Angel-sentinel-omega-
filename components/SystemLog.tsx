@@ -92,6 +92,37 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
         document.body.removeChild(link);
     };
 
+    const handleDownloadReport = () => {
+        const timestamp = new Date().toISOString();
+        const reportHeader = `=================================================================\n`
+            + `               ARKANGEL OMEGA - SYSTEM LOG SESSION REPORT       \n`
+            + `=================================================================\n`
+            + `Report Generated: ${timestamp}\n`
+            + `Total Log Activity Records: ${logs.length}\n`
+            + `Active Log Filter: ${activeFilter}\n`
+            + `Search Query Filter: ${searchQuery || 'None'}\n`
+            + `-----------------------------------------------------------------\n\n`
+            + `SESSION ACTIVITY LOG ENTRIES:\n`
+            + `-----------------------------------------------------------------\n`;
+        const reportBody = filteredLogs.length > 0 
+            ? filteredLogs.map(e => `[${e.timestamp}] [${e.source.padEnd(12)}] ${e.message}`).join('\n')
+            : 'No log entries match the current filter criteria.';
+        const reportFooter = `\n\n=================================================================\n`
+            + `                       END OF SYSTEM REPORT                      \n`
+            + `=================================================================\n`;
+
+        const fullText = reportHeader + reportBody + reportFooter;
+        const blob = new Blob([fullText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `system_log_report_${Date.now()}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const LogFilterButton: React.FC<{ filter: 'ALL' | LogEntry['source']; label: string }> = ({ filter, label }) => (
         <button
             onClick={() => setActiveFilter(filter)}
@@ -106,7 +137,7 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
     );
     
     return (
-        <div id={id} className="tech-panel flex flex-col flex-1 h-full font-mono"> 
+        <div id={id} className="tech-panel holographic-panel flex flex-col flex-1 h-full font-mono"> 
              <div className="tech-header">
                 <h2 className="micro-label flex items-center gap-2">
                     <span className="w-1 h-1 bg-amber-500 rounded-full animate-ping"></span>
@@ -123,9 +154,13 @@ const SystemLog: React.FC<{ id: string }> = ({ id }) => {
                         <span>AUTO-SCROLL</span>
                     </label>
                     <LivePaperBadge />
+                    <button onClick={handleDownloadReport} className="flex items-center space-x-1 text-[8px] font-bold px-2 py-0.5 rounded-sm bg-amber-950/40 border border-amber-500/50 text-amber-300 hover:text-amber-200 hover:bg-amber-900/60 hover:border-amber-400 transition-colors shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+                        <DownloadIcon className="w-2.5 h-2.5" />
+                        <span>DOWNLOAD REPORT</span>
+                    </button>
                     <button onClick={handleExport} className="flex items-center space-x-1 text-[8px] px-2 py-0.5 rounded-sm bg-slate-900 border border-slate-700 text-slate-400 hover:text-cyan-400 hover:border-cyan-500 transition-colors">
                         <DownloadIcon className="w-2 h-2" />
-                        <span>EXPORT</span>
+                        <span>CSV</span>
                     </button>
                     <button onClick={clearLogs} className="flex items-center space-x-1 text-[8px] px-2 py-0.5 rounded-sm bg-slate-900 border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500 transition-colors">
                         <TrashIcon className="w-2 h-2" />

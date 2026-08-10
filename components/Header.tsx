@@ -41,7 +41,7 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
             <div className={`absolute top-0 left-0 w-full h-[1px] ${isAgentZeroActive ? 'bg-emerald-500 shadow-[0_0_10px_emerald]' : isGodMode ? 'bg-amber-500 animate-pulse' : 'bg-gradient-to-r from-transparent via-cyan-500 to-transparent'} opacity-80`}></div>
             
             <div className="max-w-[1920px] mx-auto px-4 lg:px-6">
-                <div className="flex items-center justify-between h-12">
+                <div className="flex items-center justify-between h-12 relative">
                     {/* Branding Area */}
                     <div className="flex items-center gap-3">
                         <div className={`p-1 rounded border ${isAgentZeroActive ? 'border-emerald-500 bg-emerald-950/30' : isGodMode ? 'border-amber-500 bg-amber-950/30' : 'border-cyan-900 bg-cyan-950/20'} shadow-[0_0_10px_rgba(0,0,0,0.5)]`}>
@@ -67,6 +67,11 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
                                 <span className="micro-label text-violet-300">Jurisdiction: Null-Space</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* Central Area - Live Mode Toggle */}
+                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto z-10">
+                        <LiveModeToggle />
                     </div>
 
                     {/* Controls Deck */}
@@ -118,10 +123,6 @@ const Header: React.FC<HeaderProps> = ({ onAnalyzeSentiment, onStartTour, onInit
                         </button>
 
                         <KeepAwakeToggle />
-                        
-                        <div className="h-6 w-[1px] bg-white/10 mx-1"></div>
-                        
-                        <LiveModeToggle />
                         
                         <div className={`w-8 h-8 flex items-center justify-center border rounded-sm ml-1 transition-all ${isAgentZeroActive ? 'border-emerald-500 bg-emerald-900/20 shadow-[0_0_15px_rgba(16,185,129,0.4)]' : isGodMode ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'border-slate-700 bg-slate-800'}`}>
                             {isAgentZeroActive ? (

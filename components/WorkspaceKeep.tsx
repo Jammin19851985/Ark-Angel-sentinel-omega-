@@ -99,17 +99,21 @@ export default function WorkspaceKeep() {
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setErrorMsg('');
     try {
-      await googleSignIn();
-      setNeedsAuth(false);
+      const res = await googleSignIn();
+      if (res?.user) {
+        setUser(res.user);
+        setNeedsAuth(false);
+      }
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        console.error('Login failed:', err);
+      if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/network-request-failed') {
+        console.warn('Login attempt:', err?.message || err);
       }
       if (err?.message?.includes('popup-closed-by-user') || err?.code === 'auth/popup-closed-by-user') {
         setErrorMsg('Login popup was blocked or closed. Please allow popups or open this app in a new tab.');
       } else {
-        setErrorMsg('Login failed: ' + err.message);
+        setErrorMsg('Login attempt note: ' + (err?.message || 'Please check network connection or popups.'));
       }
     } finally {
       setIsLoggingIn(false);

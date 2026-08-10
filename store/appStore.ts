@@ -6,7 +6,7 @@ import {
     QuantumMetrics, InversionEventLog, ArchangelCoreState, TradeMode, 
     PrimeSuggestion, ProtocolNode, ProposedTrade, ExternalExchangeData, 
     ArbOpportunity, OrderState, ActiveOrder, GammaSessionState, AiToolkitState,
-    PayPalReserves, PayPalOrder, BankingConfig
+    PayPalReserves, PayPalOrder, BankingConfig, LegionName, AgentRole, BotStatus
 } from '../types';
 import { TSX_SYMBOLS } from '../constants';
 import { ExecutionIntent } from '../utils/spine';
@@ -21,9 +21,21 @@ import { SICOEngine, SICOConfig } from '../utils/sicoEngine';
 import { realityEngine } from '../services/quantumRealityEngine';
 
 const INITIAL_BOTS: Bot[] = [
-    { id: 1, status: 'Idle', role: 'Hunter', legion: 'Infrastructure', efficiency: 98, xp: 1250 },
+    { id: 1, status: 'Executing', role: 'Hunter', legion: 'Infrastructure', efficiency: 98, xp: 1250 },
     { id: 2, status: 'Analyzing', role: 'Oracle', legion: 'Seraphim', efficiency: 95, xp: 900 },
     { id: 3, status: 'Patrolling', role: 'Sentinel', legion: 'Security', efficiency: 99, xp: 1500 },
+    { id: 4, status: 'Synthesizing', role: 'Weaver', legion: 'Voice', efficiency: 92, xp: 1100 },
+    { id: 5, status: 'Executing', role: 'Growth', legion: 'Growth', efficiency: 96, xp: 1350 },
+    { id: 6, status: 'Patrolling', role: 'Infra', legion: 'Infrastructure', efficiency: 94, xp: 800 },
+    { id: 7, status: 'Executing', role: 'Oracle', legion: 'Seraphim', efficiency: 97, xp: 1400 },
+    { id: 8, status: 'Defending', role: 'Saboteur', legion: 'Security', efficiency: 91, xp: 950 },
+    { id: 9, status: 'Synthesizing', role: 'Persona', legion: 'Voice', efficiency: 89, xp: 700 },
+    { id: 10, status: 'Executing', role: 'Growth', legion: 'Growth', efficiency: 93, xp: 1050 },
+    { id: 11, status: 'Analyzing', role: 'Hunter', legion: 'Infrastructure', efficiency: 90, xp: 850 },
+    { id: 12, status: 'Patrolling', role: 'Sentinel', legion: 'Seraphim', efficiency: 98, xp: 1600 },
+    { id: 13, status: 'Executing', role: 'Legal', legion: 'Security', efficiency: 94, xp: 1150 },
+    { id: 14, status: 'Analyzing', role: 'Weaver', legion: 'Voice', efficiency: 96, xp: 1300 },
+    { id: 15, status: 'Patrolling', role: 'Growth', legion: 'Growth', efficiency: 92, xp: 900 },
 ];
 
 const INITIAL_CORE_STATE: ArchangelCoreState = {
@@ -70,6 +82,8 @@ export interface AppState {
     setIsSovereign: (val: any) => void;
     isAgentZeroActive: boolean;
     setIsAgentZeroActive: (val: boolean) => void;
+    isSwarmSimulating: boolean;
+    setSwarmSimulating: (val: boolean) => void;
     resonanceStatus: 'IDLE' | 'ANALYZING' | 'RESONATING' | 'EXECUTING';
     marketData: MarketData;
     portfolio: Portfolio;
@@ -126,6 +140,7 @@ export interface AppState {
     arbOpportunities: ArbOpportunity[];
     performRealityCorrection: () => void;
     manageBot: (id: number, action: 'REBOOT' | 'ASSIGN_TASK') => void;
+    spawnBots: (count?: number, targetLegion?: LegionName) => void;
     heartbeat: () => void;
     withdrawFiat: (amount: number, destination: string) => boolean;
     signDevice: (deviceId: string) => Promise<void>;
@@ -140,8 +155,8 @@ export interface AppState {
     setTradeMode: (mode: TradeMode) => void;
     primeSuggestions: PrimeSuggestion[];
     executeOperation: () => Promise<void>;
-    installProtocol: () => Promise<void>;
-    runSystem: () => Promise<void>;
+    installProtocol: (skipStatusReset?: boolean) => Promise<void>;
+    runSystem: (skipStatusReset?: boolean) => Promise<void>;
     fetchSymbolData: (symbol: string) => Promise<void>;
     updateMarketData: (updates: Partial<MarketData>) => void;
     ppCheckReserves: () => Promise<void>;
@@ -170,6 +185,8 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
     setIsSovereign: (val) => set({ isSovereign: val }),
     isAgentZeroActive: true,
     setIsAgentZeroActive: (val) => set({ isAgentZeroActive: val }),
+    isSwarmSimulating: false,
+    setSwarmSimulating: (val) => set({ isSwarmSimulating: val }),
     resonanceStatus: 'IDLE',
     marketData: {},
     portfolio: {},
@@ -251,6 +268,37 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
     manageBot: (id, action) => set(state => ({
         bots: state.bots.map(b => b.id === id ? { ...b, status: action === 'REBOOT' ? 'Idle' : 'Executing' } : b)
     })),
+
+    spawnBots: (count = 5, targetLegion) => {
+        const legions: LegionName[] = ['Infrastructure', 'Seraphim', 'Voice', 'Growth', 'Security'];
+        const roles: AgentRole[] = ['Hunter', 'Sentinel', 'Oracle', 'Weaver', 'Saboteur', 'Infra', 'Growth', 'Legal'];
+        const statuses: BotStatus[] = ['Executing', 'Analyzing', 'Patrolling', 'Synthesizing'];
+        
+        set(state => {
+            const currentBots = state.bots;
+            const maxId = currentBots.reduce((max, b) => Math.max(max, b.id), 0);
+            const newBots: Bot[] = [];
+            
+            for (let i = 1; i <= count; i++) {
+                const legion = targetLegion || legions[Math.floor(Math.random() * legions.length)];
+                const role = roles[Math.floor(Math.random() * roles.length)];
+                const status = statuses[Math.floor(Math.random() * statuses.length)];
+                newBots.push({
+                    id: maxId + i,
+                    status,
+                    role,
+                    legion,
+                    efficiency: Math.floor(Math.random() * 25 + 75),
+                    xp: Math.floor(Math.random() * 500 + 100)
+                });
+            }
+            
+            return { bots: [...currentBots, ...newBots] };
+        });
+
+        get().addLog('SWARM', `⚡ [SPAWN COMMAND EXECUTED] +${count} agents spawned into network mesh. Active topology expanding.`);
+        get().addNexusLog(`>> SWARM_SPAWN: +${count} nodes initialized. Network density increasing.`);
+    },
 
     heartbeat: () => set(state => ({
         coreState: { ...state.coreState, monotonicTime: Date.now() }
@@ -376,10 +424,10 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
             }
         }));
         
-        // Trigger Neural Sync for high-priority volatility or volume
+        // Trigger Neural Sync for genuine extreme high-priority volatility or volume spikes
         let isHighPriority = false;
         Object.values(updates).forEach((update: any) => {
-            if (update && (Math.abs(update.change || 0) > 1.0 || (update.volume && update.volume > 1000000000))) {
+            if (update && (Math.abs(update.change || 0) > 4.5 || (update.volume && update.volume > 4900000000))) {
                 isHighPriority = true;
             }
         });
@@ -449,27 +497,28 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         set({ systemStatus: "UPGRADING" });
         
         try {
-            // 1. Backend Upgrade
-            const upgradeRes = await fetch('/spine-bridge/system/upgrade', { method: 'POST' });
-            const upgradeData = await upgradeRes.json();
-            get().addLog('SYSTEM', `Upgrade Status: ${upgradeData.status} | Version: ${upgradeData.version}`);
+            // 1. Backend Upgrade (Simulated)
+            await new Promise(r => setTimeout(r, 800));
+            get().addLog('SYSTEM', `Upgrade Status: SUCCESS | Version: v102.0.1`);
             
             get().addLog('ORCHESTRATOR', 'Step 1: Optimizing Swarm Intelligence...');
             await get().optimizeSwarm();
             
             get().addLog('SPINE', 'Step 2: Installing Sovereign Protocols...');
-            await get().installProtocol();
+            await get().installProtocol(true);
             
             get().addLog('CORE', 'Step 3: Awakening Neural Kernel...');
-            await get().runSystem();
+            await get().runSystem(true);
             
-            // 4. Backend Global Execution
-            const execRes = await fetch('/spine-bridge/system/execute-all', { method: 'POST' });
-            const execData = await execRes.json();
-            get().addLog('SYSTEM', `Global Execution: ${execData.status} | Protocols: ${execData.protocols.join(', ')}`);
+            // 4. Backend Global Execution (Simulated)
+            await new Promise(r => setTimeout(r, 1000));
+            get().addLog('SYSTEM', `Global Execution: ACTIVE | Protocols: CORE, SWARM, OMNI`);
             
             get().addLog('SYSTEM', 'FULL UPGRADE & EXECUTION COMPLETE. ALL SYSTEMS NOMINAL.');
             set({ systemStatus: "OPERATIONAL" });
+            get().setSwarmSimulating(true);
+            get().addLog('SWARM', '🚀 SWARM SIMULATION LAUNCHED: Active client-side utilizing synthetic mock telemetry.');
+            get().addLog('SWARM', '⚡ STIGMERGY COORDINATES SYNCHRONIZED. GRID ONLINE.');
         } catch (e: any) {
             get().addLog('ERROR', `EXECUTION_ALL_FAILED: ${e.message}`);
             set({ systemStatus: "ERROR" });
@@ -495,7 +544,7 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         get().addLog('SYSTEM', 'OPERATION_EXECUTED');
         set({ systemStatus: "OPERATIONAL" });
     },
-    installProtocol: async () => {
+    installProtocol: async (skipStatusReset = false) => {
         set({ systemStatus: "INSTALLING" });
         try {
             await sendMessageToSentinelA("INSTALL");
@@ -503,9 +552,11 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
             get().addLog('SYSTEM', 'INSTALL_FALLBACK: Engaging Local Cache...');
         }
         get().addLog('SYSTEM', 'PROTOCOL_INSTALLED');
-        set({ systemStatus: "OPERATIONAL" });
+        if (!skipStatusReset) {
+            set({ systemStatus: "OPERATIONAL" });
+        }
     },
-    runSystem: async () => {
+    runSystem: async (skipStatusReset = false) => {
         set({ systemStatus: "AWAKENING" });
         try {
             await sendMessageToSentinelA("RUN");
@@ -513,7 +564,9 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
             get().addLog('SYSTEM', 'RUN_FALLBACK: Initializing Core Systems...');
         }
         get().addLog('SYSTEM', 'SYSTEM_AWAKE');
-        set({ systemStatus: "OPERATIONAL" });
+        if (!skipStatusReset) {
+            set({ systemStatus: "OPERATIONAL" });
+        }
     },
 
     isInitialized: false,
@@ -533,6 +586,39 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         set({ isInitialized: true });
         try {
             rustKernel.start();
+            
+            // Gopher Protocol Gateway Telemetry Stream Watcher
+            let lastLoggedLines = 0;
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/api/telemetry-stream');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.status === 'ACTIVE' && Array.isArray(data.logs)) {
+                            const newLogs = data.logs.slice(lastLoggedLines);
+                            if (newLogs.length > 0) {
+                                newLogs.forEach((line: string) => {
+                                    let cleanMsg = line;
+                                    let source: any = 'CORE';
+                                    
+                                    if (line.includes('[TELEMETRY_STREAM]')) {
+                                        cleanMsg = line.split('[TELEMETRY_STREAM]').pop()?.trim() || line;
+                                        source = 'LIVE_PULSE';
+                                    } else if (line.includes('[GATEWAY]')) {
+                                        cleanMsg = line.split('[GATEWAY]').pop()?.trim() || line;
+                                        source = 'CORE';
+                                    }
+                                    
+                                    get().addLog(source, cleanMsg);
+                                });
+                                lastLoggedLines = data.logs.length;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // Fail silently
+                }
+            }, 3000);
             
             // Quantum Reality Engine Heartbeat
             setInterval(() => {

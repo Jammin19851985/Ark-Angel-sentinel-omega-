@@ -165,7 +165,7 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
 
         const cmd = cleanInput.toLowerCase();
 
-        if (cmd === 'execute all' || cmd === 'run all') {
+        if (cmd === 'execute all' || cmd === 'run all' || cmd === 'execute --all' || cmd === 'execute --all run all' || cmd === 'run --all' || cmd === 'install all' || cmd === 'install all execute all run all' || cmd === 'install all run all') {
             const { executeAllProtocols } = useAppContext.getState();
             executeAllProtocols();
             setInput('');
@@ -175,6 +175,19 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
         if (cmd === 'upgrade' || cmd === 'update system') {
             const { executeAllProtocols } = useAppContext.getState();
             executeAllProtocols(); // In this system, upgrade is part of executeAll
+            setInput('');
+            return;
+        }
+
+        if (cmd.startsWith('spawn')) {
+            const parts = cmd.split(/\s+/);
+            let count = 5;
+            if (parts.length > 1) {
+                const parsed = parseInt(parts[1], 10);
+                if (!isNaN(parsed) && parsed > 0) count = Math.min(parsed, 50);
+            }
+            const { spawnBots } = useAppContext.getState();
+            spawnBots(count);
             setInput('');
             return;
         }
@@ -285,7 +298,7 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
                                         <div className={`w-6 h-6 rounded-sm flex items-center justify-center flex-shrink-0 mt-1 border ${isUser ? 'bg-red-900/50 border-red-500' : 'bg-cyan-900/50 border-cyan-500'}`}>
                                             {isUser ? <ShieldIcon className="w-3 h-3 text-red-200" /> : <BrainCircuitIcon className="w-3 h-3 text-cyan-200" />}
                                         </div>
-                                        <div className={`relative p-3 rounded-sm border shadow-xl ${isUser ? 'bg-red-950/20 border-red-800/50' : 'bg-slate-900/40 border-slate-700/50 text-slate-300'}`}>
+                                        <div className={`relative p-3 rounded-sm border shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] ${isUser ? 'bg-red-950/20 border-red-800/50 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-slate-900/40 border-slate-700/50 text-slate-300 hover:shadow-[0_0_15px_rgba(34,211,238,0.2)]'}`}>
                                             <div className={`text-[8px] font-bold tracking-widest mb-1 uppercase border-b pb-0.5 ${isUser ? 'text-red-500 border-red-500/20' : 'text-cyan-500 border-cyan-500/20'}`}>
                                                 {isUser ? '// FORBIDDEN_COMMAND' : '// SHADOW_RESPONSE'}
                                             </div>

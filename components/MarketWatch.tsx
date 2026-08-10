@@ -166,7 +166,7 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
     };
 
     return (
-        <div id={id} className="tech-panel p-3 flex flex-col h-full bg-black/60 relative">
+        <div id={id} className="tech-panel holographic-panel p-3 flex flex-col h-full bg-black/60 relative">
             <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
                     <h2 className="micro-label">// MARKET WATCH</h2>

@@ -38,7 +38,7 @@ export const QuantumMonitor: React.FC = () => {
     }
 
     return (
-        <div className="p-4 bg-black/60 border border-slate-800 rounded-lg font-mono relative overflow-hidden group">
+        <div className="tech-panel holographic-panel p-4 bg-black/60 border border-slate-800 rounded-lg font-mono relative overflow-hidden group">
             <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                     <Zap className={`w-3 h-3 ${status === 'CONNECTED' ? 'text-cyan-400 animate-pulse' : 'text-red-500'}`} />

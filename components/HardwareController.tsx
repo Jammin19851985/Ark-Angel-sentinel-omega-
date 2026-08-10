@@ -91,7 +91,7 @@ const HardwareController: React.FC = () => {
     };
 
     return (
-        <div className="bg-black/60 backdrop-blur-md border border-slate-800 rounded-lg p-3 font-mono flex flex-col space-y-2 relative overflow-hidden group tech-panel shrink-0">
+        <div className="bg-black/60 backdrop-blur-md border border-slate-800 rounded-lg p-3 font-mono flex flex-col space-y-2 relative overflow-hidden group tech-panel holographic-panel shrink-0">
             {/* Background scanner line effect */}
             <div className="absolute top-0 left-0 w-full h-[1px] bg-neon-green/20 animate-scan pointer-events-none" />
 

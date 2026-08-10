@@ -55,6 +55,8 @@ export interface Bot {
     efficiency: number;
     xp: number;
     tech?: string;
+    name?: string;
+    task?: string;
 }
 
 export interface LogEntry {
