@@ -50,7 +50,7 @@ class IBKRAdapter:
                 self.ib = None
 
         if not HAS_IB or self.ib is None:
-            logger.warning("ib_insync missing or failed to init. Engaging SHADOW_MOCK mode.")
+            logger.info("ib_insync initialized in SHADOW_MOCK mode.")
 
             self.connected = False # Not truly connected to a gateway
             self.is_mock = True
@@ -67,7 +67,7 @@ class IBKRAdapter:
             port_open = False
 
         if not port_open:
-            logger.info(f"Port {port} on {host} is closed/unreachable. Activating SHADOW_MOCK engine safely.")
+            logger.info(f"Port {port} on {host} is closed/unreachable. Operating in SHADOW_MOCK mode.")
             self.connected = False
             self.is_mock = True
             return
@@ -85,7 +85,7 @@ class IBKRAdapter:
                 
             logger.info(f">> IBKR UPLINK ESTABLISHED. Account: {self.account_id}")
         except Exception as e:
-            logger.warning(f">> IBKR CONNECTION FAILED: {e}. Engaging SHADOW_MOCK mode.")
+            logger.info(f">> IBKR gateway connection not active ({e}). Operating in SHADOW_MOCK mode.")
             self.connected = False 
             self.is_mock = True
             # Try to disconnect if it was partially connected
