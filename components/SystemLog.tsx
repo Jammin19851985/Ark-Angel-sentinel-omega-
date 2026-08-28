@@ -49,6 +49,8 @@ const logSourceColors: { [key in LogEntry['source']]: string } = {
     FINANCE: 'text-emerald-600 font-bold',
     CORE: 'text-cyan-300 font-bold',
     ALERT: 'text-rose-500 font-bold',
+    RISK: 'text-yellow-400 font-bold',
+    SECURITY: 'text-red-400 font-bold',
 };
 
 const SystemLog: React.FC<{ id: string }> = ({ id }) => {

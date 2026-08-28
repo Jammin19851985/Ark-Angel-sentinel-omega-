@@ -61,7 +61,7 @@ export interface Bot {
 
 export interface LogEntry {
     timestamp: string;
-    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE' | 'ALERT';
+    source: 'MARKET' | 'SWARM' | 'TRADE' | 'SENTINEL' | 'SYSTEM' | 'AI_TOOLKIT' | 'ORCHESTRATOR' | 'BOOT' | 'SONAR' | 'ERROR' | 'NEXUS' | 'CAUSAL' | 'LIVE_PULSE' | 'AODE' | 'QUANTUM' | 'BLOCKCHAIN' | 'BANKING' | 'BANKING_PAYPAL' | 'SCALPER' | 'SHADOW' | 'FORENSIC' | 'LEGION' | 'XEDO' | 'MLEM' | 'SENTRY' | 'SPINE' | 'PAPER' | 'VAULT' | 'AUTONOMY' | 'AUDIT' | 'BIOMETRIC' | 'DIRECTIVE' | 'EXCHANGE' | 'RUST_KRNL' | 'MEV_GUARD' | 'IBKR' | 'HARDWARE' | 'AUTH' | 'FINANCE' | 'CORE' | 'ALERT' | 'RISK' | 'SECURITY';
     message: string;
     complianceHash?: string;
 }
@@ -238,7 +238,7 @@ export interface RustSpineMetrics {
     kernelLatency: number;
     throughput: number;
     rateLimitUsage: number;
-    heartbeatStatus: 'HEALTHY' | 'DEGRADED' | 'FAILED';
+    heartbeatStatus: 'HEALTHY' | 'DEGRADED' | 'FAILED' | 'HYPER_THREADED_1MS' | string;
     partialFillEfficiency: number;
 }
 
@@ -292,7 +292,7 @@ export interface ArchangelCoreState {
     rustSpineMetrics: RustSpineMetrics;
     mevMetrics: MevMetrics;
     ibkrState: IbkrAccountInfo;
-    activeDirectives: Record<string, boolean>;
+    activeDirectives: Record<string, boolean | any>;
     profitVault: number;
     hardwareDevices: HardwareDevice[];
     lastSystemOp?: 'EXECUTE' | 'INSTALL' | 'RUN';

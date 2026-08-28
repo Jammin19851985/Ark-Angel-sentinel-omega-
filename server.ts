@@ -47,7 +47,15 @@ async function startServer() {
             
             if (method === 'generateContent') {
                 let response;
-                const modelsToTry = Array.from(new Set([model || 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash-lite']));
+                // Supported models per skill guidelines: gemini-3.7-flash, gemini-2.5-flash, gemini-3.1-flash-lite, gemini-2.5-flash-lite
+                const requestedModel = (model && !model.includes('2.0') && !model.includes('1.5')) ? model : 'gemini-3.7-flash';
+                const modelsToTry = Array.from(new Set([
+                    requestedModel,
+                    'gemini-3.7-flash',
+                    'gemini-2.5-flash',
+                    'gemini-3.1-flash-lite',
+                    'gemini-2.5-flash-lite'
+                ]));
                 let lastError: any = null;
 
                 for (const candidateModel of modelsToTry) {
@@ -61,10 +69,24 @@ async function startServer() {
                         break;
                     } catch (err: any) {
                         lastError = err;
-                        const errStr = String(err?.message || err || '');
-                        const isQuota = errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED') || errStr.includes('quota') || err?.status === 'RESOURCE_EXHAUSTED';
-                        if (isQuota) {
-                            console.warn(`>> [GEMINI_PROXY] Quota/Rate limit on ${candidateModel}, trying next model fallback...`);
+                        const errStr = String(err?.message || err || '').toLowerCase();
+                        const isRetryable = 
+                            errStr.includes('429') || 
+                            errStr.includes('503') || 
+                            errStr.includes('404') || 
+                            errStr.includes('500') ||
+                            errStr.includes('resource_exhausted') || 
+                            errStr.includes('unavailable') || 
+                            errStr.includes('high demand') ||
+                            errStr.includes('no longer available') ||
+                            errStr.includes('not found') ||
+                            errStr.includes('quota') || 
+                            err?.status === 'RESOURCE_EXHAUSTED' ||
+                            err?.status === 'UNAVAILABLE' ||
+                            err?.status === 'NOT_FOUND';
+                        
+                        if (isRetryable) {
+                            console.warn(`>> [GEMINI_PROXY] Model ${candidateModel} unavailable/busy (${errStr.slice(0, 80)}...), falling back to next model...`);
                             continue;
                         } else {
                             throw err;
@@ -75,11 +97,12 @@ async function startServer() {
                 if (response) {
                     return res.json({ success: true, data: response });
                 } else {
-                    console.warn(">> [GEMINI_PROXY] All candidate models exhausted due to rate limits/quota.");
-                    return res.status(429).json({
+                    console.warn(">> [GEMINI_PROXY] All candidate models temporarily busy or exhausted:", lastError?.message || lastError);
+                    return res.status(503).json({
                         success: false,
-                        error: "Quota or rate limit exceeded across all available Gemini models.",
-                        isQuotaExceeded: true
+                        error: "Gemini models currently at peak demand. Sovereign fallback activated.",
+                        isHighDemand: true,
+                        lastError: lastError?.message || String(lastError)
                     });
                 }
             } else if (method === 'generateVideos') {

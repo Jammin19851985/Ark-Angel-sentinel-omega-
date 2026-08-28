@@ -179,6 +179,90 @@ const SentinelTerminal: React.FC<SentinelTerminalProps> = ({
             return;
         }
 
+        if (cmd.includes('initiate_koho_transfer') || cmd.includes('koho_transfer') || cmd.includes('koho transfer') || cmd.includes('koho') || cmd.includes('execute transaction now') || cmd.includes('flash_sweep') || cmd.includes('flash sweep') || cmd.includes('cad transfer') || cmd.includes('interac')) {
+            const { initiateKohoTransfer } = useAppContext.getState();
+            initiateKohoTransfer();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_winnings_maximization') || cmd.includes('winnings_maximization') || cmd.includes('winnings maximization') || cmd.includes('profit_lock') || cmd.includes('profit lock') || cmd.includes('terminal profit lock') || cmd.includes('start terminal profit lock') || cmd.includes('winnings')) {
+            const { executeWinningsMaximization } = useAppContext.getState();
+            executeWinningsMaximization();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_pepe_max_pyramid') || cmd.includes('pepe_max_pyramid') || cmd.includes('max_pyramid') || cmd.includes('max pyramid') || cmd.includes('pepe pyramid') || cmd.includes('pepe max pyramid') || cmd.includes('start max pyramid protocol') || cmd.includes('max pyramid protocol')) {
+            const { executePepeMaxPyramid } = useAppContext.getState();
+            executePepeMaxPyramid();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('initiate_session_max_aggression') || cmd.includes('session_max_aggression') || cmd.includes('omni_aggression') || cmd.includes('omni-aggression') || cmd.includes('omni aggression') || cmd.includes('max_aggression') || cmd.includes('max aggression') || cmd.includes('full omni-aggression') || cmd.includes('start full omni-aggression')) {
+            const { initiateSessionMaxAggression } = useAppContext.getState();
+            initiateSessionMaxAggression();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('initiate_session_close_contingency') || cmd.includes('session_close_contingency') || cmd.includes('session_close') || cmd.includes('session close') || cmd.includes('flush_defense') || cmd.includes('flush defense') || cmd.includes('2:05 pm flush defense') || cmd.includes('2:05 pm') || cmd.includes('2:05pm') || cmd.includes('contingency')) {
+            const { initiateSessionCloseContingency } = useAppContext.getState();
+            initiateSessionCloseContingency();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_exit_cluster_scan') || cmd.includes('exit_cluster_scan') || cmd.includes('exit_cluster') || cmd.includes('exit cluster') || cmd.includes('liquidity_mapping') || cmd.includes('liquidity mapping') || cmd.includes('start liquidity mapping')) {
+            const { executeExitClusterScan } = useAppContext.getState();
+            executeExitClusterScan();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_pepe_protect') || cmd.includes('pepe_protect') || cmd.includes('pepe protect') || cmd.includes('pepe') || cmd.includes('aggressive meme management') || cmd.includes('meme management')) {
+            const { executePepeProtect } = useAppContext.getState();
+            executePepeProtect();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('initiate_meme_alpha_scan') || cmd.includes('meme_alpha_scan') || cmd.includes('meme_alpha') || cmd.includes('meme alpha') || cmd.includes('meme-swarm') || cmd.includes('meme swarm') || cmd.includes('meme-swarm override')) {
+            const { initiateMemeAlphaScan } = useAppContext.getState();
+            initiateMemeAlphaScan();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('full_swarm_positional_lock') || cmd.includes('positional_lock') || cmd.includes('2:00 pm') || cmd.includes('2pm') || cmd.includes('final 2:00 pm prep') || cmd.includes('positional lock')) {
+            const { executeFullSwarmPositionalLock } = useAppContext.getState();
+            executeFullSwarmPositionalLock();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_sol_ultra_alpha') || cmd.includes('sol_ultra_alpha') || cmd.includes('ultra_alpha') || cmd.includes('ultra-alpha') || cmd.includes('ultra alpha')) {
+            const { executeSolUltraAlpha } = useAppContext.getState();
+            executeSolUltraAlpha();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('execute_hybrid_moonshot') || cmd.includes('hybrid_moonshot') || cmd.includes('moonshot')) {
+            const { executeHybridMoonshot } = useAppContext.getState();
+            executeHybridMoonshot();
+            setInput('');
+            return;
+        }
+
+        if (cmd.includes('initiate_full_swarm_protocols') || cmd.includes('full_swarm') || cmd.includes('start omni-execution')) {
+            const { initiateFullSwarmProtocols } = useAppContext.getState();
+            initiateFullSwarmProtocols();
+            setInput('');
+            return;
+        }
+
         if (cmd.startsWith('spawn')) {
             const parts = cmd.split(/\s+/);
             let count = 5;

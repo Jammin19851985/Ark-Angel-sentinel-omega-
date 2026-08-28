@@ -36,8 +36,12 @@ import OmniCoreAgent from './components/OmniCoreAgent';
 import HardwareController from './components/HardwareController';
 
 import GlobalFPSHUD from './components/GlobalFPSHUD';
+import TargetingReticleCursor from './components/TargetingReticleCursor';
+import { useTechPanelParallax } from './hooks/useTechPanelParallax';
 
 export default function App() {
+    // Mount mouse parallax holographic depth engine across all .tech-panel elements
+    useTechPanelParallax();
     const { 
         isGodMode, 
         addLog,
@@ -283,6 +287,7 @@ The system is now running at peak efficiency. All limiters have been removed.`;
 
     return (
         <>
+            <TargetingReticleCursor />
             <GlobalFPSHUD />
             <div className="scanline-overlay"></div>
             <div className="crt-vignette"></div>
@@ -306,7 +311,7 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                 setActiveView={setActiveView}
             />
 
-            <div className={`flex flex-col h-screen overflow-hidden transition-all duration-1000 hardware-grid ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
+            <div id="floating-glass-deck" className={`floating-glass-container flex flex-col h-screen overflow-hidden transition-opacity duration-1000 hardware-grid ${showIntro || showHologram ? 'opacity-0 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}>
                 
                 <Header 
                     onStartTour={handleStartTour}

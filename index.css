@@ -33,6 +33,29 @@
   --text-main: #e0e0e0;
   --zero-primary: #10b981;
   --zero-glow: rgba(16, 185, 129, 0.4);
+
+  /* Tech-Panel Dynamic Variables */
+  --tech-panel-bg: rgba(10, 10, 15, 0.55);
+  --tech-panel-border: rgba(0, 243, 255, 0.22);
+  --tech-panel-border-hover: rgba(0, 243, 255, 0.6);
+  --tech-panel-glow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 15px rgba(0, 243, 255, 0.05);
+  --tech-panel-hover-glow: 0 15px 35px rgba(0, 243, 255, 0.25), inset 0 0 25px rgba(0, 243, 255, 0.12);
+  --tech-panel-sweep: rgba(0, 243, 255, 0.15);
+  --tech-panel-accent: #00f3ff;
+
+  /* Reticle Cursor Variables */
+  --reticle-primary: #00f3ff;
+  --reticle-glow: rgba(0, 243, 255, 0.65);
+  --reticle-bracket: rgba(0, 243, 255, 0.85);
+
+  /* Parallax Dynamic Offsets */
+  --deck-tilt-x: 0deg;
+  --deck-tilt-y: 0deg;
+  --deck-float-y: 0px;
+  --panel-tilt-x: 0deg;
+  --panel-tilt-y: 0deg;
+  --parallax-x: 0px;
+  --parallax-y: 0px;
 }
 
 body.light-theme {
@@ -41,6 +64,46 @@ body.light-theme {
   --bg-panel-border: rgba(0, 0, 0, 0.1);
   --text-main: #0f172a;
   --primary: #00b4d8;
+  --tech-panel-bg: rgba(255, 255, 255, 0.85);
+  --tech-panel-border: rgba(0, 180, 216, 0.3);
+  --tech-panel-border-hover: rgba(0, 180, 216, 0.7);
+  --tech-panel-glow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --tech-panel-hover-glow: 0 10px 30px rgba(0, 180, 216, 0.2);
+  --tech-panel-accent: #00b4d8;
+  --reticle-primary: #00b4d8;
+  --reticle-glow: rgba(0, 180, 216, 0.5);
+}
+
+/* Sovereign Mode: Deeper, aggressive crimson aesthetic */
+body.sovereign-mode,
+html.sovereign-mode {
+  --bg-app: #030005;
+  --bg-dark: #030005;
+  --bg-panel: #0d0108;
+  --bg-panel-rgb: 13, 1, 8;
+  --primary: #ff0055;
+  --primary-dim: rgba(255, 0, 85, 0.18);
+  --secondary: #ff3b00;
+  --danger: #ff0033;
+  --neon-blue: #ff0055;
+  --bg-panel-border: rgba(255, 0, 85, 0.4);
+  --text-main: #ffe4e9;
+  
+  /* Aggressive Sovereign Tech-Panel Variables */
+  --tech-panel-bg: rgba(18, 2, 10, 0.72);
+  --tech-panel-border: rgba(255, 0, 85, 0.42);
+  --tech-panel-border-hover: rgba(255, 0, 85, 0.85);
+  --tech-panel-glow: 0 0 25px rgba(255, 0, 85, 0.25), inset 0 0 20px rgba(255, 0, 85, 0.12);
+  --tech-panel-hover-glow: 0 15px 40px rgba(255, 0, 85, 0.45), inset 0 0 30px rgba(255, 0, 85, 0.22);
+  --tech-panel-sweep: rgba(255, 0, 85, 0.25);
+  --tech-panel-accent: #ff0055;
+
+  /* Sovereign Reticle */
+  --reticle-primary: #ff0055;
+  --reticle-glow: rgba(255, 0, 85, 0.75);
+  --reticle-bracket: rgba(255, 0, 85, 0.95);
+
+  background-image: radial-gradient(circle at 50% 50%, rgba(255, 0, 85, 0.04) 0%, transparent 80%), radial-gradient(circle at 10% 20%, rgba(255, 59, 0, 0.03) 0%, transparent 60%);
 }
 
 body {
@@ -61,25 +124,43 @@ body.agent-zero-active {
   background-image: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 80%), url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
 }
 
-#root { height: 100%; width: 100%; display: flex; flex-direction: column; }
+#root { height: 100%; width: 100%; display: flex; flex-direction: column; overflow: hidden; perspective: 1800px; }
 
+/* Floating Glass Deck with 3D Tilt-on-Scroll & Parallax */
+.floating-glass-container {
+  transform-style: preserve-3d;
+  transform: perspective(1800px) rotateX(var(--deck-tilt-x, 0deg)) rotateY(var(--deck-tilt-y, 0deg)) translateY(var(--deck-float-y, 0px));
+  transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+/* 3D Parallax & Tech-Panel Holographic Engine */
 .tech-panel {
   position: relative;
-  background: rgba(10, 10, 11, 0.4); /* Dark matte with more transparency for hologram */
-  border: 1px solid rgba(0, 243, 255, 0.2); 
-  box-shadow: 0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 15px rgba(0, 243, 255, 0.05);
+  background: var(--tech-panel-bg);
+  border: 1px solid var(--tech-panel-border); 
+  box-shadow: var(--tech-panel-glow);
   backdrop-filter: blur(16px);
   border-radius: 8px;
   overflow: hidden;
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+  perspective: 1200px;
+  transform: perspective(1200px) rotateX(var(--panel-tilt-x, 0deg)) rotateY(var(--panel-tilt-y, 0deg));
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform, box-shadow;
 }
 
 .tech-panel:hover {
-  transform: translateY(-2px) scale(1.01) perspective(1000px) rotateX(1deg) rotateY(-1deg);
-  box-shadow: 0 15px 35px rgba(0, 243, 255, 0.2), inset 0 0 25px rgba(0, 243, 255, 0.1);
-  border-color: rgba(0, 243, 255, 0.4);
+  border-color: var(--tech-panel-border-hover, rgba(0, 243, 255, 0.6));
+  box-shadow: var(--tech-panel-hover-glow);
   z-index: 10;
+}
+
+/* Mouse-Parallax Holographic Depth Shift for Child Elements */
+.tech-panel > * {
+  transform: translate3d(calc(var(--parallax-x, 0px) * 0.4), calc(var(--parallax-y, 0px) * 0.4), 6px);
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
 }
 
 /* Holographic accents */
@@ -87,7 +168,7 @@ body.agent-zero-active {
   content: '';
   position: absolute;
   top: 0; left: -100%; width: 50%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(0, 243, 255, 0.1), transparent);
+  background: linear-gradient(to right, transparent, var(--tech-panel-sweep), transparent);
   transform: skewX(-25deg);
   animation: hologram-sweep 8s linear infinite;
   pointer-events: none;
@@ -100,10 +181,34 @@ body.agent-zero-active {
 }
 
 .tech-panel.holographic-panel {
-  background: rgba(0, 10, 15, 0.6);
-  border: 1px solid rgba(0, 243, 255, 0.4);
-  box-shadow: 0 0 30px rgba(0, 243, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.1);
+  background: var(--tech-panel-bg);
+  border: 1px solid var(--tech-panel-border);
+  box-shadow: var(--tech-panel-glow);
   animation: hologram-flicker 4s infinite alternate;
+}
+
+/* NavigationDeck Visual Haptic Shake & Kinetic Feedback */
+@keyframes haptic-shake {
+  0% { transform: scale(1) translate(0, 0); }
+  20% { transform: scale(0.95) translate(-2px, 1px); }
+  40% { transform: scale(0.96) translate(2px, -1px); }
+  60% { transform: scale(0.98) translate(-1px, -1px); }
+  80% { transform: scale(1.02) translate(1px, 0.5px); }
+  100% { transform: scale(1) translate(0, 0); }
+}
+
+@keyframes haptic-glow-burst {
+  0% { box-shadow: 0 0 0 0 var(--tech-panel-accent, rgba(0, 243, 255, 0.8)); opacity: 1; }
+  50% { box-shadow: 0 0 25px 8px var(--tech-panel-accent, rgba(0, 243, 255, 0.6)); opacity: 0.85; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0; }
+}
+
+.animate-haptic-click {
+  animation: haptic-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.cyber-key-active-glow {
+  box-shadow: 0 0 15px var(--tech-panel-accent, rgba(0, 243, 255, 0.6)), inset 0 0 12px var(--tech-panel-accent, rgba(0, 243, 255, 0.3));
 }
 
 .shadow-cyan {

@@ -451,7 +451,7 @@ export const getGroundedResponse = async (
         }
 
         const data = await callGeminiProxy('generateContent', {
-            model: useMaps ? 'gemini-flash-lite-latest' : 'gemini-2.5-flash',
+            model: useMaps ? 'gemini-3.1-flash-lite' : 'gemini-3.7-flash',
             contents: prompt,
             config
         });
