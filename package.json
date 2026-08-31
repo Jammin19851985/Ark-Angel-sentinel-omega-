@@ -14,7 +14,7 @@
   "dependencies": {
     "@google/genai": "^2.10.0",
     "@google/generative-ai": "^0.24.1",
-    "@tailwindcss/vite": "^4.2.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/cors": "^2.8.19",
     "ccxt": "latest",
     "cors": "^2.8.6",
@@ -37,12 +37,12 @@
   "devDependencies": {
     "@firebase/eslint-plugin-security-rules": "^0.0.2",
     "@types/express": "^5.0.6",
-    "@types/node": "^22.14.0",
+    "@types/node": "^26.4.0",
     "@types/ws": "^8.18.1",
-    "@vitejs/plugin-react": "^5.0.0",
-    "esbuild": "^0.28.1",
-    "tsx": "^4.21.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^8.1.5"
   }
 }
