@@ -22,7 +22,7 @@
     "firebase": "^12.14.0",
     "framer-motion": "latest",
     "fuse.js": "^7.3.0",
-    "http-proxy-middleware": "^3.0.5",
+    "http-proxy-middleware": "^3.0.7",
     "lightweight-charts": "4.1.1",
     "lucide-react": "latest",
     "motion": "^12.38.0",
