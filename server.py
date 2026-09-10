@@ -14,6 +14,31 @@ from typing import Optional, List, Set
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("SPINE")
 
+try:
+    from services.ibkr_adapter import IBKRAdapter
+except ImportError:
+    try:
+        from ibkr_adapter import IBKRAdapter
+    except ImportError:
+        IBKRAdapter = None
+
+async def initiate_kernel():
+    # REMOVED: is_mock = os.getenv(...) 
+    # FORCED: True live execution
+    is_mock = False 
+    
+    adapter = IBKRAdapter(host="127.0.0.1", port=4001, clientId=1)
+    
+    # Check TWS status before attempting connection
+    print(">> [KERNEL] ATTEMPTING LIVE UPLINK TO IBKR...")
+    success = await adapter.connect(mock_mode=is_mock)
+    
+    if not success:
+        raise ConnectionError("CRITICAL: IBKR connection failed. Ensure TWS is open and API is enabled.")
+    
+    print(">> [KERNEL] ARK ANGEL OMEGA IS LIVE.")
+    return adapter
+
 logger.info(f"PYTHON_VERSION: {sys.version}")
 logger.info(f"PYTHON_EXECUTABLE: {sys.executable}")
 logger.info(f"PYTHONUSERBASE: {os.getenv('PYTHONUSERBASE')}")

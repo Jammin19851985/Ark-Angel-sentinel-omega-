@@ -4,6 +4,7 @@ import { useAppContext } from '../contexts/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActivityIcon } from './icons/ActivityIcon';
 import { Shield, Zap, RefreshCw, Play, DollarSign, ArrowUpRight, ArrowDownLeft, Lock } from 'lucide-react';
+import { triggerAutoSnapshot } from '../utils/autoSnapshot';
 
 export const SovereignCommandCenter: React.FC = () => {
     const { 
@@ -42,12 +43,24 @@ export const SovereignCommandCenter: React.FC = () => {
         } else {
             ppInitiateWithdrawal(email, val);
         }
+        if (val >= 1000 || ppAction === 'WITHDRAW') {
+            triggerAutoSnapshot(
+                `BANKING_${ppAction}: $${val.toLocaleString()} [PAYPAL_RESERVES]`,
+                { fiatBalance: val, isLiveMode: true },
+                addLog
+            );
+        }
         setShowPayPalModal(false);
     };
 
     const handleSaveConfig = async () => {
         try {
             addLog('SYSTEM', 'PERSISTING CONFIGURATION TO SOVEREIGN LEDGER...');
+            triggerAutoSnapshot(
+                'MAJOR_CONFIG_CHANGE: PERSISTED_SOVEREIGN_LEDGER_CONFIG',
+                { sicoConfig, quantumMetrics },
+                addLog
+            );
             const res = await fetch('/spine-bridge/system/save-config', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

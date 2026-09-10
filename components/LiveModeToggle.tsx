@@ -4,9 +4,10 @@ import { useAppContext } from '../contexts/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldAlertIcon } from './icons/ShieldAlertIcon';
 import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
+import { triggerAutoSnapshot } from '../utils/autoSnapshot';
 
 const LiveModeToggle: React.FC = () => {
-    const { isLiveMode, setLiveMode, addLog, addNexusLog } = useAppContext();
+    const { isLiveMode, setLiveMode, addLog, addNexusLog, fiatBalance, portfolio } = useAppContext();
     const [showWarning, setShowWarning] = useState(false);
 
     const handleToggle = () => {
@@ -16,6 +17,12 @@ const LiveModeToggle: React.FC = () => {
             setLiveMode(false);
             addLog('SYSTEM', 'Switched to PAPER_TRADING mode.');
             addNexusLog('>> MODE_CHANGE: PAPER_TRADING_ACTIVE');
+            triggerAutoSnapshot(
+                'MAJOR_CONFIG_CHANGE: SWITCHED_TO_PAPER_MODE',
+                { isLiveMode: false, fiatBalance, portfolio },
+                addLog,
+                addNexusLog
+            );
         }
     };
 
@@ -24,6 +31,12 @@ const LiveModeToggle: React.FC = () => {
         setShowWarning(false);
         addLog('SYSTEM', 'CRITICAL: Switched to LIVE_TRADING mode. Real capital at risk.');
         addNexusLog('>> MODE_CHANGE: LIVE_TRADING_ACTIVE [REAL_CAPITAL_ENGAGED]');
+        triggerAutoSnapshot(
+            'MAJOR_CONFIG_CHANGE: SWITCHED_TO_LIVE_MODE',
+            { isLiveMode: true, fiatBalance, portfolio },
+            addLog,
+            addNexusLog
+        );
     };
 
     return (

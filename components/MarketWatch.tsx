@@ -4,11 +4,12 @@ import { MarketData } from '../types';
 import PriceTrendTooltip from './charts/PriceTrendTooltip';
 import { Sparkline } from './charts/Sparkline';
 import { SearchIcon } from './icons/SearchIcon';
-import { BellIcon } from 'lucide-react';
+import { BellIcon, BarChart2, History } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 import Loader from './Loader';
 import { TSX_SYMBOLS, GLOBAL_SYMBOLS } from '../constants';
+import HistoricalTradesView from './HistoricalTradesView';
 
 const MARKET_NEWS_HEADLINES = [
     { headline: "TSX leads global recovery as energy sector surges.", source: "Financial Post" },
@@ -22,8 +23,11 @@ interface MarketWatchProps { id: string; }
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'SOL', 'ADA'];
 
 const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
-    const { marketData, historicalMarketData, marketFilter, setMarketFilter, fetchSymbolData, addLog } = useAppContext();
+    const { marketData, historicalMarketData, marketFilter, setMarketFilter, fetchSymbolData, addLog, trades } = useAppContext();
     
+    // Primary View Mode: TICKERS or HISTORICAL TRADES
+    const [viewMode, setViewMode] = useState<'TICKERS' | 'TRADES'>('TICKERS');
+
     // We use refs for tracking previous prices to strictly avoid re-render loops.
     const prevPricesRef = useRef<Record<string, number>>({});
     // Store flashes just for visual indications
@@ -167,92 +171,137 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
 
     return (
         <div id={id} className="tech-panel holographic-panel p-3 flex flex-col h-full bg-black/60 relative">
-            <div className="flex justify-between items-center mb-2">
+            {/* Header with Title, Mode Switcher, and Live Badge */}
+            <div className="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                     <h2 className="micro-label">// MARKET WATCH</h2>
                 </div>
+
+                {/* Sub-view switcher tabs */}
+                <div className="flex items-center gap-1 bg-black/50 p-0.5 rounded border border-slate-800">
+                    <button
+                        onClick={() => setViewMode('TICKERS')}
+                        className={`flex items-center gap-1 px-2 py-0.5 text-[8.5px] font-bold uppercase rounded-sm transition ${
+                            viewMode === 'TICKERS'
+                            ? 'bg-amber-950/80 text-amber-300 border border-amber-500/50 shadow-[0_0_5px_rgba(245,158,11,0.2)]'
+                            : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                        }`}
+                        title="Live Tickers and Price Trends"
+                    >
+                        <BarChart2 className="w-2.5 h-2.5" />
+                        <span>TICKERS</span>
+                        <span className="text-[7.5px] opacity-70">({Object.keys(marketData).length})</span>
+                    </button>
+
+                    <button
+                        onClick={() => setViewMode('TRADES')}
+                        className={`flex items-center gap-1 px-2 py-0.5 text-[8.5px] font-bold uppercase rounded-sm transition ${
+                            viewMode === 'TRADES'
+                            ? 'bg-amber-950/80 text-amber-300 border border-amber-500/50 shadow-[0_0_5px_rgba(245,158,11,0.2)]'
+                            : 'text-slate-500 hover:text-slate-300 border border-transparent'
+                        }`}
+                        title="Historical Executed Orders & Statuses"
+                    >
+                        <History className="w-2.5 h-2.5" />
+                        <span>HISTORICAL TRADES</span>
+                        <span className="px-1 py-0.2 rounded-full text-[7px] font-mono bg-amber-900/60 text-amber-300 border border-amber-700/40">
+                            {trades.length}
+                        </span>
+                    </button>
+                </div>
+
                 <LivePaperBadge />
             </div>
             
-            <div className="flex gap-1 mb-2">
-                <TabButton tab="ALL" label="All" />
-                <TabButton tab="CANADA" label="TSX" />
-                <TabButton tab="CRYPTO" label="Crypto" />
-                <TabButton tab="STOCKS" label="Global" />
-            </div>
-
-            <div className="relative mb-3 group">
-                <input 
-                    type="text"
-                    value={marketFilter}
-                    onChange={(e) => setMarketFilter(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="SCAN_TICKER (ENTER)..."
-                    disabled={isFetching}
-                    className="w-full bg-black/80 border border-slate-700 rounded-sm pl-8 pr-8 py-1 text-[10px] font-mono text-slate-200 placeholder-slate-600 focus:border-amber-500 transition outline-none"
-                />
-                <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 pointer-events-none" />
-                {isFetching && <div className="absolute right-2.5 top-1/2 -translate-y-1/2"><Loader /></div>}
-            </div>
-            
-            <div className="flex-1 flex flex-col min-h-0">
-                <div className="grid grid-cols-12 font-mono text-[9px] text-slate-600 px-2 pb-1 border-b border-slate-800 uppercase tracking-wider">
-                    <span className="col-span-2">Sym</span>
-                    <span className="col-span-2 text-center">Trend</span>
-                    <span className="col-span-3 text-right">Price</span>
-                    <span className="col-span-4 text-right">Volume</span>
-                    <span className="col-span-1 border-transparent text-center">🔔</span>
+            {viewMode === 'TRADES' ? (
+                /* Historical Executed Orders View */
+                <div className="flex-1 flex flex-col min-h-0">
+                    <HistoricalTradesView />
                 </div>
-                <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1 custom-scrollbar">
-                    {filteredSymbols.map((symbol) => {
-                        const data = marketData[symbol];
-                        const history = historicalMarketData[symbol] || [];
-                        const formattedVolume = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(data.volume);
-                        const isUp = history.length > 1 && history[history.length - 1] >= history[0];
-                        const hasAlert = priceAlerts[symbol]?.high || priceAlerts[symbol]?.low;
-
-                        return (
-                            <div 
-                                key={symbol} 
-                                className={`relative grid grid-cols-12 items-center font-mono text-[10px] p-1 rounded-sm transition-colors cursor-crosshair hover:bg-white/5 ${priceChanges[symbol] === 'up' ? 'flash-green' : priceChanges[symbol] === 'down' ? 'flash-red' : ''}`}
-                                onMouseEnter={() => setHoveredSymbol(symbol)}
-                                onMouseLeave={() => setHoveredSymbol(null)}
-                            >
-                                <span className="text-slate-300 col-span-2 truncate font-bold">{symbol}</span>
-                                <div className="col-span-2 h-4 flex items-center justify-center opacity-80">
-                                    <Sparkline data={history} width={40} height={16} color={isUp ? '#4ade80' : '#f87171'} strokeWidth={1} />
-                                </div>
-                                <span className={`font-medium text-right col-span-3 flex flex-col items-end ${getPriceColorClass(symbol)}`}>
-                                    <span>{data.price.toFixed(2)}</span>
-                                    <span className={`text-[8px] ${data.change >= 0 ? 'text-green-500/70' : 'text-red-500/70'}`}>
-                                        {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
-                                    </span>
-                                </span>
-                                <span className="text-slate-500 text-right col-span-4 flex items-center justify-end">
-                                    {formattedVolume}
-                                </span>
-                                <button 
-                                    className={`col-span-1 flex items-center justify-center transition-colors ${hasAlert ? 'text-amber-400' : 'text-slate-700 hover:text-slate-400'}`}
-                                    onClick={(e) => openAlertModal(symbol, e)}
-                                    title="Set Price Alert"
-                                >
-                                    <BellIcon className="w-3 h-3" />
-                                </button>
-                                {hoveredSymbol === symbol && history.length > 1 && <PriceTrendTooltip history={history} />}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            <div className="mt-3 pt-2 border-t border-slate-800">
-                <h3 className="text-[9px] font-bold text-slate-500 mb-1 font-mono uppercase tracking-widest">// INTEL_FEED</h3>
-                {MARKET_NEWS_HEADLINES[currentNewsIndex] && (
-                    <div key={currentNewsIndex} className="animate-fade-in-fast min-h-[30px]">
-                        <p className="text-[10px] text-slate-400 leading-tight truncate">{MARKET_NEWS_HEADLINES[currentNewsIndex].headline}</p>
+            ) : (
+                /* Live Market Watch Tickers View */
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex gap-1 mb-2">
+                        <TabButton tab="ALL" label="All" />
+                        <TabButton tab="CANADA" label="TSX" />
+                        <TabButton tab="CRYPTO" label="Crypto" />
+                        <TabButton tab="STOCKS" label="Global" />
                     </div>
-                )}
-            </div>
+
+                    <div className="relative mb-3 group">
+                        <input 
+                            type="text"
+                            value={marketFilter}
+                            onChange={(e) => setMarketFilter(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="SCAN_TICKER (ENTER)..."
+                            disabled={isFetching}
+                            className="w-full bg-black/80 border border-slate-700 rounded-sm pl-8 pr-8 py-1 text-[10px] font-mono text-slate-200 placeholder-slate-600 focus:border-amber-500 transition outline-none"
+                        />
+                        <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-600 pointer-events-none" />
+                        {isFetching && <div className="absolute right-2.5 top-1/2 -translate-y-1/2"><Loader /></div>}
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col min-h-0">
+                        <div className="grid grid-cols-12 font-mono text-[9px] text-slate-600 px-2 pb-1 border-b border-slate-800 uppercase tracking-wider">
+                            <span className="col-span-2">Sym</span>
+                            <span className="col-span-2 text-center">Trend</span>
+                            <span className="col-span-3 text-right">Price</span>
+                            <span className="col-span-4 text-right">Volume</span>
+                            <span className="col-span-1 border-transparent text-center">🔔</span>
+                        </div>
+                        <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1 custom-scrollbar">
+                            {filteredSymbols.map((symbol) => {
+                                const data = marketData[symbol];
+                                const history = historicalMarketData[symbol] || [];
+                                const formattedVolume = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(data.volume);
+                                const isUp = history.length > 1 && history[history.length - 1] >= history[0];
+                                const hasAlert = priceAlerts[symbol]?.high || priceAlerts[symbol]?.low;
+
+                                return (
+                                    <div 
+                                        key={symbol} 
+                                        className={`relative grid grid-cols-12 items-center font-mono text-[10px] p-1 rounded-sm transition-colors cursor-crosshair hover:bg-white/5 ${priceChanges[symbol] === 'up' ? 'flash-green' : priceChanges[symbol] === 'down' ? 'flash-red' : ''}`}
+                                        onMouseEnter={() => setHoveredSymbol(symbol)}
+                                        onMouseLeave={() => setHoveredSymbol(null)}
+                                    >
+                                        <span className="text-slate-300 col-span-2 truncate font-bold">{symbol}</span>
+                                        <div className="col-span-2 h-4 flex items-center justify-center opacity-80">
+                                            <Sparkline data={history} width={40} height={16} color={isUp ? '#4ade80' : '#f87171'} strokeWidth={1} />
+                                        </div>
+                                        <span className={`font-medium text-right col-span-3 flex flex-col items-end ${getPriceColorClass(symbol)}`}>
+                                            <span>{data.price.toFixed(2)}</span>
+                                            <span className={`text-[8px] ${data.change >= 0 ? 'text-green-500/70' : 'text-red-500/70'}`}>
+                                                {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
+                                            </span>
+                                        </span>
+                                        <span className="text-slate-500 text-right col-span-4 flex items-center justify-end">
+                                            {formattedVolume}
+                                        </span>
+                                        <button 
+                                            className={`col-span-1 flex items-center justify-center transition-colors ${hasAlert ? 'text-amber-400' : 'text-slate-700 hover:text-slate-400'}`}
+                                            onClick={(e) => openAlertModal(symbol, e)}
+                                            title="Set Price Alert"
+                                        >
+                                            <BellIcon className="w-3 h-3" />
+                                        </button>
+                                        {hoveredSymbol === symbol && history.length > 1 && <PriceTrendTooltip history={history} />}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-800">
+                        <h3 className="text-[9px] font-bold text-slate-500 mb-1 font-mono uppercase tracking-widest">// INTEL_FEED</h3>
+                        {MARKET_NEWS_HEADLINES[currentNewsIndex] && (
+                            <div key={currentNewsIndex} className="animate-fade-in-fast min-h-[30px]">
+                                <p className="text-[10px] text-slate-400 leading-tight truncate">{MARKET_NEWS_HEADLINES[currentNewsIndex].headline}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Sub-modal for Alert Config */}
             {alertModalSymbol && (
@@ -297,4 +346,5 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
 };
 
 export default React.memo(MarketWatch);
+
 

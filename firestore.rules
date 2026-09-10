@@ -58,6 +58,11 @@ service cloud.firestore {
              (!data.keys().hasAny(['metadata']) || data.metadata is map);
     }
 
+    // Test verification rule for connectivity diagnostics
+    match /test/{testId} {
+      allow get: if true;
+    }
+
     // 4. Secure Sovereign Sub-Collection Paths
     match /users/{userId} {
       allow get: if isOwner(userId);

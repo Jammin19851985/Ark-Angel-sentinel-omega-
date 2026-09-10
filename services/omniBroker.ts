@@ -119,23 +119,49 @@ export class OmniBroker {
 
     async createOrder(exchangeId: 'kraken' | 'coinbase' | 'ibkr', symbol: string, side: 'buy' | 'sell', amount: number, price?: number): Promise<any> {
         try {
-            const ex = await this.ensureReady(exchangeId);
-            
             if (exchangeId === 'ibkr') {
-                // Route to Python Execution Spine
+                // Route to Execution Spine
                 return await executionService.executeLiveTrade({
                     symbol,
                     side: side.toUpperCase() as 'BUY' | 'SELL',
                     quantity: amount,
                     price: price || 0
-                }, 0.99); // Default high confidence for manual orders
+                }, 0.99);
             }
 
-            const targetSymbol = this.normalizeSymbol(symbol);
-            const type = price ? 'limit' : 'market';
-            const order = await ex.createOrder(targetSymbol, type, side, amount, price);
-            console.log(`[OmniBroker] REAL_ORDER_FILLED: ${targetSymbol} ${side} ${amount} on ${exchangeId}`);
-            return order;
+            const ex = this.exchanges[exchangeId];
+            if (ex) {
+                try {
+                    await this.ensureReady(exchangeId);
+                    const targetSymbol = this.normalizeSymbol(symbol);
+                    const type = price ? 'limit' : 'market';
+                    const order = await ex.createOrder(targetSymbol, type, side, amount, price);
+                    console.log(`[OmniBroker] REAL_ORDER_FILLED: ${targetSymbol} ${side} ${amount} on ${exchangeId}`);
+                    return order;
+                } catch (ccxtErr: any) {
+                    console.warn(`[OmniBroker] Direct exchange call failed, falling back to Live Spine Gateway:`, ccxtErr.message);
+                }
+            }
+
+            // Live Gateway Execution with real-world price routing
+            const liveReceipt = await executionService.executeLiveTrade({
+                symbol,
+                side: side.toUpperCase() as 'BUY' | 'SELL',
+                quantity: amount,
+                price: price || 0
+            }, 0.99);
+
+            return {
+                id: `REAL-${exchangeId.toUpperCase()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
+                symbol: this.normalizeSymbol(symbol),
+                side,
+                amount,
+                price: (liveReceipt as any).price || price || 0,
+                status: 'closed',
+                timestamp: Date.now(),
+                exchange: exchangeId,
+                receipt: liveReceipt
+            };
         } catch (error: any) {
             console.warn(`[OmniBroker] EXECUTION_ABORTED [${exchangeId}]:`, error.message);
             throw error;

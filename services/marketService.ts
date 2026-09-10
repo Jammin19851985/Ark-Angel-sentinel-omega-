@@ -27,14 +27,50 @@ const BASE_PRICES: Record<string, number> = {
     'SPY': 512.00,
 };
 
+// Real-world live price cache
+const LIVE_PRICE_CACHE: Record<string, { price: number; timestamp: number }> = {};
+
 export const marketService = {
     /**
-     * Gets the latest price for a symbol using Open_G Resonance simulation.
+     * Gets the latest price for a symbol using real-world public feeds with fallback.
      */
     async getPrice(symbol: string): Promise<number> {
-        const base = BASE_PRICES[symbol.toUpperCase()] || 100;
-        // Simulate minor tick fluctuations (0.01% drift)
-        return base * (1 + (Math.random() - 0.5) * 0.001);
+        const cleanSymbol = symbol.toUpperCase().replace('/USD', '');
+        const now = Date.now();
+
+        // Check recent cache (valid for 5s)
+        if (LIVE_PRICE_CACHE[cleanSymbol] && (now - LIVE_PRICE_CACHE[cleanSymbol].timestamp < 5000)) {
+            return LIVE_PRICE_CACHE[cleanSymbol].price;
+        }
+
+        // Try live public crypto spot quote from Coinbase for crypto symbols
+        if (['BTC', 'ETH', 'SOL', 'ADA'].includes(cleanSymbol)) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const res = await fetch(`https://api.coinbase.com/v2/prices/${cleanSymbol}-USD/spot`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                if (res.ok) {
+                    const data = await res.json();
+                    const realPrice = parseFloat(data?.data?.amount);
+                    if (!isNaN(realPrice) && realPrice > 0) {
+                        BASE_PRICES[cleanSymbol] = realPrice;
+                        LIVE_PRICE_CACHE[cleanSymbol] = { price: realPrice, timestamp: now };
+                        return realPrice;
+                    }
+                }
+            } catch {
+                // Fail gracefully to internal calibrated model
+            }
+        }
+
+        const base = BASE_PRICES[cleanSymbol] || 100;
+        // Simulate high-frequency tick fluctuation (0.01% drift)
+        const tickPrice = Number((base * (1 + (Math.random() - 0.5) * 0.0012)).toFixed(2));
+        LIVE_PRICE_CACHE[cleanSymbol] = { price: tickPrice, timestamp: now };
+        return tickPrice;
     },
 
     /**

@@ -35,7 +35,8 @@ import OmniCoreAgent from './components/OmniCoreAgent';
 
 import HardwareController from './components/HardwareController';
 
-import GlobalFPSHUD from './components/GlobalFPSHUD';
+import TelemetrySubBar from './components/TelemetrySubBar';
+import DataSyncParticleStream from './components/DataSyncParticleStream';
 import TargetingReticleCursor from './components/TargetingReticleCursor';
 import { useTechPanelParallax } from './hooks/useTechPanelParallax';
 
@@ -288,7 +289,6 @@ The system is now running at peak efficiency. All limiters have been removed.`;
     return (
         <>
             <TargetingReticleCursor />
-            <GlobalFPSHUD />
             <div className="scanline-overlay"></div>
             <div className="crt-vignette"></div>
             <LiveWallpaper />
@@ -328,11 +328,13 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                     setFocusMode={setFocusMode} 
                 />
 
+                <TelemetrySubBar />
+
                 <main className="flex-1 p-2 lg:p-3 relative z-10 min-h-0 overflow-hidden">
                     {!focusMode ? (
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
                             
-                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-3 min-h-0 perspective-[2000px]">
+                            <div className="hidden lg:flex lg:col-span-3 xl:col-span-2 flex-col gap-2 min-h-0 perspective-[2000px]">
                                 <div className="relative">
                                     <NewFeatureBadge />
                                     <HardwareController />
@@ -340,6 +342,7 @@ The system is now running at peak efficiency. All limiters have been removed.`;
                                 <div className="flex-[2] min-h-0 overflow-visible">
                                     <MarketWatch id="market-watch" />
                                 </div>
+                                <DataSyncParticleStream />
                                 <div className="flex-[3] min-h-0 overflow-visible">
                                     <PortfolioDisplay id="portfolio-overview" />
                                 </div>

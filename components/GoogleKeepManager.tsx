@@ -100,17 +100,25 @@ export const GoogleKeepManager: React.FC<GoogleKeepManagerProps> = ({ token }) =
   
   const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // 1. Connection testing mandate inside useEffect init hook
+  // 1. Connection testing mandate inside useEffect init hook with fast timeout
   useEffect(() => {
+    let isMounted = true;
     async function verifyConnection() {
       try {
-        await getDocFromServer(doc(db, 'test', 'verification_ping'));
-        setDbConnected(true);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection check timeout')), 2500)
+        );
+        await Promise.race([
+          getDocFromServer(doc(db, 'test', 'verification_ping')),
+          timeoutPromise
+        ]);
+        if (isMounted) setDbConnected(true);
       } catch (error) {
-        setDbConnected(false);
+        if (isMounted) setDbConnected(false);
       }
     }
     verifyConnection();
+    return () => { isMounted = false; };
   }, []);
 
   // 2. Track Firebase Auth changes to switch notes storage engine

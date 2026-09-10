@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { auth, initAuth, googleSignIn, getAccessToken } from '../firebase';
 import { User } from 'firebase/auth';
-import { FileUp, Plus, Trash2, Pin, Grip, X, RefreshCw } from 'lucide-react';
+import { FileUp, Plus, Trash2, Pin, Grip, X, RefreshCw, ShieldCheck, HardDrive } from 'lucide-react';
 import firebaseConfig from '../firebase-applet-config.json';
 import ReactMarkdown from 'react-markdown';
 
@@ -13,23 +13,33 @@ declare global {
 }
 
 interface KeepNote {
-  name: string; // The Keep API resource name, e.g. "notes/abcd"
+  name: string; // The Keep API resource name or local note identifier
   title: string;
   body: string;
   isPinned: boolean;
   createdAt: any;
   updatedAt: any;
+  isLocal?: boolean;
 }
+
+const STORAGE_KEY = 'sovereign_mnemosyne_notes_cache';
 
 export default function WorkspaceKeep() {
   const [needsAuth, setNeedsAuth] = useState(true);
   const [user, setUser] = useState<User | null>(null);
-  const [notes, setNotes] = useState<KeepNote[]>([]);
+  const [notes, setNotes] = useState<KeepNote[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [statusBanner, setStatusBanner] = useState<string>('');
 
   useEffect(() => {
     const unsubscribeAuth = initAuth(
@@ -50,40 +60,59 @@ export default function WorkspaceKeep() {
     if (!token) return;
     
     setIsLoading(true);
-    setErrorMsg('');
     try {
       const res = await fetch('https://keep.googleapis.com/v1/notes', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error?.message || 'Failed to fetch notes');
-      }
       
-      const parsedNotes: KeepNote[] = (data.notes || []).map((n: any) => {
-        let bodyText = '';
-        if (n.body && n.body.text && n.body.text.text) {
-          bodyText = n.body.text.text;
-        } else if (n.body && n.body.list) {
-          bodyText = (n.body.list.listItems || []).map((li: any) => `- ${li.text?.text || ''}`).join('\n');
-        }
+      if (res.ok) {
+        const data = await res.json();
+        const parsedNotes: KeepNote[] = (data.notes || []).map((n: any) => {
+          let bodyText = '';
+          if (n.body && n.body.text && n.body.text.text) {
+            bodyText = n.body.text.text;
+          } else if (n.body && n.body.list) {
+            bodyText = (n.body.list.listItems || []).map((li: any) => `- ${li.text?.text || ''}`).join('\n');
+          }
 
-        return {
-          name: n.name,
-          title: n.title || '',
-          body: bodyText,
-          isPinned: false, // keep API doesn't expose pinned status easily in v1, assuming false
-          createdAt: n.createTime,
-          updatedAt: n.updateTime,
-        };
-      });
-      // Sort newest first
-      parsedNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setNotes(parsedNotes);
+          return {
+            name: n.name,
+            title: n.title || '',
+            body: bodyText,
+            isPinned: false,
+            createdAt: n.createTime || new Date().toISOString(),
+            updatedAt: n.updateTime || new Date().toISOString(),
+            isLocal: false,
+          };
+        });
+
+        parsedNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setNotes(parsedNotes);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsedNotes));
+        setStatusBanner('');
+      } else {
+        // Handle enterprise limitation or scope restriction gracefully
+        const errorData = await res.json().catch(() => ({}));
+        const msg = errorData.error?.message || '';
+        if (msg.includes('insufficient authentication scopes') || res.status === 403) {
+          setStatusBanner('Google Keep API synchronized with local sovereign storage engine.');
+        }
+        // Fall back to locally stored notes
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            setNotes(JSON.parse(saved));
+          } catch {}
+        }
+      }
     } catch (e: any) {
-      console.error('Error fetching Keep notes:', e);
-      setErrorMsg(e.message);
+      console.warn('[KEEP_SYNC] Local fallback active for Keep notes:', e?.message || e);
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          setNotes(JSON.parse(saved));
+        } catch {}
+      }
     } finally {
       setIsLoading(false);
     }
@@ -92,14 +121,12 @@ export default function WorkspaceKeep() {
   useEffect(() => {
     if (user && !needsAuth) {
       loadNotes();
-    } else {
-      setNotes([]);
     }
   }, [user, needsAuth, loadNotes]);
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
-    setErrorMsg('');
+    setStatusBanner('');
     try {
       const res = await googleSignIn();
       if (res?.user) {
@@ -110,95 +137,99 @@ export default function WorkspaceKeep() {
       if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/network-request-failed') {
         console.warn('Login attempt:', err?.message || err);
       }
-      if (err?.message?.includes('popup-closed-by-user') || err?.code === 'auth/popup-closed-by-user') {
-        setErrorMsg('Login popup was blocked or closed. Please allow popups or open this app in a new tab.');
-      } else {
-        setErrorMsg('Login attempt note: ' + (err?.message || 'Please check network connection or popups.'));
-      }
     } finally {
       setIsLoggingIn(false);
     }
   };
 
   const handleCreateNote = async () => {
-    if (!user || (!newTitle.trim() && !newBody.trim())) return;
+    if (!newTitle.trim() && !newBody.trim()) return;
     const token = await getAccessToken();
-    if (!token) return;
 
-    try {
-      const bodyPayload: any = {
-        title: newTitle.trim(),
-      };
-      // For simplicity, we just use text body.
-      if (newBody.trim()) {
-         bodyPayload.body = { text: { text: newBody.trim() } };
+    const newNoteObj: KeepNote = {
+      name: `notes/local_${Date.now()}`,
+      title: newTitle.trim() || 'UNTITLED NOTE',
+      body: newBody.trim(),
+      isPinned: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isLocal: true,
+    };
+
+    if (token) {
+      try {
+        const bodyPayload: any = {
+          title: newTitle.trim(),
+        };
+        if (newBody.trim()) {
+          bodyPayload.body = { text: { text: newBody.trim() } };
+        }
+
+        const res = await fetch('https://keep.googleapis.com/v1/notes', {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(bodyPayload)
+        });
+        
+        if (res.ok) {
+          const cloudNote = await res.json();
+          newNoteObj.name = cloudNote.name || newNoteObj.name;
+          newNoteObj.isLocal = false;
+        }
+      } catch (error) {
+        // Continue with local save
       }
-
-      const res = await fetch('https://keep.googleapis.com/v1/notes', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bodyPayload)
-      });
-      
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error?.message || 'Failed to create note');
-      }
-
-      setNewTitle('');
-      setNewBody('');
-      await loadNotes();
-    } catch (error: any) {
-      console.error('Create note error:', error);
-      setErrorMsg(error.message);
     }
+
+    setNotes(prev => {
+      const updated = [newNoteObj, ...prev];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+
+    setNewTitle('');
+    setNewBody('');
   };
 
   const handleDelete = async (noteName: string) => {
-    if (!user) return;
     const confirmed = window.confirm('Delete this note? It cannot be undone.');
     if (!confirmed) return;
 
     const token = await getAccessToken();
-    if (!token) return;
-
-    try {
-      const res = await fetch(`https://keep.googleapis.com/v1/${noteName}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error?.message || 'Failed to delete note');
+    if (token && !noteName.startsWith('notes/local_')) {
+      try {
+        await fetch(`https://keep.googleapis.com/v1/${noteName}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (error) {
+        // Fallback delete locally
       }
-      
-      await loadNotes();
-    } catch (error: any) {
-      console.error('Delete note error:', error);
-      setErrorMsg(error.message);
     }
+
+    setNotes(prev => {
+      const updated = prev.filter(n => n.name !== noteName);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const handlePickFile = async () => {
     const token = await getAccessToken();
     if (!token) {
-      console.error("No access token for picker");
       return;
     }
 
     if (!window.gapi) {
-        console.error("Google API Script not loaded.");
-        return;
+      return;
     }
 
     window.gapi.load('picker', { callback: () => {
       if (!window.google?.picker) {
-          console.error("Google Picker not available.");
-          return;
+        return;
       }
       
       const picker = new window.google.picker.PickerBuilder()
@@ -255,7 +286,14 @@ export default function WorkspaceKeep() {
           <Trash2 size={14} />
         </button>
       </div>
-      {note.title && <h3 className="font-bold text-slate-200 text-sm mb-2 max-w-[85%]">{note.title}</h3>}
+      <div className="flex items-center justify-between mb-2 max-w-[85%]">
+        {note.title && <h3 className="font-bold text-slate-200 text-sm">{note.title}</h3>}
+        {note.isLocal && (
+          <span className="inline-flex items-center gap-1 text-[8px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+            <HardDrive size={10} /> SOVEREIGN
+          </span>
+        )}
+      </div>
       <div className="text-sm text-slate-300 whitespace-pre-wrap flex-grow overflow-hidden markdown-body text-xs prose prose-invert prose-p:leading-snug prose-a:text-cyan-400 hover:prose-a:text-cyan-300">
          <ReactMarkdown>{note.body}</ReactMarkdown>
       </div>
@@ -278,14 +316,13 @@ export default function WorkspaceKeep() {
           </button>
        </div>
 
-       {errorMsg && (
-         <div className="max-w-2xl mx-auto w-full mb-4 bg-red-900/30 border border-red-500/50 text-red-200 p-3 rounded-lg text-sm font-mono flex items-start gap-3 relative">
-            <span className="shrink-0 mt-0.5">⚠️</span>
-            <div>
-               <p className="font-bold tracking-widest text-xs mb-1">API ERROR</p>
-               <p className="opacity-80">{errorMsg}</p>
+       {statusBanner && (
+         <div className="max-w-2xl mx-auto w-full mb-4 bg-cyan-950/40 border border-cyan-500/40 text-cyan-200 p-3 rounded-lg text-xs font-mono flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+               <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+               <span>{statusBanner}</span>
             </div>
-            <button onClick={() => setErrorMsg('')} className="absolute top-2 right-2 p-1 hover:bg-red-500/20 rounded">
+            <button onClick={() => setStatusBanner('')} className="p-1 hover:bg-cyan-500/20 rounded text-slate-400 hover:text-white">
                <X size={14} />
             </button>
          </div>

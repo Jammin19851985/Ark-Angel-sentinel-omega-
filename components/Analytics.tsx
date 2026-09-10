@@ -9,6 +9,7 @@ import { ArrowDownIcon } from './icons/ArrowDownIcon';
 import { useAppContext } from '../contexts/AppContext';
 import { ChartInfo } from './charts/ChartInfoOverlay';
 import { LivePaperBadge } from './LivePaperBadge';
+import { TradeStatusBadge } from './TradeHistory';
 
 interface AnalyticsProps {
     id: string; 
@@ -157,7 +158,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ id }) => {
                     <div className="bg-black/50 backdrop-blur-sm rounded-lg border border-slate-800 p-4 shadow-inner flex flex-col h-[350px]">
                         <h3 className="text-xs font-bold text-slate-200 mb-2 uppercase tracking-widest flex-shrink-0">Recent Trade History</h3>
                         <div className="flex-1 overflow-hidden font-mono text-[10px] flex flex-col">
-                            <div className="grid grid-cols-5 gap-2 text-slate-500 mb-2 px-2 uppercase tracking-tight flex-shrink-0">
+                            <div className="grid grid-cols-6 gap-2 text-slate-500 mb-2 px-2 uppercase tracking-tight flex-shrink-0">
+                                <span>STATUS</span>
                                 <span>TIME</span>
                                 <span>SYMBOL</span>
                                 <span className="text-right">QTY</span>
@@ -166,8 +168,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ id }) => {
                             </div>
                             <div className="space-y-1 flex-1 overflow-y-auto custom-scrollbar">
                                 {trades.map(trade => (
-                                    <div key={trade.id} className={`grid grid-cols-5 gap-2 p-2 rounded-sm border border-transparent hover:border-slate-600 transition-colors ${trade.action === 'BUY' ? 'bg-emerald-950/20 text-emerald-100' : 'bg-rose-950/20 text-rose-100'}`}>
-                                        <span className="opacity-70">{trade.timestamp}</span>
+                                    <div key={trade.id} className={`grid grid-cols-6 gap-2 p-2 rounded-sm border border-transparent hover:border-slate-600 transition-colors items-center ${trade.action === 'BUY' ? 'bg-emerald-950/20 text-emerald-100' : 'bg-rose-950/20 text-rose-100'}`}>
+                                        <div>
+                                            <TradeStatusBadge status={trade.status} size="sm" />
+                                        </div>
+                                        <span className="opacity-70 truncate">{typeof trade.timestamp === 'string' && trade.timestamp.includes('T') ? trade.timestamp.split('T')[1].substring(0, 8) : trade.timestamp}</span>
                                         <div className="flex items-center space-x-1">
                                             {trade.action === 'BUY' ? <ArrowUpIcon className="w-2.5 h-2.5 text-emerald-400"/> : <ArrowDownIcon className="w-2.5 h-2.5 text-rose-400"/>}
                                             <span className="font-bold">{trade.symbol}</span>

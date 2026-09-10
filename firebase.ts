@@ -1,15 +1,19 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+// Initialize singleton Firebase app
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId); // Use correct database ID
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
-const provider = new GoogleAuthProvider();
+// Google Auth Provider with all required Workspace and Keep Scopes
+export const provider = new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/drive.file');
 provider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
+provider.addScope('https://www.googleapis.com/auth/keep');
+provider.addScope('https://www.googleapis.com/auth/keep.readonly');
 provider.addScope('https://www.googleapis.com/auth/classroom.announcements');
 provider.addScope('https://www.googleapis.com/auth/classroom.announcements.readonly');
 provider.addScope('https://www.googleapis.com/auth/classroom.courses');
@@ -120,7 +124,7 @@ interface FirestoreErrorInfo {
       providerId?: string | null;
       email?: string | null;
     }[];
-  }
+  };
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
@@ -140,11 +144,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
-
-// Connection test has been muted to avoid blocking connection attempts and console error triggers in sandboxed or offline environments.
-async function testConnection() {
-  // Silent fallback. No network requests executed at load.
+  console.warn('[FIRESTORE_STATUS] ', JSON.stringify(errInfo));
+  return errInfo;
 }
