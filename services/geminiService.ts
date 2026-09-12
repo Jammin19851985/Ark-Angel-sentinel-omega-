@@ -115,7 +115,7 @@ const callGeminiProxy = async (method: string, body: any) => {
 export const sendMessageToSentinelA = async (message: string): Promise<{ text: string; sources?: any[] }> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: message,
             config: { 
                 systemInstruction: AODE_MANDATE,
@@ -138,7 +138,7 @@ export const sendMessageToSentinelA = async (message: string): Promise<{ text: s
 export const analyzeCodeDeep = async (code: string, language: string): Promise<CodeAnalysisResult> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_DEEP_ANALYSIS [${language}]: Analyze this source for bugs, security vulnerabilities, and optimizations. Return JSON.
             
             CODE:
@@ -173,7 +173,7 @@ export const analyzeCodeDeep = async (code: string, language: string): Promise<C
 export const auditCode = async (code: string, language: string): Promise<string> => {
     try {
         const data = await callGeminiProxy('generateContent', { 
-            model: 'gemini-2.5-flash', 
+            model: 'gemini-3.8-flash', 
             contents: `AODE_FORENSIC_AUDIT [${language}]: Audit this source for Causal Drift via Pete_The_Raccoon:\n\n${code}`,
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -187,7 +187,7 @@ export const auditCode = async (code: string, language: string): Promise<string>
 export const generatePatchedCode = async (code: string, language: string, review: string): Promise<string> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_ACMD_PATCH [${language}]: Applying Woodworking_Joinery patches. Hot-swap injection ready:\n\nCODE:\n${code}\n\nAUDIT:\n${review}\n\nReturn ONLY the patched source code.`,
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -201,30 +201,27 @@ export const generatePatchedCode = async (code: string, language: string, review
 export const analyzeSentiment = async (q: string): Promise<SentimentResult> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
-            contents: `AODE_SENTIMENT_SCAN: "${q}". Return JSON.`,
+            model: 'gemini-3.8-flash',
+            contents: `AODE_SENTIMENT_SCAN: "${q}".
+Conduct a market sentiment scan. Return ONLY a valid JSON object formatted strictly as:
+{
+  "overall_sentiment": 0.85,
+  "sentiment_label": "BULLISH",
+  "key_topics": ["string1", "string2"],
+  "summary": "concise market analysis summary"
+}`,
             config: { 
                 tools: [{ googleSearch: {} }],
-                systemInstruction: AODE_MANDATE,
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        overall_sentiment: { type: Type.NUMBER },
-                        sentiment_label: { type: Type.STRING },
-                        key_topics: { type: Type.ARRAY, items: { type: Type.STRING } },
-                        summary: { type: Type.STRING }
-                    }
-                }
+                systemInstruction: AODE_MANDATE
             }
         });
-        const parsed = parseJSON(data.text || "{}") || {};
-        const sources = data.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
+        const parsed = parseJSON(data?.text || "{}") || {};
+        const sources = data?.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
         return { 
-            overall_sentiment: parsed.overall_sentiment ?? 0.85,
-            sentiment_label: parsed.sentiment_label ?? "BULLISH",
-            key_topics: parsed.key_topics ?? ["Order book stability", "Tweed Node synchronization"],
-            summary: parsed.summary ?? "Highly stable momentum observed across regional decentralized exchanges.",
+            overall_sentiment: typeof parsed.overall_sentiment === 'number' ? parsed.overall_sentiment : 0.85,
+            sentiment_label: parsed.sentiment_label || "BULLISH",
+            key_topics: Array.isArray(parsed.key_topics) && parsed.key_topics.length > 0 ? parsed.key_topics : ["Order book stability", "Tweed Node synchronization"],
+            summary: parsed.summary || "Highly stable momentum observed across regional decentralized exchanges.",
             sources 
         };
     } catch (e) {
@@ -260,7 +257,7 @@ export const analyzeImage = async (image: File, prompt: string): Promise<string>
     try {
         const imagePart = await fileToGenerativePart(image);
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: { parts: [imagePart, { text: prompt }] },
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -320,7 +317,7 @@ export const analyzeVideo = async (video: File, prompt: string): Promise<string>
     try {
         const videoPart = await fileToGenerativePart(video);
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: { parts: [videoPart, { text: prompt }] },
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -358,7 +355,7 @@ export const generateSpeech = async (text: string, voiceName: string): Promise<A
 export const getPredictiveForecast = async (symbol: string, currentPrice: number): Promise<ForecastPoint[]> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `Synthesize a 7-day price forecast for ${symbol} starting from ${currentPrice}. Use Open_G Rhythm for variance. Return JSON array [{date, price}].`,
             config: { 
                 responseMimeType: 'application/json', 
@@ -390,7 +387,7 @@ export const queryRagStore = async (q: string): Promise<RagQueryResult> => {
     try {
         const context = RAG_CONTENT_CHUNKS.join('\n\n');
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `Query Codex: "${q}"\n\nContext:\n${context}`,
             config: { 
                 responseMimeType: "application/json", 
@@ -481,7 +478,7 @@ export const analyzeBacktestResults = async (strategy: string, results: Backtest
         Provide forensic analysis through Pete_The_Raccoon's lens. Recommend Kelly Criterion sizing.`;
         
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: prompt,
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -503,7 +500,7 @@ export const runAgenticOrchestration = async (
     let plan: OrchestrationStep[] = [];
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_MISSION_PLANNER: "${mission}". Generate step-by-step injection plan as JSON array of {id, description, toolName?}.`,
             config: {
                 systemInstruction: AODE_MANDATE,
@@ -577,7 +574,7 @@ export const runAgenticOrchestration = async (
         } else {
             try {
                 const data = await callGeminiProxy('generateContent', {
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.8-flash',
                     contents: `EXECUTE_STEP: ${step.description}`,
                     config: { systemInstruction: AODE_MANDATE }
                 });
@@ -597,7 +594,7 @@ export const runAgenticOrchestration = async (
 export const getSignalAnalysis = async (details: string): Promise<string> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_SONAR_BRIEFING: Analyze this threat vector: "${details}"`,
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -611,7 +608,7 @@ export const getSignalAnalysis = async (details: string): Promise<string> => {
 export const analyzeQuantumVolatility = async (details: string): Promise<string> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_QUANTUM_ANALYSIS: Detect Open_G variance for: "${details}"`,
             config: { systemInstruction: AODE_MANDATE }
         });
@@ -625,7 +622,7 @@ export const analyzeQuantumVolatility = async (details: string): Promise<string>
 export const runSwarmOptimization = async (kpis: AnalyticsKPIs): Promise<string> => {
     try {
         const data = await callGeminiProxy('generateContent', {
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.8-flash',
             contents: `AODE_SWARM_OPTIMIZATION: Current KPIs:\n- PnL: $${kpis.totalPnl}\n- WinRate: ${kpis.winRate}%\n- Sharpe: ${kpis.sharpeRatio}\n\nSynthesize hot-swap report.`,
             config: { systemInstruction: AODE_MANDATE }
         });
