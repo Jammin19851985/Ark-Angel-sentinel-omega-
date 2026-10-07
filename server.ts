@@ -29,6 +29,50 @@ async function startServer() {
         res.json({ status: "OK", timestamp: new Date().toISOString() });
     });
 
+    // Server-side Market Data Proxy (eliminates browser CORS and signal abort issues)
+    const serverMarketPriceCache: Record<string, { price: number; timestamp: number }> = {};
+    app.get('/api/market/prices', async (req, res) => {
+        try {
+            const symbolsParam = req.query.symbols as string;
+            const symbols = symbolsParam ? symbolsParam.split(',') : ['BTC', 'ETH', 'SOL', 'ADA'];
+            const prices: Record<string, number> = {};
+            const now = Date.now();
+
+            for (const sym of symbols) {
+                const cleanSym = sym.trim().toUpperCase();
+                if (!cleanSym) continue;
+
+                if (serverMarketPriceCache[cleanSym] && (now - serverMarketPriceCache[cleanSym].timestamp < 6000)) {
+                    prices[cleanSym] = serverMarketPriceCache[cleanSym].price;
+                    continue;
+                }
+
+                if (['BTC', 'ETH', 'SOL', 'ADA'].includes(cleanSym)) {
+                    try {
+                        const spotRes = await fetch(`https://api.coinbase.com/v2/prices/${cleanSym}-USD/spot`, {
+                            headers: { 'User-Agent': 'Sovereign-Omega-Node/204.0' }
+                        });
+                        if (spotRes.ok) {
+                            const data: any = await spotRes.json();
+                            const val = parseFloat(data?.data?.amount);
+                            if (!isNaN(val) && val > 0) {
+                                serverMarketPriceCache[cleanSym] = { price: val, timestamp: now };
+                                prices[cleanSym] = val;
+                                continue;
+                            }
+                        }
+                    } catch {
+                        // Ignore server-side spot fetch errors
+                    }
+                }
+            }
+
+            res.json({ success: true, prices });
+        } catch (e: any) {
+            res.json({ success: false, error: e?.message });
+        }
+    });
+
     // Gemini API Secure Server-Side Proxy
     let aiInstance: any = null;
     const getServerAi = () => {

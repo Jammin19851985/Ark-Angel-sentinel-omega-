@@ -12,6 +12,7 @@ import HardwareController from './HardwareController';
 import SystemMonitor from './SystemMonitor';
 import SICOControl from './SICOControl';
 import AlphaGauge from './AlphaGauge';
+import SystemStabilityGauge from './SystemStabilityGauge';
 import SwarmVisualizer from './SwarmVisualizer';
 import CandlestickChart from './charts/CandlestickChart';
 import { CandlestickData } from '../types';
@@ -207,11 +208,14 @@ const Nexus: React.FC<NexusProps> = ({ id }) => {
                             )}
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-64 shrink-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[16rem] shrink-0">
                          <div className="tech-panel overflow-hidden">
                              <AlphaGauge id="nexus-alpha" />
                          </div>
                          <div className="tech-panel overflow-hidden">
+                             <SystemStabilityGauge id="nexus-stability" />
+                         </div>
+                         <div className="tech-panel overflow-hidden md:col-span-2 lg:col-span-1">
                              <GammaScalper id="nexus-gamma" />
                          </div>
                     </div>

@@ -4,7 +4,7 @@ import { MarketData } from '../types';
 import PriceTrendTooltip from './charts/PriceTrendTooltip';
 import { Sparkline } from './charts/Sparkline';
 import { SearchIcon } from './icons/SearchIcon';
-import { BellIcon, BarChart2, History } from 'lucide-react';
+import { BellIcon, BarChart2, History, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAppContext } from '../contexts/AppContext';
 import { LivePaperBadge } from './LivePaperBadge';
 import Loader from './Loader';
@@ -22,11 +22,109 @@ interface MarketWatchProps { id: string; }
 
 const CRYPTO_SYMBOLS = ['BTC', 'ETH', 'SOL', 'ADA'];
 
+type SortField = 'symbol' | 'price' | 'change';
+type SortOrder = 'asc' | 'desc';
+
+interface ThresholdConfig {
+    tier: 'SURGE_BULL' | 'BULL' | 'NEUTRAL_POS' | 'NEUTRAL_NEG' | 'BEAR' | 'CRASH_BEAR';
+    label: string;
+    dotClass: string;
+    textClass: string;
+    badgeBg: string;
+    badgeBorder: string;
+    glowClass: string;
+    badgeGlow: string;
+    icon: string;
+}
+
+const getThresholdIndicator = (change: number = 0): ThresholdConfig => {
+    if (change >= 2.5) {
+        return {
+            tier: 'SURGE_BULL',
+            label: 'SURGE BULL (>= +2.5%)',
+            dotClass: 'bg-emerald-400 border-emerald-300 ring-2 ring-emerald-500/60 animate-pulse glow-beacon-green-high',
+            textClass: 'text-emerald-300 font-bold',
+            badgeBg: 'bg-emerald-950/80',
+            badgeBorder: 'border-emerald-400/80',
+            glowClass: 'shadow-[0_0_12px_rgba(34,197,94,0.85)]',
+            badgeGlow: 'shadow-[0_0_8px_rgba(34,197,94,0.6)]',
+            icon: '▲'
+        };
+    }
+    if (change >= 0.5) {
+        return {
+            tier: 'BULL',
+            label: 'BULLISH (>= +0.5%)',
+            dotClass: 'bg-emerald-500 border-emerald-400 glow-beacon-green-mid',
+            textClass: 'text-emerald-400 font-semibold',
+            badgeBg: 'bg-emerald-950/50',
+            badgeBorder: 'border-emerald-500/60',
+            glowClass: 'shadow-[0_0_7px_rgba(34,197,94,0.5)]',
+            badgeGlow: 'shadow-[0_0_5px_rgba(34,197,94,0.35)]',
+            icon: '▲'
+        };
+    }
+    if (change >= 0) {
+        return {
+            tier: 'NEUTRAL_POS',
+            label: 'MILD GAIN (0% to +0.5%)',
+            dotClass: 'bg-emerald-500/80 border-emerald-600/70',
+            textClass: 'text-emerald-400/90',
+            badgeBg: 'bg-emerald-950/30',
+            badgeBorder: 'border-emerald-700/50',
+            glowClass: 'shadow-[0_0_4px_rgba(34,197,94,0.35)]',
+            badgeGlow: 'shadow-[0_0_3px_rgba(34,197,94,0.2)]',
+            icon: '▲'
+        };
+    }
+    if (change > -0.5) {
+        return {
+            tier: 'NEUTRAL_NEG',
+            label: 'MILD PULLBACK (0% to -0.5%)',
+            dotClass: 'bg-rose-500/80 border-rose-600/70',
+            textClass: 'text-rose-400/90',
+            badgeBg: 'bg-rose-950/30',
+            badgeBorder: 'border-rose-700/50',
+            glowClass: 'shadow-[0_0_4px_rgba(239,68,68,0.35)]',
+            badgeGlow: 'shadow-[0_0_3px_rgba(239,68,68,0.2)]',
+            icon: '▼'
+        };
+    }
+    if (change > -2.5) {
+        return {
+            tier: 'BEAR',
+            label: 'BEARISH (<= -0.5%)',
+            dotClass: 'bg-rose-500 border-rose-400 glow-beacon-red-mid',
+            textClass: 'text-rose-400 font-semibold',
+            badgeBg: 'bg-rose-950/50',
+            badgeBorder: 'border-rose-500/60',
+            glowClass: 'shadow-[0_0_7px_rgba(239,68,68,0.5)]',
+            badgeGlow: 'shadow-[0_0_5px_rgba(239,68,68,0.35)]',
+            icon: '▼'
+        };
+    }
+    return {
+        tier: 'CRASH_BEAR',
+        label: 'HYPER BEARISH (<= -2.5%)',
+        dotClass: 'bg-rose-500 border-rose-300 ring-2 ring-rose-500/60 animate-pulse glow-beacon-red-high',
+        textClass: 'text-rose-300 font-bold',
+        badgeBg: 'bg-rose-950/80',
+        badgeBorder: 'border-rose-400/80',
+        glowClass: 'shadow-[0_0_12px_rgba(239,68,68,0.85)]',
+        badgeGlow: 'shadow-[0_0_8px_rgba(239,68,68,0.6)]',
+        icon: '▼'
+    };
+};
+
 const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
     const { marketData, historicalMarketData, marketFilter, setMarketFilter, fetchSymbolData, addLog, trades } = useAppContext();
     
     // Primary View Mode: TICKERS or HISTORICAL TRADES
     const [viewMode, setViewMode] = useState<'TICKERS' | 'TRADES'>('TICKERS');
+
+    // Sorting state
+    const [sortField, setSortField] = useState<SortField>('change');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
     // We use refs for tracking previous prices to strictly avoid re-render loops.
     const prevPricesRef = useRef<Record<string, number>>({});
@@ -51,7 +149,15 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
         }
     }, []);
 
-    // Check alerts and update flashes
+    const triggerNotification = useCallback((symbol: string, direction: 'HIGH' | 'LOW', currentPrice: number, threshold: number) => {
+        const msg = `${symbol} crossed ${direction} threshold! Current: $${currentPrice.toFixed(2)} (Alert: $${threshold.toFixed(2)})`;
+        addLog('ALERT', msg);
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Sovereign Alert', { body: msg });
+        }
+    }, [addLog]);
+
+    // Check alerts and update real-time tick flashes
     useEffect(() => {
         const changes: Record<string, 'up' | 'down'> = {};
         let hasChanges = false;
@@ -60,13 +166,13 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
             const currentPrice = marketData[symbol]?.price;
             const previousPrice = prevPricesRef.current[symbol];
             
-            if (currentPrice && previousPrice && currentPrice !== previousPrice) {
+            if (currentPrice !== undefined && previousPrice !== undefined && currentPrice !== previousPrice) {
                 changes[symbol] = currentPrice > previousPrice ? 'up' : 'down';
                 hasChanges = true;
             }
             
             // Trigger alerts
-            if (currentPrice) {
+            if (currentPrice !== undefined) {
                 const alerts = priceAlerts[symbol];
                 if (alerts) {
                     if (alerts.high && currentPrice >= alerts.high && (!previousPrice || previousPrice < alerts.high)) {
@@ -81,19 +187,17 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
         });
         
         if (hasChanges) {
-            // setPriceChanges(changes);
-            // const timer = setTimeout(() => setPriceChanges({}), 1000);
-            // return () => clearTimeout(timer);
+            setPriceChanges(prev => ({ ...prev, ...changes }));
+            const timer = setTimeout(() => {
+                setPriceChanges(prev => {
+                    const next = { ...prev };
+                    Object.keys(changes).forEach(k => delete next[k]);
+                    return next;
+                });
+            }, 1200);
+            return () => clearTimeout(timer);
         }
-    }, [marketData, priceAlerts]);
-
-    const triggerNotification = useCallback((symbol: string, direction: 'HIGH' | 'LOW', currentPrice: number, threshold: number) => {
-        const msg = `${symbol} crossed ${direction} threshold! Current: $${currentPrice.toFixed(2)} (Alert: $${threshold.toFixed(2)})`;
-        addLog('ALERT', msg);
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Sovereign Alert', { body: msg });
-        }
-    }, [addLog]);
+    }, [marketData, priceAlerts, triggerNotification]);
 
     useEffect(() => {
         const newsInterval = setInterval(() => setCurrentNewsIndex(prev => (prev + 1) % MARKET_NEWS_HEADLINES.length), 7000);
@@ -110,9 +214,29 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
 
     const getPriceColorClass = (symbol: string) => {
         const changeStatus = priceChanges[symbol];
-        if (changeStatus === 'up') return 'text-green-300';
-        if (changeStatus === 'down') return 'text-red-300';
+        if (changeStatus === 'up') return 'text-green-300 font-bold';
+        if (changeStatus === 'down') return 'text-red-300 font-bold';
         return (marketData[symbol]?.change ?? 0) >= 0 ? 'text-green-400' : 'text-red-400';
+    };
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortField(field);
+            setSortOrder(field === 'symbol' ? 'asc' : 'desc');
+        }
+    };
+
+    const renderSortIcon = (field: SortField) => {
+        if (sortField !== field) {
+            return <ArrowUpDown className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition" />;
+        }
+        return sortOrder === 'asc' ? (
+            <ArrowUp className="w-2.5 h-2.5 text-amber-400" />
+        ) : (
+            <ArrowDown className="w-2.5 h-2.5 text-amber-400" />
+        );
     };
 
     const filteredSymbols = Object.keys(marketData).filter(symbol => {
@@ -128,6 +252,25 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
             (activeTab === 'STOCKS' && isGlobal);
             
         return matchesSearch && matchesTab;
+    });
+
+    const sortedSymbols = [...filteredSymbols].sort((a, b) => {
+        const dataA = marketData[a];
+        const dataB = marketData[b];
+        if (!dataA && !dataB) return 0;
+        if (!dataA) return 1;
+        if (!dataB) return -1;
+
+        let comp = 0;
+        if (sortField === 'symbol') {
+            comp = a.localeCompare(b);
+        } else if (sortField === 'price') {
+            comp = (dataA.price || 0) - (dataB.price || 0);
+        } else if (sortField === 'change') {
+            comp = (dataA.change || 0) - (dataB.change || 0);
+        }
+
+        return sortOrder === 'asc' ? comp : -comp;
     });
     
     const TabButton: React.FC<{ tab: typeof activeTab, label: string }> = ({ tab, label }) => (
@@ -243,52 +386,170 @@ const MarketWatch: React.FC<MarketWatchProps> = ({ id }) => {
                     </div>
                     
                     <div className="flex-1 flex flex-col min-h-0">
-                        <div className="grid grid-cols-12 font-mono text-[9px] text-slate-600 px-2 pb-1 border-b border-slate-800 uppercase tracking-wider">
-                            <span className="col-span-2">Sym</span>
-                            <span className="col-span-2 text-center">Trend</span>
-                            <span className="col-span-3 text-right">Price</span>
-                            <span className="col-span-4 text-right">Volume</span>
-                            <span className="col-span-1 border-transparent text-center">🔔</span>
+                        {/* Quick Sorting Toolbar */}
+                        <div className="flex items-center justify-between px-1.5 py-1 mb-1.5 bg-black/40 rounded border border-slate-800/80 text-[8px] font-mono">
+                            <div className="flex items-center gap-1">
+                                <span className="text-slate-500 uppercase tracking-wider">SORT:</span>
+                                <span className="text-amber-400 font-bold uppercase">{sortField} {sortOrder === 'asc' ? '▲' : '▼'}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={() => handleSort('symbol')}
+                                    className={`px-1.5 py-0.5 rounded text-[7.5px] font-bold border transition ${
+                                        sortField === 'symbol' 
+                                        ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.25)]' 
+                                        : 'bg-black/40 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                                    }`}
+                                    title="Toggle Sort by Symbol / Name"
+                                >
+                                    NAME {sortField === 'symbol' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                                </button>
+                                <button
+                                    onClick={() => handleSort('price')}
+                                    className={`px-1.5 py-0.5 rounded text-[7.5px] font-bold border transition ${
+                                        sortField === 'price' 
+                                        ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.25)]' 
+                                        : 'bg-black/40 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                                    }`}
+                                    title="Toggle Sort by Price"
+                                >
+                                    PRICE {sortField === 'price' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                                </button>
+                                <button
+                                    onClick={() => handleSort('change')}
+                                    className={`px-1.5 py-0.5 rounded text-[7.5px] font-bold border transition ${
+                                        sortField === 'change' 
+                                        ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 shadow-[0_0_6px_rgba(245,158,11,0.25)]' 
+                                        : 'bg-black/40 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
+                                    }`}
+                                    title="Toggle Sort by 24h Percentage Change"
+                                >
+                                    24H % {sortField === 'change' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                                </button>
+                            </div>
                         </div>
+
+                        {/* Sortable Column Headers */}
+                        <div className="grid grid-cols-12 font-mono text-[9px] text-slate-400 px-1.5 pb-1 border-b border-slate-800 uppercase tracking-wider select-none items-center">
+                            <button 
+                                onClick={() => handleSort('symbol')}
+                                className={`col-span-3 flex items-center gap-1 text-left font-bold transition hover:text-amber-300 ${
+                                    sortField === 'symbol' ? 'text-amber-400' : 'text-slate-500'
+                                }`}
+                                title="Click to Sort by Symbol / Name"
+                            >
+                                <span>SYM</span>
+                                {renderSortIcon('symbol')}
+                            </button>
+                            <span className="col-span-2 text-center text-slate-600">TREND</span>
+                            <button 
+                                onClick={() => handleSort('price')}
+                                className={`col-span-3 flex items-center justify-end gap-1 text-right font-bold transition hover:text-amber-300 ${
+                                    sortField === 'price' ? 'text-amber-400' : 'text-slate-500'
+                                }`}
+                                title="Click to Sort by Current Price"
+                            >
+                                <span>PRICE</span>
+                                {renderSortIcon('price')}
+                            </button>
+                            <button 
+                                onClick={() => handleSort('change')}
+                                className={`col-span-3 flex items-center justify-end gap-1 text-right font-bold transition hover:text-amber-300 ${
+                                    sortField === 'change' ? 'text-amber-400' : 'text-slate-500'
+                                }`}
+                                title="Click to Sort by 24h Percentage Change"
+                            >
+                                <span>24H %</span>
+                                {renderSortIcon('change')}
+                            </button>
+                            <span className="col-span-1 border-transparent text-center text-slate-600" title="Price Alerts">🔔</span>
+                        </div>
+
+                        {/* List of Tickers with Glowing Visual Indicators */}
                         <div className="space-y-0.5 overflow-y-auto flex-1 p-1 -m-1 custom-scrollbar">
-                            {filteredSymbols.map((symbol) => {
+                            {sortedSymbols.map((symbol) => {
                                 const data = marketData[symbol];
                                 const history = historicalMarketData[symbol] || [];
                                 const formattedVolume = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(data.volume);
                                 const isUp = history.length > 1 && history[history.length - 1] >= history[0];
                                 const hasAlert = priceAlerts[symbol]?.high || priceAlerts[symbol]?.low;
+                                const indicator = getThresholdIndicator(data.change);
 
                                 return (
                                     <div 
                                         key={symbol} 
-                                        className={`relative grid grid-cols-12 items-center font-mono text-[10px] p-1 rounded-sm transition-colors cursor-crosshair hover:bg-white/5 ${priceChanges[symbol] === 'up' ? 'flash-green' : priceChanges[symbol] === 'down' ? 'flash-red' : ''}`}
+                                        className={`relative grid grid-cols-12 items-center font-mono text-[10px] p-1 rounded-sm transition-colors cursor-crosshair hover:bg-white/5 ${
+                                            priceChanges[symbol] === 'up' ? 'flash-green' : priceChanges[symbol] === 'down' ? 'flash-red' : ''
+                                        }`}
                                         onMouseEnter={() => setHoveredSymbol(symbol)}
                                         onMouseLeave={() => setHoveredSymbol(null)}
                                     >
-                                        <span className="text-slate-300 col-span-2 truncate font-bold">{symbol}</span>
-                                        <div className="col-span-2 h-4 flex items-center justify-center opacity-80">
-                                            <Sparkline data={history} width={40} height={16} color={isUp ? '#4ade80' : '#f87171'} strokeWidth={1} />
+                                        {/* Symbol with Glowing Real-time Threshold Beacon Indicator */}
+                                        <div className="col-span-3 flex items-center gap-1.5 min-w-0">
+                                            <span 
+                                                className={`w-2 h-2 rounded-full flex-shrink-0 transition-all ${indicator.dotClass} ${indicator.glowClass}`} 
+                                                title={`${symbol}: ${indicator.label}`}
+                                            />
+                                            <span className="text-slate-200 truncate font-bold text-[9.5px]">{symbol}</span>
                                         </div>
-                                        <span className={`font-medium text-right col-span-3 flex flex-col items-end ${getPriceColorClass(symbol)}`}>
-                                            <span>{data.price.toFixed(2)}</span>
-                                            <span className={`text-[8px] ${data.change >= 0 ? 'text-green-500/70' : 'text-red-500/70'}`}>
-                                                {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
-                                            </span>
-                                        </span>
-                                        <span className="text-slate-500 text-right col-span-4 flex items-center justify-end">
-                                            {formattedVolume}
-                                        </span>
+
+                                        {/* Sparkline Trend */}
+                                        <div className="col-span-2 h-4 flex items-center justify-center opacity-85">
+                                            <Sparkline data={history} width={38} height={15} color={isUp ? '#4ade80' : '#f87171'} strokeWidth={1} />
+                                        </div>
+
+                                        {/* Current Price */}
+                                        <div className="col-span-3 text-right font-medium text-[9.5px]">
+                                            <span className={getPriceColorClass(symbol)}>${data.price.toFixed(2)}</span>
+                                        </div>
+
+                                        {/* 24h Percentage Change with Glowing Threshold Pill */}
+                                        <div className="col-span-3 flex justify-end">
+                                            <div 
+                                                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-mono border transition-all ${indicator.badgeBg} ${indicator.badgeBorder} ${indicator.textClass} ${indicator.badgeGlow}`}
+                                                title={`${symbol} 24h: ${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}% (${indicator.label})`}
+                                            >
+                                                <span className="text-[7px]">{indicator.icon}</span>
+                                                <span>{data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Price Alert Bell */}
                                         <button 
                                             className={`col-span-1 flex items-center justify-center transition-colors ${hasAlert ? 'text-amber-400' : 'text-slate-700 hover:text-slate-400'}`}
                                             onClick={(e) => openAlertModal(symbol, e)}
-                                            title="Set Price Alert"
+                                            title={`Set Price Alert for ${symbol} (Vol: ${formattedVolume})`}
                                         >
                                             <BellIcon className="w-3 h-3" />
                                         </button>
+
                                         {hoveredSymbol === symbol && history.length > 1 && <PriceTrendTooltip history={history} />}
                                     </div>
                                 );
                             })}
+                        </div>
+
+                        {/* Real-time Threshold Indicators Legend */}
+                        <div className="flex items-center justify-between px-1.5 pt-1 mt-1 border-t border-slate-800/60 text-[7px] font-mono text-slate-500">
+                            <div className="flex items-center gap-2">
+                                <span className="flex items-center gap-1" title="Surge Bullish (>= +2.5%)">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 glow-beacon-green-high animate-pulse" />
+                                    <span className="text-emerald-400/90">&ge;+2.5%</span>
+                                </span>
+                                <span className="flex items-center gap-1" title="Bullish Gain (> 0%)">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 glow-beacon-green-mid" />
+                                    <span className="text-emerald-400/70">&gt;0%</span>
+                                </span>
+                                <span className="flex items-center gap-1" title="Bearish Retrace (< 0%)">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 glow-beacon-red-mid" />
+                                    <span className="text-rose-400/70">&lt;0%</span>
+                                </span>
+                                <span className="flex items-center gap-1" title="Hyper Bearish (<= -2.5%)">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 glow-beacon-red-high animate-pulse" />
+                                    <span className="text-rose-400/90">&le;-2.5%</span>
+                                </span>
+                            </div>
+                            <span className="text-[6.5px] uppercase tracking-wider text-slate-600">THRESHOLD BEACONS</span>
                         </div>
                     </div>
 

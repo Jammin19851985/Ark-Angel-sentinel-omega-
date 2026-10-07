@@ -32,7 +32,7 @@ const LIVE_PRICE_CACHE: Record<string, { price: number; timestamp: number }> = {
 
 export const marketService = {
     /**
-     * Gets the latest price for a symbol using real-world public feeds with fallback.
+     * Gets the latest price for a symbol using secure server proxy feeds with fallback.
      */
     async getPrice(symbol: string): Promise<number> {
         const cleanSymbol = symbol.toUpperCase().replace('/USD', '');
@@ -43,19 +43,14 @@ export const marketService = {
             return LIVE_PRICE_CACHE[cleanSymbol].price;
         }
 
-        // Try live public crypto spot quote from Coinbase for crypto symbols
+        // Try server-side proxy for crypto symbols (prevents browser CORS & abort signals)
         if (['BTC', 'ETH', 'SOL', 'ADA'].includes(cleanSymbol)) {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-                const res = await fetch(`https://api.coinbase.com/v2/prices/${cleanSymbol}-USD/spot`, {
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
+                const res = await fetch(`/api/market/prices?symbols=${cleanSymbol}`);
                 if (res.ok) {
                     const data = await res.json();
-                    const realPrice = parseFloat(data?.data?.amount);
-                    if (!isNaN(realPrice) && realPrice > 0) {
+                    const realPrice = data?.prices?.[cleanSymbol];
+                    if (typeof realPrice === 'number' && realPrice > 0) {
                         BASE_PRICES[cleanSymbol] = realPrice;
                         LIVE_PRICE_CACHE[cleanSymbol] = { price: realPrice, timestamp: now };
                         return realPrice;
@@ -78,6 +73,29 @@ export const marketService = {
      */
     async getBatchPrices(symbols: string[]): Promise<Partial<MarketData>> {
         const updates: Partial<MarketData> = {};
+
+        // Query crypto symbols in one unified request to reduce round-trips
+        const cryptoSymbols = symbols.filter(s => ['BTC', 'ETH', 'SOL', 'ADA'].includes(s.toUpperCase().replace('/USD', '')));
+        if (cryptoSymbols.length > 0) {
+            try {
+                const res = await fetch(`/api/market/prices?symbols=${cryptoSymbols.join(',')}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data?.prices) {
+                        const now = Date.now();
+                        Object.entries(data.prices).forEach(([sym, priceVal]) => {
+                            if (typeof priceVal === 'number' && priceVal > 0) {
+                                BASE_PRICES[sym] = priceVal;
+                                LIVE_PRICE_CACHE[sym] = { price: priceVal, timestamp: now };
+                            }
+                        });
+                    }
+                }
+            } catch {
+                // Ignore and use calibrated simulation
+            }
+        }
+
         for (const sym of symbols) {
             try {
                 const price = await this.getPrice(sym);

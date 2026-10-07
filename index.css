@@ -248,8 +248,91 @@ body.agent-zero-active {
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
 }
 
+/* Radial pulse animation for System Stability warning (< 70%) */
+@keyframes radial-pulse-red {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.95;
+    border-color: rgba(255, 0, 55, 0.95);
+    box-shadow: 0 0 18px 6px rgba(255, 0, 55, 0.8), inset 0 0 16px rgba(255, 0, 55, 0.5);
+  }
+  50% {
+    opacity: 0.65;
+    border-color: rgba(255, 0, 55, 0.7);
+    box-shadow: 0 0 40px 14px rgba(255, 0, 55, 0.6), inset 0 0 25px rgba(255, 0, 55, 0.3);
+  }
+  100% {
+    transform: scale(1.48);
+    opacity: 0;
+    border-color: rgba(255, 0, 55, 0);
+    box-shadow: 0 0 65px 22px rgba(255, 0, 55, 0);
+  }
+}
+
+@keyframes radial-glow-breathe {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.12);
+  }
+}
+
+.animate-radial-pulse-1 {
+  animation: radial-pulse-red 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+.animate-radial-pulse-2 {
+  animation: radial-pulse-red 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite 0.65s;
+}
+
+.animate-radial-pulse-3 {
+  animation: radial-pulse-red 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite 1.3s;
+}
+
+.animate-radial-breathe {
+  animation: radial-glow-breathe 1.6s ease-in-out infinite;
+}
+
 .status-glow-red {
   box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+/* MarketWatch Real-time Price Ticker Flashes and Glow Threshold Indicators */
+@keyframes flash-green-glow {
+  0% { background-color: rgba(34, 197, 94, 0.3); box-shadow: inset 0 0 12px rgba(34, 197, 94, 0.4), 0 0 10px rgba(34, 197, 94, 0.3); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+
+@keyframes flash-red-glow {
+  0% { background-color: rgba(239, 68, 68, 0.3); box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.4), 0 0 10px rgba(239, 68, 68, 0.3); }
+  100% { background-color: transparent; box-shadow: none; }
+}
+
+.flash-green {
+  animation: flash-green-glow 1.2s ease-out;
+}
+
+.flash-red {
+  animation: flash-red-glow 1.2s ease-out;
+}
+
+.glow-beacon-green-high {
+  box-shadow: 0 0 8px #22c55e, 0 0 16px rgba(34, 197, 94, 0.55);
+}
+
+.glow-beacon-green-mid {
+  box-shadow: 0 0 5px #22c55e;
+}
+
+.glow-beacon-red-high {
+  box-shadow: 0 0 8px #ef4444, 0 0 16px rgba(239, 68, 68, 0.55);
+}
+
+.glow-beacon-red-mid {
+  box-shadow: 0 0 5px #ef4444;
 }
 
 /* Grid background for main container */
